@@ -1,9 +1,10 @@
 package com.springboot.springboothousemarket.Controller;
 
 import com.springboot.springboothousemarket.Entitiy.HouseOrder;
+import com.springboot.springboothousemarket.Service.HouseOrderService;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -12,14 +13,17 @@ import java.util.List;
 @RestController
 public class HouseOrderController {
 
+    @Autowired
+    private HouseOrderService houseOrderService;
+
     /**
      * 创建订单
      * @param houseOrder 订单信息
      * @return 创建结果
      */
-    public HouseOrder createOrder(HouseOrder houseOrder) {
-        // TODO: 实现创建订单逻辑
-        return new HouseOrder();
+    @PostMapping
+    public HouseOrder createOrder(@RequestBody HouseOrder houseOrder) {
+        return houseOrderService.createOrder(houseOrder);
     }
 
     /**
@@ -27,9 +31,9 @@ public class HouseOrderController {
      * @param id 订单ID
      * @return 订单信息
      */
-    public HouseOrder getOrderById(Long id) {
-        // TODO: 实现根据ID获取订单逻辑
-        return new HouseOrder();
+    @GetMapping("/{id}")
+    public HouseOrder getOrderById(@PathVariable Long id) {
+        return houseOrderService.getOrderById(id);
     }
 
     /**
@@ -38,9 +42,9 @@ public class HouseOrderController {
      * @param houseOrder 更新的订单信息
      * @return 更新结果
      */
-    public HouseOrder updateOrder(Long id, HouseOrder houseOrder) {
-        // TODO: 实现更新订单逻辑
-        return new HouseOrder();
+    @PutMapping("/{id}")
+    public HouseOrder updateOrder(@PathVariable Long id, @RequestBody HouseOrder houseOrder) {
+        return houseOrderService.updateOrder(id, houseOrder);
     }
 
     /**
@@ -48,18 +52,18 @@ public class HouseOrderController {
      * @param id 订单ID
      * @return 删除结果
      */
-    public boolean deleteOrder(Long id) {
-        // TODO: 实现删除订单逻辑
-        return true;
+    @DeleteMapping("/{id}")
+    public boolean deleteOrder(@PathVariable Long id) {
+        return houseOrderService.deleteOrder(id);
     }
 
     /**
      * 获取所有订单列表
      * @return 订单列表
      */
+    @GetMapping
     public List<HouseOrder> getAllOrders() {
-        // TODO: 实现获取所有订单逻辑
-        return List.of();
+        return houseOrderService.getAllOrders();
     }
 
     /**
@@ -67,8 +71,8 @@ public class HouseOrderController {
      * @param userId 用户ID
      * @return 订单列表
      */
-    public List<HouseOrder> getOrdersByUserId(Long userId) {
-        // TODO: 实现根据用户ID获取订单逻辑
-        return List.of();
+    @GetMapping("/user/{userId}")
+    public List<HouseOrder> getOrdersByUserId(@PathVariable Long userId) {
+        return houseOrderService.getOrdersByUserId(userId);
     }
 }
