@@ -3,14 +3,18 @@ package com.springboot.springboothousemarket.Config;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 @Configuration
 public class SwaggerConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
+                .servers(List.of(new Server().url("http://localhost:8082")))
                 .info(new Info()
                         .title("房源市场-房屋租售在线平台")   // 标题
                         .description("进行房屋租售的在线平台") // 描述

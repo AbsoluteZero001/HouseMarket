@@ -1,9 +1,9 @@
 package com.springboot.springboothousemarket.Controller;
 
 import com.springboot.springboothousemarket.Entitiy.SysUser;
+import com.springboot.springboothousemarket.Service.SysUserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -12,14 +12,20 @@ import java.util.List;
 @RestController
 public class SysUserController {
 
+    private final SysUserService sysUserService;
+
+    public SysUserController(SysUserService sysUserService) {
+        this.sysUserService = sysUserService;
+    }
+
     /**
      * 创建用户
      * @param sysUser 用户信息
      * @return 创建结果
      */
-    public SysUser createUser(SysUser sysUser) {
-        // TODO: 实现创建用户逻辑
-        return new SysUser();
+    @PostMapping
+    public SysUser createUser(@RequestBody SysUser sysUser) {
+        return sysUserService.createUser(sysUser);
     }
 
     /**
@@ -27,9 +33,9 @@ public class SysUserController {
      * @param id 用户ID
      * @return 用户信息
      */
-    public SysUser getUserById(Long id) {
-        // TODO: 实现根据ID获取用户逻辑
-        return new SysUser();
+    @GetMapping("/{id}")
+    public SysUser getUserById(@PathVariable Long id) {
+        return sysUserService.getUserById(id);
     }
 
     /**
@@ -38,9 +44,9 @@ public class SysUserController {
      * @param sysUser 更新的用户信息
      * @return 更新结果
      */
-    public SysUser updateUser(Long id, SysUser sysUser) {
-        // TODO: 实现更新用户逻辑
-        return new SysUser();
+    @PutMapping("/{id}")
+    public SysUser updateUser(@PathVariable Long id, @RequestBody SysUser sysUser) {
+        return sysUserService.updateUser(id, sysUser);
     }
 
     /**
@@ -48,18 +54,18 @@ public class SysUserController {
      * @param id 用户ID
      * @return 删除结果
      */
-    public boolean deleteUser(Long id) {
-        // TODO: 实现删除用户逻辑
-        return true;
+    @DeleteMapping("/{id}")
+    public boolean deleteUser(@PathVariable Long id) {
+        return sysUserService.deleteUser(id);
     }
 
     /**
      * 获取所有用户列表
      * @return 用户列表
      */
+    @GetMapping
     public List<SysUser> getAllUsers() {
-        // TODO: 实现获取所有用户逻辑
-        return List.of();
+        return sysUserService.getAllUsers();
     }
 
     /**
@@ -67,8 +73,8 @@ public class SysUserController {
      * @param username 用户名
      * @return 用户信息
      */
-    public SysUser getUserByUsername(String username) {
-        // TODO: 实现根据用户名获取用户逻辑
-        return new SysUser();
+    @GetMapping("/username/{username}")
+    public SysUser getUserByUsername(@PathVariable String username) {
+        return sysUserService.getUserByUsername(username);
     }
 }

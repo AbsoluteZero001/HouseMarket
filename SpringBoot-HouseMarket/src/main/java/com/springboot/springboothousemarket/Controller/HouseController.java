@@ -3,7 +3,6 @@ package com.springboot.springboothousemarket.Controller;
 import com.springboot.springboothousemarket.Entitiy.House;
 import com.springboot.springboothousemarket.Service.HouseService;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,8 +12,11 @@ import java.util.List;
 @RestController
 public class HouseController {
 
-    @Autowired
-    private HouseService houseService;
+    private final HouseService houseService;
+
+    public HouseController(HouseService houseService) {
+        this.houseService = houseService;
+    }
 
     /**
      * 创建房源信息
