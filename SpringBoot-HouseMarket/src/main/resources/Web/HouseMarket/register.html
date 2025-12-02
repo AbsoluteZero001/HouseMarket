@@ -279,12 +279,41 @@
                 return;
             }
 
-            showMessage('注册成功，即将跳转到登录页', 'success');
+            // 构建注册数据
+            const formData = new FormData(e.target);
+            const registerData = {
+                username: formData.get('username'),
+                password: formData.get('password'),
+                role: formData.get('role')
+            };
 
-            // 注册成功后跳转到登录页
-            setTimeout(() => {
-                window.location.href = 'login.html';
-            }, 1500);
+            try {
+                // 调用后端注册API
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(registerData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showMessage('注册成功，即将跳转到登录页', 'success');
+                    
+                    // 注册成功后跳转到登录页
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 1500);
+                } else {
+                    showMessage(result.message || '注册失败', 'error');
+                    generateCaptcha();
+                }
+            } catch (error) {
+                console.error('注册请求失败:', error);
+                showMessage('注册请求失败，请稍后重试', 'error');
+            }
         });
     }
 

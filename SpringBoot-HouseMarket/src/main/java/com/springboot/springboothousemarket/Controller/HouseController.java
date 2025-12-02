@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 @Tag(name = "房源信息API")
-@RequestMapping("/house")
+@RequestMapping("/api/houses")
 @RestController
 public class HouseController {
 
@@ -85,7 +85,7 @@ public class HouseController {
      * @param pageSize 每页数量
      * @return 房源列表
      */
-    @GetMapping("/list")
+    @GetMapping
     public Map<String, Object> getHouses(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String type,

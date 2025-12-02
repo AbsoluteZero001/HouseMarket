@@ -355,139 +355,159 @@
     });
 </script>
 <script>
+    // 带认证的请求函数
+    async function fetchWithAuth(url, options = {}) {
+        const token = localStorage.getItem('token');
+        const headers = {
+            'Content-Type': 'application/json',
+            ...options.headers
+        };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(url, {
+            ...options,
+            headers
+        });
+
+        return response.json();
+    }
+
     // 租客页面JS
-    function initTenantPage() {
-        // 初始化房源列表
-        initHouseList();
-
-        // 搜索表单提交事件
-        document.getElementById('searchForm').addEventListener('submit', (e) => {
-            e.preventDefault();
-            initHouseList();
-        });
-
-        // 重置筛选条件
-        document.querySelector('.btn-secondary[onclick="resetFilters()"]').addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('searchForm').reset();
-            initHouseList();
-        });
-
-        // 初始化收藏列表
-        initFavoritesList();
-    }
-
-    // 初始化房源列表
-    function initHouseList() {
-        // 模拟房源数据
-        const mockHouses = [
-            {
-                id: 1,
-                title: '阳光小区 3室2厅',
-                type: '平层',
-                area: 120,
-                price: 3500,
-                address: '北京市朝阳区阳光路1号',
-                image: 'https://picsum.photos/seed/house1/300/200'
-            },
-            {
-                id: 2,
-                title: '幸福家园 2室1厅',
-                type: '跃层',
-                area: 85,
-                price: 2800,
-                address: '北京市海淀区幸福路2号',
-                image: 'https://picsum.photos/seed/house2/300/200'
-            },
-            {
-                id: 3,
-                title: '和谐社区 4室2厅',
-                type: '复式',
-                area: 150,
-                price: 4500,
-                address: '北京市西城区和谐路3号',
-                image: 'https://picsum.photos/seed/house3/300/200'
-            },
-            {
-                id: 4,
-                title: '美好家园 1室1厅',
-                type: '平层',
-                area: 50,
-                price: 1800,
-                address: '北京市东城区美好路4号',
-                image: 'https://picsum.photos/seed/house4/300/200'
-            },
-            {
-                id: 5,
-                title: '温馨小区 3室1厅',
-                type: '错层',
-                area: 100,
-                price: 3200,
-                address: '北京市丰台区温馨路5号',
-                image: 'https://picsum.photos/seed/house5/300/200'
-            }
-        ];
-
-        // 获取收藏列表
-        const favorites = getFavorites();
-
-        const houseList = document.getElementById('houseList');
-        houseList.innerHTML = mockHouses.map(house => {
-            const isFavorited = favorites.some(fav => fav.id === house.id);
-            return `
-        <div class="house-card">
-            <img src="${house.image}" alt="${house.title}" class="house-image">
-            <div class="house-info">
-                <h4 class="house-title">${house.title}</h4>
-                <div class="house-meta">
-                    <span>户型：${house.type}</span>
-                    <span>面积：${house.area}㎡</span>
-                </div>
-                <div class="house-price">¥${house.price}/月</div>
-                <div class="house-address">${house.address}</div>
-                <div style="margin-top: 1rem; display: flex; gap: 1rem;">
-                    <button class="btn" onclick="viewHouseDetail(${house.id})">查看详情</button>
-                    <button class="btn btn-secondary" onclick="bookHouse(${house.id})">预约看房</button>
-                    <button class="btn btn-heart ${isFavorited ? 'favorited' : ''}" onclick="toggleFavorite(${house.id}, this)">${isFavorited ? '取消收藏' : '收藏'}</button>
-                </div>
-            </div>
-        </div>
-    `;
-        }).join('');
-    }
-
-    // 初始化收藏列表
-    function initFavoritesList() {
-        // 获取收藏列表
-        const favorites = getFavorites();
-
-        const favoritesList = document.getElementById('favoritesList');
-
-        if (favorites.length === 0) {
-            favoritesList.innerHTML = '<p style="text-align: center; color: #666; margin: 2rem 0;">您还没有收藏任何房源</p>';
+    async function initTenantPage() {
+        // 检查用户是否已登录
+        const user = localStorage.getItem('user');
+        if (!user) {
+            window.location.href = 'login.html';
             return;
         }
 
-        // 渲染收藏列表
-        favoritesList.innerHTML = favorites.map(house => `
-        <div class="house-card">
-            <img src="${house.image}" alt="${house.title}" class="house-image">
-            <div class="house-info">
-                <h4 class="house-title">${house.title}</h4>
-                <div class="house-meta">
-                    <span>户型：${house.type}</span>
-                    <span>面积：${house.area}㎡</span>
+        // 显示用户名
+        const userData = JSON.parse(user);
+        document.getElementById('username').textContent = userData.username;
+
+        // 初始化个人信息
+        document.getElementById('profileUsername').value = userData.username;
+        document.getElementById('profileRole').value = userData.role;
+
+        // 初始化房源列表
+        await initHouseList();
+
+        // 搜索表单提交事件
+        document.getElementById('searchForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await initHouseList();
+        });
+
+        // 重置筛选条件
+        document.querySelector('.btn-secondary[onclick="resetFilters()"]').addEventListener('click', async (e) => {
+            e.preventDefault();
+            document.getElementById('searchForm').reset();
+            await initHouseList();
+        });
+
+        // 初始化收藏列表
+        await initFavoritesList();
+
+        // 个人信息表单提交
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await updateProfile();
+        });
+    }
+
+    // 初始化房源列表
+    async function initHouseList() {
+        try {
+            // 获取搜索参数
+            const formData = new FormData(document.getElementById('searchForm'));
+            const searchParams = new URLSearchParams(formData).toString();
+
+            // 调用后端API获取房源列表
+            const result = await fetchWithAuth(`/api/houses?${searchParams}`);
+
+            if (result.success) {
+                const houses = result.data.houses || [];
+                const favorites = await getFavorites();
+
+                const houseList = document.getElementById('houseList');
+                houseList.innerHTML = houses.map(house => {
+                    const isFavorited = favorites.some(fav => fav.houseId === house.id);
+                    return `
+                <div class="house-card">
+                    <img src="${house.image || 'https://picsum.photos/seed/house' + house.id + '/300/200'}" alt="${house.title}" class="house-image">
+                    <div class="house-info">
+                        <h4 class="house-title">${house.title}</h4>
+                        <div class="house-meta">
+                            <span>户型：${house.type}</span>
+                            <span>面积：${house.area}㎡</span>
+                        </div>
+                        <div class="house-price">¥${house.price}/月</div>
+                        <div class="house-address">${house.address}</div>
+                        <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                            <button class="btn" onclick="viewHouseDetail(${house.id})">查看详情</button>
+                            <button class="btn btn-secondary" onclick="bookHouse(${house.id})">预约看房</button>
+                            <button class="btn btn-heart ${isFavorited ? 'favorited' : ''}" onclick="toggleFavorite(${house.id}, this)">${isFavorited ? '取消收藏' : '收藏'}</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="house-price">¥${house.price}/月</div>
-                <div class="house-address">${house.address}</div>
-                <div style="margin-top: 1rem; display: flex; gap: 1rem;">
-                    <button class="btn" onclick="viewHouseDetail(${house.id})">查看详情</button>
-                    <button class="btn btn-secondary" onclick="bookHouse(${house.id})">预约看房</button>
-                    <button class="btn btn-heart favorited" onclick="toggleFavorite(${house.id}, this)">取消收藏</button>
+            `;
+                }).join('');
+            } else {
+                showMessage('获取房源列表失败', 'error');
+            }
+        } catch (error) {
+            console.error('获取房源列表失败:', error);
+            showMessage('获取房源列表失败，请稍后重试', 'error');
+        }
+    }
+
+    // 初始化收藏列表
+    async function initFavoritesList() {
+        try {
+            const favorites = await getFavorites();
+            const favoritesList = document.getElementById('favoritesList');
+
+            if (favorites.length === 0) {
+                favoritesList.innerHTML = '<p style="text-align: center; color: #666; margin: 2rem 0;">您还没有收藏任何房源</p>';
+                return;
+            }
+
+            // 获取收藏的房源详情
+            const housesResult = await fetchWithAuth('/api/houses');
+            const allHouses = housesResult.success ? housesResult.data.houses || [] : [];
+
+            // 渲染收藏列表
+            favoritesList.innerHTML = favorites.map(fav => {
+                const house = allHouses.find(h => h.id === fav.houseId);
+                if (!house) return '';
+                
+                return `
+                <div class="house-card">
+                    <img src="${house.image || 'https://picsum.photos/seed/house' + house.id + '/300/200'}" alt="${house.title}" class="house-image">
+                    <div class="house-info">
+                        <h4 class="house-title">${house.title}</h4>
+                        <div class="house-meta">
+                            <span>户型：${house.type}</span>
+                            <span>面积：${house.area}㎡</span>
+                        </div>
+                        <div class="house-price">¥${house.price}/月</div>
+                        <div class="house-address">${house.address}</div>
+                        <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                            <button class="btn" onclick="viewHouseDetail(${house.id})">查看详情</button>
+                            <button class="btn btn-secondary" onclick="bookHouse(${house.id})">预约看房</button>
+                            <button class="btn btn-heart favorited" onclick="toggleFavorite(${house.id}, this)">取消收藏</button>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-    `).join('');
+            `;
+            }).join('');
+        } catch (error) {
+            console.error('获取收藏列表失败:', error);
+            showMessage('获取收藏列表失败，请稍后重试', 'error');
+        }
     }
 
     // 查看房源详情
@@ -501,93 +521,86 @@
     }
 
     // 获取收藏列表
-    function getFavorites() {
-        const favorites = localStorage.getItem('favorites');
-        return favorites ? JSON.parse(favorites) : [];
-    }
-
-    // 保存收藏列表
-    function saveFavorites(favorites) {
-        localStorage.setItem('favorites', JSON.stringify(favorites));
+    async function getFavorites() {
+        try {
+            const result = await fetchWithAuth('/api/favorites');
+            return result.success ? result.data : [];
+        } catch (error) {
+            console.error('获取收藏列表失败:', error);
+            return [];
+        }
     }
 
     // 切换收藏状态
-    function toggleFavorite(houseId, button) {
-        // 模拟房源数据
-        const mockHouses = [
-            {
-                id: 1,
-                title: '阳光小区 3室2厅',
-                type: '平层',
-                area: 120,
-                price: 3500,
-                address: '北京市朝阳区阳光路1号',
-                image: 'https://picsum.photos/seed/house1/300/200'
-            },
-            {
-                id: 2,
-                title: '幸福家园 2室1厅',
-                type: '跃层',
-                area: 85,
-                price: 2800,
-                address: '北京市海淀区幸福路2号',
-                image: 'https://picsum.photos/seed/house2/300/200'
-            },
-            {
-                id: 3,
-                title: '和谐社区 4室2厅',
-                type: '复式',
-                area: 150,
-                price: 4500,
-                address: '北京市西城区和谐路3号',
-                image: 'https://picsum.photos/seed/house3/300/200'
-            },
-            {
-                id: 4,
-                title: '美好家园 1室1厅',
-                type: '平层',
-                area: 50,
-                price: 1800,
-                address: '北京市东城区美好路4号',
-                image: 'https://picsum.photos/seed/house4/300/200'
-            },
-            {
-                id: 5,
-                title: '温馨小区 3室1厅',
-                type: '错层',
-                area: 100,
-                price: 3200,
-                address: '北京市丰台区温馨路5号',
-                image: 'https://picsum.photos/seed/house5/300/200'
+    async function toggleFavorite(houseId, button) {
+        try {
+            if (button.classList.contains('favorited')) {
+                // 取消收藏
+                const result = await fetchWithAuth(`/api/favorites/${houseId}`, {
+                    method: 'DELETE'
+                });
+
+                if (result.success) {
+                    button.textContent = '收藏';
+                    button.classList.remove('favorited');
+                    showMessage('取消收藏成功', 'success');
+                    await initFavoritesList();
+                } else {
+                    showMessage('取消收藏失败', 'error');
+                }
+            } else {
+                // 添加收藏
+                const result = await fetchWithAuth('/api/favorites', {
+                    method: 'POST',
+                    body: JSON.stringify({ houseId })
+                });
+
+                if (result.success) {
+                    button.textContent = '取消收藏';
+                    button.classList.add('favorited');
+                    showMessage('收藏成功', 'success');
+                } else {
+                    showMessage('收藏失败', 'error');
+                }
             }
-        ];
-
-        const house = mockHouses.find(h => h.id === houseId);
-        if (!house) return;
-
-        let favorites = getFavorites();
-
-        if (button.classList.contains('favorited')) {
-            // 取消收藏
-            favorites = favorites.filter(fav => fav.id !== houseId);
-            button.textContent = '收藏';
-            button.classList.remove('favorited');
-            showMessage('取消收藏成功', 'success');
-        } else {
-            // 添加收藏
-            favorites.push(house);
-            button.textContent = '取消收藏';
-            button.classList.add('favorited');
-            showMessage('收藏成功', 'success');
+        } catch (error) {
+            console.error('切换收藏状态失败:', error);
+            showMessage('操作失败，请稍后重试', 'error');
         }
+    }
 
-        // 保存收藏列表
-        saveFavorites(favorites);
+    // 更新个人信息
+    async function updateProfile() {
+        try {
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmNewPassword = document.getElementById('confirmNewPassword').value;
 
-        // 如果当前显示的是收藏列表，更新收藏列表
-        const currentSection = document.querySelector('.section.active');
-        if (currentSection && currentSection.id === 'favorites') {
-            initFavoritesList();
+            if (newPassword && newPassword !== confirmNewPassword) {
+                showMessage('两次输入的密码不一致', 'error');
+                return;
+            }
+
+            const updateData = {};
+            if (newPassword) {
+                updateData.password = newPassword;
+            }
+
+            const result = await fetchWithAuth('/api/user/profile', {
+                method: 'PUT',
+                body: JSON.stringify(updateData)
+            });
+
+            if (result.success) {
+                showMessage('个人信息更新成功', 'success');
+                // 清空密码输入框
+                document.getElementById('newPassword').value = '';
+                document.getElementById('confirmNewPassword').value = '';
+            } else {
+                showMessage(result.message || '更新失败', 'error');
+            }
+        } catch (error) {
+            console.error('更新个人信息失败:', error);
+            showMessage('更新失败，请稍后重试', 'error');
         }
     }
 
