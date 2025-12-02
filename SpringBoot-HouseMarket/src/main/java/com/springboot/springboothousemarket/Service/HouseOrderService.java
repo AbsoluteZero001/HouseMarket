@@ -1,10 +1,11 @@
 package com.springboot.springboothousemarket.Service;
 
-import com.springboot.springboothousemarket.Entitiy.HouseOrder;
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.springboot.springboothousemarket.Entity.HouseOrder;
 
 import java.util.List;
 
-public interface HouseOrderService {
+public interface HouseOrderService extends IService<HouseOrder> {
 
     /**
      * 创建订单

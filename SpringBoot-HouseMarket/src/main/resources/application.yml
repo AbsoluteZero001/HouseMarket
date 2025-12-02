@@ -10,33 +10,29 @@ spring:
     url: jdbc:mysql://localhost:3306/housemarket?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
     username: ${DB_USERNAME}  # 数据库用户名，从环境变量中获取
     password: ${DB_PASSWORD}  # 数据库密码，从环境变量中获取
-  sql:
-    init:
-      mode: always
-      schema-locations: classpath:schema.sql
-      data-locations: classpath:data.sql
 
-# MyBatis配置
-mybatis:
+
+# MyBatis Plus配置
+mybatis-plus:
   # Mapper XML文件的位置，位于classpath下的mapper目录
   mapper-locations: classpath:mapper/*.xml
-  # MyBatis配置项
+  # MyBatis Plus配置项
   configuration:
     # 使用标准输出实现日志打印，方便调试
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
     # 开启驼峰命名转换，将数据库中的下划线命名转换为Java中的驼峰命名
     map-underscore-to-camel-case: true
-
-# PageHelper分页插件配置
-pagehelper:
-  # 指定数据库方言为MySQL
-  helper-dialect: mysql
-  # 启用合理化，如果pageNum<1会查询第一页，如果pageNum>pages会查询最后一页
-  reasonable: true
-  # 支持通过Mapper接口参数传递分页参数
-  support-methods-arguments: true
-  # 设置count参数名为countSql
-  params: count=countSql
+  # 全局配置
+  global-config:
+    db-config:
+      # 主键策略
+      id-type: auto
+      # 逻辑删除字段
+      logic-delete-field: isDeleted
+      # 逻辑删除值
+      logic-delete-value: 1
+      # 逻辑未删除值
+      logic-not-delete-value: 0
 
 # SpringDoc Swagger配置
 springdoc:

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.springboot.springboothousemarket.Mapper.FavoritesMapper">
+
+    <resultMap id="favoritesResultMap" type="com.springboot.springboothousemarket.Entity.Favorites">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="houseId" column="house_id"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO favorites(user_id, house_id)
+        VALUES (#{userId}, #{houseId})
+        ON DUPLICATE KEY UPDATE id = id
+    </insert>
+
+    <delete id="deleteByUserIdAndHouseId">
+        DELETE
+        FROM favorites
+        WHERE user_id = #{userId}
+          AND house_id = #{houseId}
+    </delete>
+
+    <select id="selectByUserId" resultMap="favoritesResultMap">
+        SELECT *
+        FROM favorites
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="selectByUserIdAndHouseId" resultMap="favoritesResultMap">
+        SELECT *
+        FROM favorites
+        WHERE user_id = #{userId}
+          AND house_id = #{houseId}
+    </select>
+
+</mapper>

@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.springboot.springboothousemarket.Mapper.HouseOrderMapper">
 
-    <resultMap id="houseOrderResultMap" type="com.springboot.springboothousemarket.Entitiy.HouseOrder">
+    <resultMap id="houseOrderResultMap" type="com.springboot.springboothousemarket.Entity.HouseOrder">
         <id property="id" column="id"/>
         <result property="houseId" column="house_id"/>
         <result property="tenantId" column="tenant_id"/>
@@ -13,40 +13,6 @@
         <result property="endDate" column="end_date"/>
         <result property="createTime" column="create_time"/>
     </resultMap>
-
-    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO house_order(house_id, tenant_id, landlord_id, price, status, start_date, end_date)
-        VALUES (#{houseId}, #{tenantId}, #{landlordId}, #{price}, #{status}, #{startDate}, #{endDate})
-    </insert>
-
-    <select id="selectById" resultMap="houseOrderResultMap">
-        SELECT *
-        FROM house_order
-        WHERE id = #{id}
-    </select>
-
-    <update id="update">
-        UPDATE house_order
-        SET house_id=#{houseId},
-            tenant_id=#{tenantId},
-            landlord_id=#{landlordId},
-            price=#{price},
-            status=#{status},
-            start_date=#{startDate},
-            end_date=#{endDate}
-        WHERE id = #{id}
-    </update>
-
-    <delete id="deleteById">
-        DELETE
-        FROM house_order
-        WHERE id = #{id}
-    </delete>
-
-    <select id="selectAll" resultMap="houseOrderResultMap">
-        SELECT *
-        FROM house_order
-    </select>
 
     <select id="selectByUserId" resultMap="houseOrderResultMap">
         SELECT *
@@ -59,7 +25,7 @@
         SELECT *
         FROM house_order
         WHERE (tenant_id = #{userId} OR landlord_id = #{userId})
-        <if test="status != null and status != ''">
+        <if test="status != null">
             AND status = #{status}
         </if>
     </select>

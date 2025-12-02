@@ -1,15 +1,16 @@
 package com.springboot.springboothousemarket.Service;
 
-import com.github.pagehelper.PageHelper;
-import com.github.pagehelper.PageInfo;
-import com.springboot.springboothousemarket.Entitiy.House;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.springboot.springboothousemarket.Entity.House;
 import com.springboot.springboothousemarket.Mapper.HouseMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-public class HouseServiceImpl implements HouseService {
+public class HouseServiceImpl extends ServiceImpl<HouseMapper, House> implements HouseService {
 
     private final HouseMapper houseMapper;
     public HouseServiceImpl(HouseMapper houseMapper) {
@@ -31,7 +32,7 @@ public class HouseServiceImpl implements HouseService {
     @Override
     public House updateHouse(Long id, House house) {
         house.setId(id);
-        houseMapper.update(house);
+        houseMapper.updateById(house);
         return house;
     }
 
@@ -42,7 +43,9 @@ public class HouseServiceImpl implements HouseService {
 
     @Override
     public List<House> getAllHouses() {
-        return houseMapper.selectAll();
+        QueryWrapper<House> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("is_deleted", 0);
+        return houseMapper.selectList(queryWrapper);
     }
 
     @Override
@@ -51,10 +54,11 @@ public class HouseServiceImpl implements HouseService {
     }
 
     @Override
-    public PageInfo<House> getHouses(String keyword, String type, Double minArea, Double maxArea,
-                                     Double minPrice, Double maxPrice, String address, int page, int pageSize) {
-        PageHelper.startPage(page, pageSize);
+    public Page<House> getHouses(String keyword, String type, Double minArea, Double maxArea,
+                                 Double minPrice, Double maxPrice, String address, int page, int pageSize) {
+        Page<House> pageObj = new Page<>(page, pageSize);
         List<House> houses = houseMapper.selectByConditions(keyword, type, minArea, maxArea, minPrice, maxPrice, address);
-        return new PageInfo<>(houses);
+        pageObj.setRecords(houses);
+        return pageObj;
     }
 }

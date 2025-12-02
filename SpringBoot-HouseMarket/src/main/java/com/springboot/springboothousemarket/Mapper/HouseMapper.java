@@ -1,23 +1,14 @@
 package com.springboot.springboothousemarket.Mapper;
 
-import com.springboot.springboothousemarket.Entitiy.House;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.springboot.springboothousemarket.Entity.House;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
 @Mapper
-public interface HouseMapper {
-
-    int insert(House house);
-
-    House selectById(Long id);
-
-    int update(House house);
-
-    int deleteById(Long id);
-
-    List<House> selectAll();
+public interface HouseMapper extends BaseMapper<House> {
 
     List<House> selectByLandlordId(Long landlordId);
 

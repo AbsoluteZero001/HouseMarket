@@ -1,11 +1,12 @@
 package com.springboot.springboothousemarket.Service;
 
-import com.github.pagehelper.PageInfo;
-import com.springboot.springboothousemarket.Entitiy.House;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.springboot.springboothousemarket.Entity.House;
 
 import java.util.List;
 
-public interface HouseService {
+public interface HouseService extends IService<House> {
 
     /**
      * 创建房源信息
@@ -69,6 +70,6 @@ public interface HouseService {
      * @param pageSize 每页数量
      * @return 房源分页信息
      */
-    PageInfo<House> getHouses(String keyword, String type, Double minArea, Double maxArea,
-                              Double minPrice, Double maxPrice, String address, int page, int pageSize);
+    Page<House> getHouses(String keyword, String type, Double minArea, Double maxArea,
+                          Double minPrice, Double maxPrice, String address, int page, int pageSize);
 }

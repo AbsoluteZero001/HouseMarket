@@ -1,16 +1,16 @@
 package com.springboot.springboothousemarket.Service;
 
-import com.springboot.springboothousemarket.Entitiy.HouseOrder;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.springboot.springboothousemarket.Entity.HouseOrder;
 import com.springboot.springboothousemarket.Mapper.HouseOrderMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-public class HouseOrderServiceImpl implements HouseOrderService {
+public class HouseOrderServiceImpl extends ServiceImpl<HouseOrderMapper, HouseOrder> implements HouseOrderService {
 
     private final HouseOrderMapper houseOrderMapper;
-
     public HouseOrderServiceImpl(HouseOrderMapper houseOrderMapper) {
         this.houseOrderMapper = houseOrderMapper;
     } //构造函数注入
@@ -30,7 +30,7 @@ public class HouseOrderServiceImpl implements HouseOrderService {
     @Override
     public HouseOrder updateOrder(Long id, HouseOrder houseOrder) {
         houseOrder.setId(id);
-        houseOrderMapper.update(houseOrder);
+        houseOrderMapper.updateById(houseOrder);
         return houseOrder;
     }
 
@@ -41,7 +41,7 @@ public class HouseOrderServiceImpl implements HouseOrderService {
 
     @Override
     public List<HouseOrder> getAllOrders() {
-        return houseOrderMapper.selectAll();
+        return houseOrderMapper.selectList(null);
     }
 
     @Override
@@ -59,7 +59,7 @@ public class HouseOrderServiceImpl implements HouseOrderService {
         HouseOrder order = houseOrderMapper.selectById(id);
         if (order != null) {
             order.setStatus(status);
-            return houseOrderMapper.update(order) > 0;
+            return houseOrderMapper.updateById(order) > 0;
         }
         return false;
     }

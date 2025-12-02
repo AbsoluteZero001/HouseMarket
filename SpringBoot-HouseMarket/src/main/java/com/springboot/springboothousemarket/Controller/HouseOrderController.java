@@ -1,6 +1,6 @@
 package com.springboot.springboothousemarket.Controller;
 
-import com.springboot.springboothousemarket.Entitiy.HouseOrder;
+import com.springboot.springboothousemarket.Entity.HouseOrder;
 import com.springboot.springboothousemarket.Service.HouseOrderService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;

@@ -1,7 +1,7 @@
 package com.springboot.springboothousemarket.Controller;
 
-import com.github.pagehelper.PageInfo;
-import com.springboot.springboothousemarket.Entitiy.House;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.springboot.springboothousemarket.Entity.House;
 import com.springboot.springboothousemarket.Service.HouseService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
@@ -97,13 +97,13 @@ public class HouseController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int pageSize) {
 
-        PageInfo<House> pageInfo = houseService.getHouses(keyword, type, minArea, maxArea, minPrice, maxPrice, address, page, pageSize);
+        Page<House> pageInfo = houseService.getHouses(keyword, type, minArea, maxArea, minPrice, maxPrice, address, page, pageSize);
 
         Map<String, Object> data = new HashMap<>();
-        data.put("houses", pageInfo.getList());
+        data.put("houses", pageInfo.getRecords());
         data.put("total", pageInfo.getTotal());
-        data.put("page", pageInfo.getPageNum());
-        data.put("pageSize", pageInfo.getPageSize());
+        data.put("page", pageInfo.getCurrent());
+        data.put("pageSize", pageInfo.getSize());
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);

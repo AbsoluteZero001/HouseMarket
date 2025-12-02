@@ -1,9 +1,8 @@
-package com.springboot.springboothousemarket.Entitiy;
+package com.springboot.springboothousemarket.Entity;
 
+import com.baomidou.mybatisplus.annotation.*;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.persistence.*;
 import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -11,44 +10,41 @@ import java.time.LocalDateTime;
 
 @Data
 @Schema(description = "房屋交易订单")
-@Entity
-@Table(name = "house_order")
+@TableName("house_order")
 public class HouseOrder {
     @Schema(description = "主键ID")
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     @Schema(description = "房源ID")
-    @Column(name = "house_id")
+    @TableField("house_id")
     private Long houseId;
 
     @Schema(description = "租户ID (关联 sys_user.id)")
-    @Column(name = "tenant_id")
+    @TableField("tenant_id")
     private Long tenantId;
 
     @Schema(description = "房东ID (冗余字段，方便查询)")
-    @Column(name = "landlord_id")
+    @TableField("landlord_id")
     private Long landlordId;
 
     @Schema(description = "成交价格")
-    @Column(name = "price")
+    @TableField("price")
     private BigDecimal price;
 
     @Schema(description = "订单状态: 0-待房东确认, 1-待支付, 2-已完成, 3-已取消")
-    @Column(name = "status")
+    @TableField("status")
     private Integer status;
 
     @Schema(description = "起租日期")
-    @Column(name = "start_date")
+    @TableField("start_date")
     private LocalDate startDate;
 
     @Schema(description = "结束日期(若是售卖则为空)")
-    @Column(name = "end_date")
+    @TableField("end_date")
     private LocalDate endDate;
 
     @Schema(description = "创建时间")
-    @CreationTimestamp
-    @Column(name = "create_time")
+    @TableField(value = "create_time", fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 }

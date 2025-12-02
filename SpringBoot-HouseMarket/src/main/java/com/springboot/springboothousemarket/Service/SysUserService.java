@@ -1,10 +1,11 @@
 package com.springboot.springboothousemarket.Service;
 
-import com.springboot.springboothousemarket.Entitiy.SysUser;
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.springboot.springboothousemarket.Entity.SysUser;
 
 import java.util.List;
 
-public interface SysUserService {
+public interface SysUserService extends IService<SysUser> {
 
     /**
      * 创建用户

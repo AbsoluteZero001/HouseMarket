@@ -1,22 +1,11 @@
 package com.springboot.springboothousemarket.Mapper;
 
-import com.springboot.springboothousemarket.Entitiy.SysUser;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.springboot.springboothousemarket.Entity.SysUser;
 import org.apache.ibatis.annotations.Mapper;
 
-import java.util.List;
-
 @Mapper
-public interface SysUserMapper {
-
-    int insert(SysUser sysUser);
-
-    SysUser selectById(Long id);
-
-    int update(SysUser sysUser);
-
-    int deleteById(Long id);
-
-    List<SysUser> selectAll();
+public interface SysUserMapper extends BaseMapper<SysUser> {
 
     SysUser selectByUsername(String username);
 }

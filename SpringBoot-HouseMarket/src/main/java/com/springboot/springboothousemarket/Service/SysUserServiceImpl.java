@@ -1,13 +1,15 @@
 package com.springboot.springboothousemarket.Service;
 
-import com.springboot.springboothousemarket.Entitiy.SysUser;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.springboot.springboothousemarket.Entity.SysUser;
 import com.springboot.springboothousemarket.Mapper.SysUserMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-public class SysUserServiceImpl implements SysUserService {
+public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
 
     private final SysUserMapper sysUserMapper;
 
@@ -30,7 +32,7 @@ public class SysUserServiceImpl implements SysUserService {
     @Override
     public SysUser updateUser(Long id, SysUser sysUser) {
         sysUser.setId(id);
-        sysUserMapper.update(sysUser);
+        sysUserMapper.updateById(sysUser);
         return sysUser;
     }
 
@@ -41,7 +43,9 @@ public class SysUserServiceImpl implements SysUserService {
 
     @Override
     public List<SysUser> getAllUsers() {
-        return sysUserMapper.selectAll();
+        QueryWrapper<SysUser> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("is_deleted", 0);
+        return sysUserMapper.selectList(queryWrapper);
     }
 
     @Override
