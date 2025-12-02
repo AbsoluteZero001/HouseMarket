@@ -10,6 +10,11 @@ spring:
     url: jdbc:mysql://localhost:3306/housemarket?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
     username: ${DB_USERNAME}  # 数据库用户名，从环境变量中获取
     password: ${DB_PASSWORD}  # 数据库密码，从环境变量中获取
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:data.sql
 
 # MyBatis配置
 mybatis:

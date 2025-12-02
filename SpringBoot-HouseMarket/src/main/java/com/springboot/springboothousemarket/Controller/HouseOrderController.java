@@ -5,10 +5,12 @@ import com.springboot.springboothousemarket.Service.HouseOrderService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "房屋订单API")
-@RequestMapping("/order")
+@RequestMapping("/api/appointments")
 @RestController
 public class HouseOrderController {
 
@@ -24,8 +26,18 @@ public class HouseOrderController {
      * @return 创建结果
      */
     @PostMapping
-    public HouseOrder createOrder(@RequestBody HouseOrder houseOrder) {
-        return houseOrderService.createOrder(houseOrder);
+    public Map<String, Object> createOrder(@RequestBody HouseOrder houseOrder) {
+        HouseOrder order = houseOrderService.createOrder(houseOrder);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("id", order.getId());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "预约提交成功，请等待房东确认");
+        response.put("data", data);
+
+        return response;
     }
 
     /**
@@ -55,8 +67,19 @@ public class HouseOrderController {
      * @return 删除结果
      */
     @DeleteMapping("/{id}")
-    public boolean deleteOrder(@PathVariable Long id) {
-        return houseOrderService.deleteOrder(id);
+    public Map<String, Object> deleteOrder(@PathVariable Long id) {
+        boolean result = houseOrderService.deleteOrder(id);
+
+        Map<String, Object> response = new HashMap<>();
+        if (result) {
+            response.put("success", true);
+            response.put("message", "预约已删除");
+        } else {
+            response.put("success", false);
+            response.put("message", "删除失败");
+        }
+
+        return response;
     }
 
     /**
@@ -71,10 +94,88 @@ public class HouseOrderController {
     /**
      * 根据用户ID获取订单列表
      * @param userId 用户ID
+     * @param status 订单状态
      * @return 订单列表
      */
     @GetMapping("/user/{userId}")
-    public List<HouseOrder> getOrdersByUserId(@PathVariable Long userId) {
-        return houseOrderService.getOrdersByUserId(userId);
+    public Map<String, Object> getOrdersByUserId(
+            @PathVariable Long userId,
+            @RequestParam(required = false) String status) {
+        List<HouseOrder> orders = houseOrderService.getOrdersByUserIdAndStatus(userId, status);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("appointments", orders);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", data);
+
+        return response;
+    }
+
+    /**
+     * 批准预约
+     *
+     * @param id 订单ID
+     * @return 操作结果
+     */
+    @PutMapping("/{id}/approve")
+    public Map<String, Object> approveOrder(@PathVariable Long id) {
+        boolean result = houseOrderService.updateOrderStatus(id, 1); // 1-已批准
+
+        Map<String, Object> response = new HashMap<>();
+        if (result) {
+            response.put("success", true);
+            response.put("message", "预约已批准");
+        } else {
+            response.put("success", false);
+            response.put("message", "操作失败");
+        }
+
+        return response;
+    }
+
+    /**
+     * 拒绝预约
+     *
+     * @param id 订单ID
+     * @return 操作结果
+     */
+    @PutMapping("/{id}/reject")
+    public Map<String, Object> rejectOrder(@PathVariable Long id) {
+        boolean result = houseOrderService.updateOrderStatus(id, 3); // 3-已拒绝
+
+        Map<String, Object> response = new HashMap<>();
+        if (result) {
+            response.put("success", true);
+            response.put("message", "预约已拒绝");
+        } else {
+            response.put("success", false);
+            response.put("message", "操作失败");
+        }
+
+        return response;
+    }
+
+    /**
+     * 取消预约
+     *
+     * @param id 订单ID
+     * @return 操作结果
+     */
+    @PutMapping("/{id}/cancel")
+    public Map<String, Object> cancelOrder(@PathVariable Long id) {
+        boolean result = houseOrderService.updateOrderStatus(id, 4); // 4-已取消
+
+        Map<String, Object> response = new HashMap<>();
+        if (result) {
+            response.put("success", true);
+            response.put("message", "预约已取消");
+        } else {
+            response.put("success", false);
+            response.put("message", "操作失败");
+        }
+
+        return response;
     }
 }

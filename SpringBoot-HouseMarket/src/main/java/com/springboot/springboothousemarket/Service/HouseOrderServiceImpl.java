@@ -17,6 +17,7 @@ public class HouseOrderServiceImpl implements HouseOrderService {
 
     @Override
     public HouseOrder createOrder(HouseOrder houseOrder) {
+        houseOrder.setStatus(0); // 0-待房东确认
         houseOrderMapper.insert(houseOrder);
         return houseOrder;
     }
@@ -46,5 +47,20 @@ public class HouseOrderServiceImpl implements HouseOrderService {
     @Override
     public List<HouseOrder> getOrdersByUserId(Long userId) {
         return houseOrderMapper.selectByUserId(userId);
+    }
+
+    @Override
+    public List<HouseOrder> getOrdersByUserIdAndStatus(Long userId, String status) {
+        return houseOrderMapper.selectByUserIdAndStatus(userId, status);
+    }
+
+    @Override
+    public boolean updateOrderStatus(Long id, int status) {
+        HouseOrder order = houseOrderMapper.selectById(id);
+        if (order != null) {
+            order.setStatus(status);
+            return houseOrderMapper.update(order) > 0;
+        }
+        return false;
     }
 }

@@ -55,4 +55,13 @@
            OR landlord_id = #{userId}
     </select>
 
+    <select id="selectByUserIdAndStatus" resultMap="houseOrderResultMap">
+        SELECT *
+        FROM house_order
+        WHERE (tenant_id = #{userId} OR landlord_id = #{userId})
+        <if test="status != null and status != ''">
+            AND status = #{status}
+        </if>
+    </select>
+
 </mapper>

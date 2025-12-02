@@ -53,4 +53,22 @@ public interface HouseOrderService {
      * @return 订单列表
      */
     List<HouseOrder> getOrdersByUserId(Long userId);
+
+    /**
+     * 根据用户ID和状态获取订单列表
+     *
+     * @param userId 用户ID
+     * @param status 订单状态
+     * @return 订单列表
+     */
+    List<HouseOrder> getOrdersByUserIdAndStatus(Long userId, String status);
+
+    /**
+     * 更新订单状态
+     *
+     * @param id     订单ID
+     * @param status 新的状态
+     * @return 更新结果
+     */
+    boolean updateOrderStatus(Long id, int status);
 }

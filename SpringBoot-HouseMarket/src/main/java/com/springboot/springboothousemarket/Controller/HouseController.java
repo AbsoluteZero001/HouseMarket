@@ -1,11 +1,14 @@
 package com.springboot.springboothousemarket.Controller;
 
+import com.github.pagehelper.PageInfo;
 import com.springboot.springboothousemarket.Entitiy.House;
 import com.springboot.springboothousemarket.Service.HouseService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "房源信息API")
 @RequestMapping("/house")
@@ -35,8 +38,17 @@ public class HouseController {
      * @return 房源信息
      */
     @GetMapping("/{id}")
-    public House getHouseById(@PathVariable Long id) {
-        return houseService.getHouseById(id);
+    public Map<String, Object> getHouseById(@PathVariable Long id) {
+        House house = houseService.getHouseById(id);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("house", house);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", data);
+
+        return response;
     }
 
     /**
@@ -60,15 +72,44 @@ public class HouseController {
         return houseService.deleteHouse(id);
     }
 
-
-
     /**
-     * 获取所有房源列表
+     * 获取所有房源列表（带分页和条件查询）
+     * @param keyword 关键词
+     * @param type 户型
+     * @param minArea 最小面积
+     * @param maxArea 最大面积
+     * @param minPrice 最低价格
+     * @param maxPrice 最高价格
+     * @param address 地址
+     * @param page 页码
+     * @param pageSize 每页数量
      * @return 房源列表
      */
-    @GetMapping
-    public List<House> getAllHouses() {
-        return houseService.getAllHouses();
+    @GetMapping("/list")
+    public Map<String, Object> getHouses(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) Double minArea,
+            @RequestParam(required = false) Double maxArea,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) String address,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int pageSize) {
+
+        PageInfo<House> pageInfo = houseService.getHouses(keyword, type, minArea, maxArea, minPrice, maxPrice, address, page, pageSize);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("houses", pageInfo.getList());
+        data.put("total", pageInfo.getTotal());
+        data.put("page", pageInfo.getPageNum());
+        data.put("pageSize", pageInfo.getPageSize());
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", data);
+
+        return response;
     }
 
     /**

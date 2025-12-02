@@ -13,7 +13,6 @@ import java.util.List;
 public class SysUserController {
 
     private final SysUserService sysUserService;
-
     public SysUserController(SysUserService sysUserService) {
         this.sysUserService = sysUserService;
     }

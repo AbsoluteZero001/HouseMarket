@@ -1,5 +1,7 @@
 package com.springboot.springboothousemarket.Service;
 
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
 import com.springboot.springboothousemarket.Entitiy.House;
 import com.springboot.springboothousemarket.Mapper.HouseMapper;
 import org.springframework.stereotype.Service;
@@ -10,7 +12,6 @@ import java.util.List;
 public class HouseServiceImpl implements HouseService {
 
     private final HouseMapper houseMapper;
-
     public HouseServiceImpl(HouseMapper houseMapper) {
         this.houseMapper = houseMapper;
     }
@@ -47,5 +48,13 @@ public class HouseServiceImpl implements HouseService {
     @Override
     public List<House> getHousesByLandlordId(Long landlordId) {
         return houseMapper.selectByLandlordId(landlordId);
+    }
+
+    @Override
+    public PageInfo<House> getHouses(String keyword, String type, Double minArea, Double maxArea,
+                                     Double minPrice, Double maxPrice, String address, int page, int pageSize) {
+        PageHelper.startPage(page, pageSize);
+        List<House> houses = houseMapper.selectByConditions(keyword, type, minArea, maxArea, minPrice, maxPrice, address);
+        return new PageInfo<>(houses);
     }
 }
