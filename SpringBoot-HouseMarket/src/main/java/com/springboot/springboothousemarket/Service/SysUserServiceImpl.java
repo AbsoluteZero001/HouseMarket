@@ -2,7 +2,6 @@ package com.springboot.springboothousemarket.Service;
 
 import com.springboot.springboothousemarket.Entitiy.SysUser;
 import com.springboot.springboothousemarket.Mapper.SysUserMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,8 +9,11 @@ import java.util.List;
 @Service
 public class SysUserServiceImpl implements SysUserService {
 
-    @Autowired
-    private SysUserMapper sysUserMapper;
+    private final SysUserMapper sysUserMapper;
+
+    public SysUserServiceImpl(SysUserMapper sysUserMapper) {
+        this.sysUserMapper = sysUserMapper;
+    }
 
     @Override
     public SysUser createUser(SysUser sysUser) {

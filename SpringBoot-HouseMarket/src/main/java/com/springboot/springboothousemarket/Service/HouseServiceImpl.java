@@ -2,7 +2,6 @@ package com.springboot.springboothousemarket.Service;
 
 import com.springboot.springboothousemarket.Entitiy.House;
 import com.springboot.springboothousemarket.Mapper.HouseMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,8 +9,11 @@ import java.util.List;
 @Service
 public class HouseServiceImpl implements HouseService {
 
-    @Autowired
-    private HouseMapper houseMapper;
+    private final HouseMapper houseMapper;
+
+    public HouseServiceImpl(HouseMapper houseMapper) {
+        this.houseMapper = houseMapper;
+    }
 
     @Override
     public House createHouse(House house) {

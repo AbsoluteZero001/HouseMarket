@@ -2,7 +2,6 @@ package com.springboot.springboothousemarket.Service;
 
 import com.springboot.springboothousemarket.Entitiy.HouseOrder;
 import com.springboot.springboothousemarket.Mapper.HouseOrderMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -10,8 +9,11 @@ import java.util.List;
 @Service
 public class HouseOrderServiceImpl implements HouseOrderService {
 
-    @Autowired
-    private HouseOrderMapper houseOrderMapper;
+    private final HouseOrderMapper houseOrderMapper;
+
+    public HouseOrderServiceImpl(HouseOrderMapper houseOrderMapper) {
+        this.houseOrderMapper = houseOrderMapper;
+    } //构造函数注入
 
     @Override
     public HouseOrder createOrder(HouseOrder houseOrder) {
