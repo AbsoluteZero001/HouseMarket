@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Schema(description = "用户信息")
-@TableName("sys_user")
+@TableName("users")
 public class SysUser {
     @Schema(description = "主键ID")
     @TableId(type = IdType.AUTO)
@@ -23,7 +23,7 @@ public class SysUser {
     private String password;
 
     @Schema(description = "真实姓名")
-    @TableField("real_name")
+    @TableField("realName")
     private String realName;
 
     @Schema(description = "角色: ADMIN(管理员), LANDLORD(房东), TENANT(租户)")
@@ -43,15 +43,15 @@ public class SysUser {
     private String status;
 
     @Schema(description = "注册时间")
-    @TableField(value = "create_time", fill = FieldFill.INSERT)
+    @TableField("registerTime")
     private LocalDateTime createTime;
 
     @Schema(description = "更新时间")
-    @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
+    @TableField("updateTime")
     private LocalDateTime updateTime;
 
     @Schema(description = "逻辑删除: 0未删, 1已删")
     @TableLogic
-    @TableField("is_deleted")
+    @TableField("isDeleted")
     private Integer isDeleted;
 }

@@ -1,6 +1,9 @@
 package com.springboot.springboothousemarket.Entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -15,14 +18,14 @@ public class Favorites {
     private Long id;
 
     @Schema(description = "用户ID")
-    @TableField("user_id")
+    @TableField("userId")
     private Long userId;
 
     @Schema(description = "房源ID")
-    @TableField("house_id")
+    @TableField("houseId")
     private Long houseId;
 
     @Schema(description = "收藏时间")
-    @TableField(value = "create_time", fill = FieldFill.INSERT)
+    @TableField("createTime")
     private LocalDateTime createTime;
 }

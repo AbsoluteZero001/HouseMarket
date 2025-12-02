@@ -1,6 +1,9 @@
 package com.springboot.springboothousemarket.Entity;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -8,27 +11,27 @@ import java.time.LocalDateTime;
 
 @Data
 @Schema(description = "预约信息")
-@TableName("appointment")
+@TableName("appointments")
 public class Appointment {
     @Schema(description = "主键ID")
     @TableId(type = IdType.AUTO)
     private Long id;
 
     @Schema(description = "房源ID")
-    @TableField("house_id")
+    @TableField("houseId")
     private Long houseId;
 
     @Schema(description = "租客ID")
-    @TableField("tenant_id")
+    @TableField("tenantId")
     private Long tenantId;
 
     @Schema(description = "房东ID")
-    @TableField("landlord_id")
+    @TableField("landlordId")
     private Long landlordId;
 
     @Schema(description = "预约时间")
-    @TableField("appointment_time")
-    private LocalDateTime appointmentTime;
+    @TableField("time")
+    private LocalDateTime time;
 
     @Schema(description = "预约地点")
     @TableField("location")
@@ -43,10 +46,10 @@ public class Appointment {
     private String status;
 
     @Schema(description = "创建时间")
-    @TableField(value = "create_time", fill = FieldFill.INSERT)
+    @TableField("createTime")
     private LocalDateTime createTime;
 
     @Schema(description = "更新时间")
-    @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
+    @TableField("updateTime")
     private LocalDateTime updateTime;
 }
