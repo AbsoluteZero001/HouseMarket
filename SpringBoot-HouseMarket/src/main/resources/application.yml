@@ -10,29 +10,9 @@ spring:
     url: jdbc:mysql://localhost:3306/housemarket?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
     username: ${DB_USERNAME}  # 数据库用户名，从环境变量中获取
     password: ${DB_PASSWORD}  # 数据库密码，从环境变量中获取
-
-
-# MyBatis Plus配置
-mybatis-plus:
-  # Mapper XML文件的位置，位于classpath下的mapper目录
-  mapper-locations: classpath:mapper/*.xml
-  # MyBatis Plus配置项
-  configuration:
-    # 使用标准输出实现日志打印，方便调试
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-    # 开启驼峰命名转换，将数据库中的下划线命名转换为Java中的驼峰命名
-    map-underscore-to-camel-case: true
-  # 全局配置
-  global-config:
-    db-config:
-      # 主键策略
-      id-type: auto
-      # 逻辑删除字段
-      logic-delete-field: isDeleted
-      # 逻辑删除值
-      logic-delete-value: 1
-      # 逻辑未删除值
-      logic-not-delete-value: 0
+  web:
+    resources:
+      static-locations: classpath:/Web/,classpath:/static/
 
 # SpringDoc Swagger配置
 springdoc:

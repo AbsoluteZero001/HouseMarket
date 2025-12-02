@@ -33,7 +33,10 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/register", "/api/login", "/house", "/house/**",
-                                "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                                "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
+                                "/", "/index.html", "/Web/**", "/webjars/**",
+                                "/css/**", "/js/**", "/images/**", "/favicon.ico",
+                                "/HouseMarket/**", "/HouseMarket/login.html", "/HouseMarket/register.html").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
