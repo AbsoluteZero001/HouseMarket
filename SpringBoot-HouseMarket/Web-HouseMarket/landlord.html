@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>房屋租售系统 - 房东主页</title>
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+<header>
+    <div class="container">
+        <nav>
+            <div class="logo">房屋租售系统</div>
+            <ul class="nav-links">
+                <li><a class="active" href="landlord.html">首页</a></li>
+                <li><a href="#" onclick="showSection('house-manage')">房源管理</a></li>
+                <li><a href="#" onclick="showSection('appointment')">预约记录</a></li>
+                <li><a href="#" onclick="showSection('profile')">个人中心</a></li>
+                <li><span id="username"></span></li>
+                <li><a class="btn btn-secondary" href="#" id="logoutBtn">登出</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<div class="container">
+    <!-- 房东首页 -->
+    <section class="section active" id="dashboard">
+        <h2 style="margin: 2rem 0;">房东首页</h2>
+        <p>欢迎使用房屋租售系统房东后台</p>
+    </section>
+
+    <!-- 房源管理 -->
+    <section class="section" id="house-manage" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 2rem 0;">
+            <h2>房源管理</h2>
+            <button class="btn" onclick="showModal('addHouseModal')">发布新房源</button>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <table class="table" id="houseTable">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>标题</th>
+                        <th>户型</th>
+                        <th>面积</th>
+                        <th>价格</th>
+                        <th>地址</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- 房源数据将通过JavaScript动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- 预约记录 -->
+    <section class="section" id="appointment" style="display: none;">
+        <h2 style="margin: 2rem 0;">预约记录</h2>
+
+        <div class="card">
+            <div class="card-body">
+                <table class="table" id="appointmentTable">
+                    <thead>
+                    <tr>
+                        <th>订单ID</th>
+                        <th>房源</th>
+                        <th>租客</th>
+                        <th>预约时间</th>
+                        <th>预约地点</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- 预约记录将通过JavaScript动态生成 -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <!-- 个人中心 -->
+    <section class="section" id="profile" style="display: none;">
+        <h2 style="margin: 2rem 0;">个人中心</h2>
+
+        <div class="form-container">
+            <h3>个人信息</h3>
+            <form id="profileForm">
+                <div class="form-group">
+                    <label for="profileUsername">用户名</label>
+                    <input disabled id="profileUsername" name="username" type="text">
+                </div>
+
+                <div class="form-group">
+                    <label for="profileRole">角色</label>
+                    <input disabled id="profileRole" name="role" type="text">
+                </div>
+
+                <div class="form-group">
+                    <label for="newPassword">新密码</label>
+                    <input id="newPassword" maxlength="20" minlength="6" name="newPassword"
+                           placeholder="不修改密码请留空" type="password">
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmNewPassword">确认新密码</label>
+                    <input id="confirmNewPassword" name="confirmNewPassword" placeholder="请再次输入新密码"
+                           type="password">
+                </div>
+
+                <button class="btn" type="submit">保存修改</button>
+            </form>
+        </div>
+    </section>
+</div>
+
+<!-- 添加房源模态框 -->
+<div class="modal" id="addHouseModal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h3 style="margin-bottom: 1.5rem;">发布新房源</h3>
+
+        <form id="addHouseForm">
+            <div class="form-group">
+                <label for="houseTitle">标题</label>
+                <input id="houseTitle" name="title" placeholder="请输入房源标题" required type="text">
+            </div>
+
+            <div class="form-group">
+                <label for="houseType">户型</label>
+                <select id="houseType" name="type" required>
+                    <option value="">请选择户型</option>
+                    <option value="平层">平层</option>
+                    <option value="跃层">跃层</option>
+                    <option value="错层">错层</option>
+                    <option value="复式">复式</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="houseArea">面积 (㎡)</label>
+                    <input id="houseArea" min="1" name="area" placeholder="请输入面积" required type="number">
+                </div>
+
+                <div class="form-group">
+                    <label for="housePrice">价格 (元/月)</label>
+                    <input id="housePrice" min="1" name="price" placeholder="请输入价格" required type="number">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="houseAddress">地址</label>
+                <input id="houseAddress" name="address" placeholder="请输入详细地址" required type="text">
+            </div>
+
+            <div class="form-group">
+                <label for="houseImage">图片</label>
+                <input accept="image/*" id="houseImage" name="image" type="file">
+                <img alt="图片预览" id="imagePreview" src=""
+                     style="display: none; max-width: 100%; margin-top: 1rem; border-radius: 4px;">
+            </div>
+
+            <div class="form-group">
+                <label for="houseDescription">描述</label>
+                <textarea id="houseDescription" name="description" placeholder="请输入房源描述" rows="4"></textarea>
+            </div>
+
+            <button class="btn" style="width: 100%; margin-top: 1rem;" type="submit">发布房源</button>
+        </form>
+    </div>
+</div>
+
+<!-- 编辑房源模态框 -->
+<div class="modal" id="editHouseModal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h3 style="margin-bottom: 1.5rem;">编辑房源</h3>
+
+        <form id="editHouseForm">
+            <input id="editHouseId" name="id" type="hidden">
+
+            <div class="form-group">
+                <label for="editHouseTitle">标题</label>
+                <input id="editHouseTitle" name="title" placeholder="请输入房源标题" required type="text">
+            </div>
+
+            <div class="form-group">
+                <label for="editHouseType">户型</label>
+                <select id="editHouseType" name="type" required>
+                    <option value="">请选择户型</option>
+                    <option value="平层">平层</option>
+                    <option value="跃层">跃层</option>
+                    <option value="错层">错层</option>
+                    <option value="复式">复式</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="editHouseArea">面积 (㎡)</label>
+                    <input id="editHouseArea" min="1" name="area" placeholder="请输入面积" required type="number">
+                </div>
+
+                <div class="form-group">
+                    <label for="editHousePrice">价格 (元/月)</label>
+                    <input id="editHousePrice" min="1" name="price" placeholder="请输入价格" required type="number">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="editHouseAddress">地址</label>
+                <input id="editHouseAddress" name="address" placeholder="请输入详细地址" required type="text">
+            </div>
+
+            <div class="form-group">
+                <label for="editHouseImage">图片</label>
+                <input accept="image/*" id="editHouseImage" name="image" type="file">
+                <img alt="图片预览" id="editImagePreview" src=""
+                     style="display: none; max-width: 100%; margin-top: 1rem; border-radius: 4px;">
+            </div>
+
+            <div class="form-group">
+                <label for="editHouseDescription">描述</label>
+                <textarea id="editHouseDescription" name="description" placeholder="请输入房源描述" rows="4"></textarea>
+            </div>
+
+            <button class="btn" style="width: 100%; margin-top: 1rem;" type="submit">保存修改</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // 验证码生成函数
+    function generateCaptcha() {
+        const canvas = document.getElementById('captchaCanvas');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // 清空画布
+        ctx.fillStyle = '#f5f5f5';
+        ctx.fillRect(0, 0, width, height);
+
+        // 生成随机验证码
+        const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        let captcha = '';
+        for (let i = 0; i < 4; i++) {
+            captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+
+        // 绘制验证码
+        ctx.font = '30px Arial';
+        ctx.fillStyle = '#333';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        // 添加干扰线
+        for (let i = 0; i < 5; i++) {
+            ctx.strokeStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
+            ctx.beginPath();
+            ctx.moveTo(Math.random() * width, Math.random() * height);
+            ctx.lineTo(Math.random() * width, Math.random() * height);
+            ctx.stroke();
+        }
+
+        // 添加干扰点
+        for (let i = 0; i < 30; i++) {
+            ctx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
+            ctx.beginPath();
+            ctx.arc(Math.random() * width, Math.random() * height, 1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // 绘制验证码文本
+        for (let i = 0; i < captcha.length; i++) {
+            const x = (width / 4) * (i + 0.5);
+            const y = height / 2 + (Math.random() - 0.5) * 10;
+            const rotation = (Math.random() - 0.5) * 0.5;
+
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+            ctx.fillText(captcha.charAt(i), 0, 0);
+            ctx.restore();
+        }
+
+        // 保存验证码到sessionStorage
+        sessionStorage.setItem('captcha', captcha.toLowerCase());
+    }
+
+    // 表单验证函数
+    function validateForm(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return false;
+
+        const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+        let isValid = true;
+
+        inputs.forEach(input => {
+            if (!input.value.trim()) {
+                isValid = false;
+                input.style.borderColor = '#dc3545';
+                input.addEventListener('input', () => {
+                    input.style.borderColor = '#ddd';
+                });
+            }
+        });
+
+        return isValid;
+    }
+
+    // 显示消息函数
+    function showMessage(message, type = 'success') {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `alert alert-${type}`;
+        messageDiv.textContent = message;
+
+        // 添加到页面顶部
+        document.body.insertBefore(messageDiv, document.body.firstChild);
+
+        // 3秒后移除
+        setTimeout(() => {
+            messageDiv.remove();
+        }, 3000);
+    }
+
+    // 图片预览功能
+    function initImagePreview(inputId, previewId) {
+        const input = document.getElementById(inputId);
+        const preview = document.getElementById(previewId);
+
+        if (input && preview) {
+            input.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        preview.src = event.target.result;
+                        preview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+    }
+
+    // 模态框控制
+    function showModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'block';
+        }
+    }
+
+    function hideModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    // 关闭模态框事件监听
+    function initModals() {
+        const modals = document.querySelectorAll('.modal');
+        modals.forEach(modal => {
+            const closeBtn = modal.querySelector('.close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                    modal.style.display = 'none';
+                });
+            }
+
+            // 点击模态框外部关闭
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    }
+
+    // 登出函数
+    function logout() {
+        // 清除用户数据
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+
+        showMessage('已成功登出', 'success');
+
+        // 跳转到登录页
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 1500);
+    }
+
+    // 初始化所有工具函数
+    document.addEventListener('DOMContentLoaded', () => {
+        // 生成验证码
+        if (document.getElementById('captchaCanvas')) {
+            generateCaptcha();
+            // 点击刷新验证码
+            document.getElementById('captchaCanvas').addEventListener('click', generateCaptcha);
+        }
+
+        // 初始化模态框
+        initModals();
+
+        // 登出按钮事件
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                logout();
+            });
+        }
+    });
+</script>
+<script>
+    // 房东页面JS
+    function initLandlordPage() {
+        // 初始化房源列表
+        initHouseList();
+
+        // 初始化预约记录
+        initAppointmentList();
+
+        // 初始化图片预览
+        initImagePreview('houseImage', 'imagePreview');
+        initImagePreview('editHouseImage', 'editImagePreview');
+    }
+
+    // 初始化房源列表
+    function initHouseList() {
+        // 模拟房源数据
+        const houses = [
+            {id: 1, title: '阳光小区 3室2厅', type: '平层', area: 120, price: 3500, address: '北京市朝阳区阳光路1号'},
+            {id: 2, title: '幸福家园 2室1厅', type: '跃层', area: 85, price: 2800, address: '北京市海淀区幸福路2号'},
+            {id: 3, title: '和谐社区 4室2厅', type: '复式', area: 150, price: 4500, address: '北京市西城区和谐路3号'}
+        ];
+
+        const tbody = document.getElementById('houseTable').getElementsByTagName('tbody')[0];
+        tbody.innerHTML = houses.map(house => `
+            <tr>
+                <td>${house.id}</td>
+                <td>${house.title}</td>
+                <td>${house.type}</td>
+                <td>${house.area}㎡</td>
+                <td>¥${house.price}/月</td>
+                <td>${house.address}</td>
+                <td>
+                    <button class="btn btn-secondary btn-sm" onclick="editHouse(${house.id})">编辑</button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteHouse(${house.id})" style="margin-left: 0.5rem;">删除</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // 初始化预约记录
+    function initAppointmentList() {
+        // 模拟预约数据
+        const appointments = [
+            {
+                id: 1,
+                house: '阳光小区 3室2厅',
+                tenant: '张三',
+                time: '2025-12-01 14:00',
+                location: '小区门口',
+                status: '待处理'
+            },
+            {
+                id: 2,
+                house: '幸福家园 2室1厅',
+                tenant: '李四',
+                time: '2025-12-02 10:00',
+                location: '单元门口',
+                status: '已批准'
+            }
+        ];
+
+        const tbody = document.getElementById('appointmentTable').getElementsByTagName('tbody')[0];
+        tbody.innerHTML = appointments.map(appointment => `
+            <tr>
+                <td>${appointment.id}</td>
+                <td>${appointment.house}</td>
+                <td>${appointment.tenant}</td>
+                <td>${appointment.time}</td>
+                <td>${appointment.location}</td>
+                <td>${appointment.status}</td>
+                <td>
+                    ${appointment.status === '待处理' ?
+            '<button class="btn btn-success btn-sm" onclick="approveAppointment(' + appointment.id + ')">批准</button>' +
+            '<button class="btn btn-danger btn-sm" onclick="rejectAppointment(' + appointment.id + ')" style="margin-left: 0.5rem;">拒绝</button>' :
+            '<button class="btn btn-secondary btn-sm" disabled>查看</button>'
+        }
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // 编辑房源
+    function editHouse(houseId) {
+        showModal('editHouseModal');
+    }
+
+    // 删除房源
+    function deleteHouse(houseId) {
+        if (confirm('确定要删除这套房源吗？')) {
+            showMessage('房源删除成功', 'success');
+            initHouseList();
+        }
+    }
+
+    // 批准预约
+    function approveAppointment(appointmentId) {
+        showMessage('预约已批准', 'success');
+        initAppointmentList();
+    }
+
+    // 拒绝预约
+    function rejectAppointment(appointmentId) {
+        showMessage('预约已拒绝', 'success');
+        initAppointmentList();
+    }
+
+    // 显示指定section
+    function showSection(sectionId) {
+        // 隐藏所有section
+        document.querySelectorAll('.section').forEach(section => {
+            section.style.display = 'none';
+        });
+
+        // 显示指定section
+        document.getElementById(sectionId).style.display = 'block';
+
+        // 更新导航激活状态
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.classList.remove('active');
+        });
+
+        // 如果是导航链接，添加激活状态
+        const activeLink = document.querySelector(`.nav-links a[onclick="showSection('${sectionId}')"]`);
+        if (activeLink) {
+            activeLink.classList.add('active');
+        }
+    }
+
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', initLandlordPage);
+</script>
+</body>
+</html>
