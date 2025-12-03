@@ -13,19 +13,37 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * JWT过滤器组件，用于处理HTTP请求中的JWT认证
+ * 继承自OncePerRequestFilter，确保每个请求只执行一次过滤
+ */
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
 
+    /**
+     * 构造函数，通过依赖注入方式获取JwtUtil实例
+     *
+     * @param jwtUtil JWT工具类实例
+     */
     public JwtFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
     }
 
+    /**
+     * 核心过滤方法，处理每个请求的JWT认证逻辑
+     * @param request HTTP请求对象
+     * @param response HTTP响应对象
+     * @param chain 过滤器链
+     * @throws ServletException Servlet异常
+     * @throws IOException IO异常
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
+        // 从请求头中获取Authorization字段
         final String requestTokenHeader = request.getHeader("Authorization");
 
         String username = null;
