@@ -38,7 +38,11 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
 
     @Override
     public boolean deleteUser(Long id) {
-        return sysUserMapper.deleteById(id) > 0;
+        SysUser user = getUserById(id);
+        if (user == null) return false;
+        user.setIsDeleted(1);
+        sysUserMapper.updateById(user);
+        return true;
     }
 
     @Override

@@ -1,18 +1,28 @@
 # Spring Boot应用配置
 spring:
   application:
-    name: SpringBoot-HouseMarket  # 应用名称，用于服务注册和发现
+    name: SpringBoot-HouseMarket # 应用名称，用于服务注册和发现
   config:
     # 导入私有配置文件，使用optional标记表示可选，即使文件不存在也不会报错
     import: optional:application-private.yml
   datasource:
     # 数据库连接URL，包含MySQL特定参数
     url: jdbc:mysql://localhost:3306/housemarket?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
-    username: ${DB_USERNAME}  # 数据库用户名，从环境变量中获取
-    password: ${DB_PASSWORD}  # 数据库密码，从环境变量中获取
-  web:
-    resources:
-      static-locations: classpath:/Web/,classpath:/static/
+    username: ${DB_USERNAME} # 数据库用户名，从环境变量中获取
+    password: ${DB_PASSWORD} # 数据库密码，从环境变量中获取
+  # 日志编码配置
+  output:
+    ansi:
+      enabled: always
+  mvc:
+    async:
+      request-timeout: 30s
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
 
 # SpringDoc Swagger配置
 springdoc:
@@ -29,4 +39,3 @@ springdoc:
 
 server:
   port: 8082
-

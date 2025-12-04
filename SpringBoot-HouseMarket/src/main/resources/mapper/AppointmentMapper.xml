@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.springboot.springboothousemarket.Mapper.AppointmentMapper">
+
+    <resultMap id="appointmentResultMap" type="com.springboot.springboothousemarket.Entity.Appointment">
+        <id property="id" column="id"/>
+        <result property="houseId" column="houseId"/>
+        <result property="tenantId" column="tenantId"/>
+        <result property="landlordId" column="landlordId"/>
+        <result property="time" column="time"/>
+        <result property="location" column="location"/>
+        <result property="notes" column="notes"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="createTime"/>
+        <result property="updateTime" column="updateTime"/>
+    </resultMap>
+
+</mapper>

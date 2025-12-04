@@ -3,6 +3,7 @@ package com.springboot.springboothousemarket.Controller;
 import com.springboot.springboothousemarket.Entity.SysUser;
 import com.springboot.springboothousemarket.Service.SysUserService;
 import com.springboot.springboothousemarket.Util.JwtUtil;
+import com.springboot.springboothousemarket.dto.RegisterRequest;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,14 +33,30 @@ public class AuthController {
 
     /**
      * 用户注册
-     *
-     * @param user 用户信息
-     * @return 注册结果
      */
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody SysUser user) {
-        // 检查用户名是否已存在
-        SysUser existingUser = userService.getUserByUsername(user.getUsername());
+    public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
+
+        // 1. 校验密码和确认密码是否一致
+        if (!req.getPassword().equals(req.getConfirmPassword())) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", "两次密码不一致"));
+        }
+
+        // 2. 角色转换：将前端传入的中文角色转换为后端使用的英文角色
+        String role;
+        switch (req.getRole()) {
+            case "租客":
+                role = "TENANT";
+                break;
+            case "房东":
+                role = "LANDLORD";
+                break;
+            default:
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "角色类型错误"));
+        }
+
+        // 3. 检查用户名是否已存在
+        SysUser existingUser = userService.getUserByUsername(req.getUsername());
         if (existingUser != null) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
@@ -46,11 +64,20 @@ public class AuthController {
             return ResponseEntity.badRequest().body(response);
         }
 
-        // 加密密码
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        // 4. 构建 SysUser 实体
+        SysUser user = new SysUser();
+        user.setUsername(req.getUsername());
+        user.setPassword(passwordEncoder.encode(req.getPassword()));
+        user.setRealName(req.getRealName());
+        user.setPhone(req.getPhone());
+        user.setRole(role); // 使用转换后的英文角色
+        user.setStatus("normal");
+        user.setAvatar(null);  // 默认无头像
         user.setIsDeleted(0);
+        user.setCreateTime(LocalDateTime.now());
+        user.setUpdateTime(LocalDateTime.now());
 
-        // 创建用户
+        // 5. 保存用户
         SysUser createdUser = userService.createUser(user);
 
         Map<String, Object> userData = new HashMap<>();
@@ -68,9 +95,6 @@ public class AuthController {
 
     /**
      * 用户登录
-     *
-     * @param loginUser 登录信息
-     * @return 登录结果和JWT令牌
      */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginUser) {
@@ -112,13 +136,14 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    // 登录请求的数据传输对象
+    /**
+     * 登录 DTO
+     */
     static class LoginRequest {
         private String username;
         private String password;
         private String role;
 
-        // Getters and setters
         public String getUsername() {
             return username;
         }

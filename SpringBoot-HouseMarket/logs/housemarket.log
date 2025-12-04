@@ -1,0 +1,78 @@
+2025-12-02 20:39:24.940 [main] INFO  c.s.s.SpringBootHouseMarketApplication - Starting SpringBootHouseMarketApplication using Java 21.0.8 with PID 49444 (D:\GitHub\EnderManTeam\SpringBoot-HouseMarket\target\classes started by TANGJ in D:\GitHub\EnderManTeam\SpringBoot-HouseMarket)
+2025-12-02 20:39:24.942 [main] DEBUG c.s.s.SpringBootHouseMarketApplication - Running with Spring Boot v3.2.4, Spring v6.1.5
+2025-12-02 20:39:24.942 [main] INFO  c.s.s.SpringBootHouseMarketApplication - No active profile set, falling back to 1 default profile: "default"
+2025-12-02 20:39:26.579 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8082"]
+2025-12-02 20:39:26.581 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-12-02 20:39:26.582 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.19]
+2025-12-02 20:39:26.662 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-12-02 20:39:26.718 [main] DEBUG c.s.s.Config.JwtFilter - Filter 'jwtFilter' configured for use
+2025-12-02 20:39:26.826 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-12-02 20:39:27.090 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@3af236d0
+2025-12-02 20:39:27.091 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-12-02 20:39:28.291 [main] WARN  c.b.m.core.injector.methods.Insert - [com.springboot.springboothousemarket.Mapper.FavoritesMapper.insert] Has been loaded by XML or SqlProvider or Mybatis's Annotation, so ignoring this injection for [class com.baomidou.mybatisplus.core.injector.methods.Insert]
+2025-12-02 20:39:28.702 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-12-02 20:39:29.532 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8082"]
+2025-12-02 20:39:29.560 [main] INFO  c.s.s.SpringBootHouseMarketApplication - Started SpringBootHouseMarketApplication in 5.059 seconds (process running for 5.715)
+2025-12-02 20:45:01.886 [main] INFO  c.s.s.SpringBootHouseMarketApplication - Starting SpringBootHouseMarketApplication using Java 21.0.8 with PID 32996 (D:\GitHub\EnderManTeam\SpringBoot-HouseMarket\target\classes started by TANGJ in D:\GitHub\EnderManTeam\SpringBoot-HouseMarket)
+2025-12-02 20:45:01.887 [main] DEBUG c.s.s.SpringBootHouseMarketApplication - Running with Spring Boot v3.2.4, Spring v6.1.5
+2025-12-02 20:45:01.888 [main] INFO  c.s.s.SpringBootHouseMarketApplication - No active profile set, falling back to 1 default profile: "default"
+2025-12-02 20:45:03.253 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8082"]
+2025-12-02 20:45:03.255 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-12-02 20:45:03.255 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.19]
+2025-12-02 20:45:03.320 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-12-02 20:45:03.381 [main] DEBUG c.s.s.Config.JwtFilter - Filter 'jwtFilter' configured for use
+2025-12-02 20:45:03.469 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-12-02 20:45:03.643 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@12567179
+2025-12-02 20:45:03.645 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-12-02 20:45:04.753 [main] WARN  c.b.m.core.injector.methods.Insert - [com.springboot.springboothousemarket.Mapper.FavoritesMapper.insert] Has been loaded by XML or SqlProvider or Mybatis's Annotation, so ignoring this injection for [class com.baomidou.mybatisplus.core.injector.methods.Insert]
+2025-12-02 20:45:05.134 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-12-02 20:45:05.814 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8082"]
+2025-12-02 20:45:05.824 [main] WARN  o.s.b.w.s.c.AnnotationConfigServletWebServerApplicationContext - Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2025-12-02 20:45:05.830 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-12-02 20:45:05.838 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.
+2025-12-02 20:45:05.862 [main] ERROR o.s.b.d.LoggingFailureAnalysisReporter - 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8082 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8082 or configure this application to listen on another port.
+
+2025-12-02 20:46:27.945 [main] INFO  c.s.s.SpringBootHouseMarketApplication - Starting SpringBootHouseMarketApplication using Java 21.0.8 with PID 35408 (D:\GitHub\EnderManTeam\SpringBoot-HouseMarket\target\classes started by TANGJ in D:\GitHub\EnderManTeam\SpringBoot-HouseMarket)
+2025-12-02 20:46:27.946 [main] DEBUG c.s.s.SpringBootHouseMarketApplication - Running with Spring Boot v3.2.4, Spring v6.1.5
+2025-12-02 20:46:27.946 [main] INFO  c.s.s.SpringBootHouseMarketApplication - No active profile set, falling back to 1 default profile: "default"
+2025-12-02 20:46:29.387 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8082"]
+2025-12-02 20:46:29.390 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-12-02 20:46:29.390 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.19]
+2025-12-02 20:46:29.461 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-12-02 20:46:29.527 [main] DEBUG c.s.s.Config.JwtFilter - Filter 'jwtFilter' configured for use
+2025-12-02 20:46:29.631 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-12-02 20:46:29.792 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@12567179
+2025-12-02 20:46:29.794 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-12-02 20:46:30.692 [main] WARN  c.b.m.core.injector.methods.Insert - [com.springboot.springboothousemarket.Mapper.FavoritesMapper.insert] Has been loaded by XML or SqlProvider or Mybatis's Annotation, so ignoring this injection for [class com.baomidou.mybatisplus.core.injector.methods.Insert]
+2025-12-02 20:46:31.089 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-12-02 20:46:31.787 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8082"]
+2025-12-02 20:46:31.821 [main] INFO  c.s.s.SpringBootHouseMarketApplication - Started SpringBootHouseMarketApplication in 4.268 seconds (process running for 4.809)
+2025-12-02 20:52:50.192 [main] INFO  c.s.s.SpringBootHouseMarketApplication - Starting SpringBootHouseMarketApplication using Java 21.0.8 with PID 37272 (D:\GitHub\EnderManTeam\SpringBoot-HouseMarket\target\classes started by TANGJ in D:\GitHub\EnderManTeam\SpringBoot-HouseMarket)
+2025-12-02 20:52:50.193 [main] DEBUG c.s.s.SpringBootHouseMarketApplication - Running with Spring Boot v3.2.4, Spring v6.1.5
+2025-12-02 20:52:50.194 [main] INFO  c.s.s.SpringBootHouseMarketApplication - No active profile set, falling back to 1 default profile: "default"
+2025-12-02 20:52:51.660 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Initializing ProtocolHandler ["http-nio-8082"]
+2025-12-02 20:52:51.663 [main] INFO  o.a.catalina.core.StandardService - Starting service [Tomcat]
+2025-12-02 20:52:51.664 [main] INFO  o.a.catalina.core.StandardEngine - Starting Servlet engine: [Apache Tomcat/10.1.19]
+2025-12-02 20:52:51.724 [main] INFO  o.a.c.c.C.[Tomcat].[localhost].[/] - Initializing Spring embedded WebApplicationContext
+2025-12-02 20:52:51.783 [main] DEBUG c.s.s.Config.JwtFilter - Filter 'jwtFilter' configured for use
+2025-12-02 20:52:51.877 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Starting...
+2025-12-02 20:52:52.077 [main] INFO  com.zaxxer.hikari.pool.HikariPool - HikariPool-1 - Added connection com.mysql.cj.jdbc.ConnectionImpl@ff0e6d4
+2025-12-02 20:52:52.081 [main] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Start completed.
+2025-12-02 20:52:53.341 [main] WARN  c.b.m.core.injector.methods.Insert - [com.springboot.springboothousemarket.Mapper.FavoritesMapper.insert] Has been loaded by XML or SqlProvider or Mybatis's Annotation, so ignoring this injection for [class com.baomidou.mybatisplus.core.injector.methods.Insert]
+2025-12-02 20:52:53.717 [main] WARN  o.s.b.a.o.j.JpaBaseConfiguration$JpaWebConfiguration - spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2025-12-02 20:52:54.401 [main] INFO  o.a.coyote.http11.Http11NioProtocol - Starting ProtocolHandler ["http-nio-8082"]
+2025-12-02 20:52:54.422 [main] INFO  c.s.s.SpringBootHouseMarketApplication - Started SpringBootHouseMarketApplication in 4.796 seconds (process running for 5.746)
+2025-12-02 20:53:04.478 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown initiated...
+2025-12-02 20:53:04.486 [SpringApplicationShutdownHook] INFO  com.zaxxer.hikari.HikariDataSource - HikariPool-1 - Shutdown completed.

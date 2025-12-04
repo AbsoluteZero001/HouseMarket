@@ -14,8 +14,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * JWT过滤器组件，用于处理HTTP请求中的JWT认证
- * 继承自OncePerRequestFilter，确保每个请求只执行一次过滤
+ * JWT过滤器组件
+ * 用于验证和处理HTTP请求中的JWT令牌
  */
 @Component
 public class JwtFilter extends OncePerRequestFilter {
@@ -32,7 +32,7 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     /**
-     * 核心过滤方法，处理每个请求的JWT认证逻辑
+     * 核心过滤方法，在每次请求时执行
      * @param request HTTP请求对象
      * @param response HTTP响应对象
      * @param chain 过滤器链

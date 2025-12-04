@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>房屋租售系统 - 登录</title>
+    <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+<div class="container">
+    <div class="form-container">
+        <h2 style="text-align: center; margin-bottom: 2rem;">房屋租售系统</h2>
+        <h3 style="text-align: center; margin-bottom: 1.5rem;">用户登录</h3>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input id="username" name="username" placeholder="请输入用户名" required type="text">
+            </div>
+
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input id="password" name="password" placeholder="请输入密码" required type="password">
+            </div>
+
+            <div class="form-group">
+                <label for="role">用户角色</label>
+                <select id="role" name="role" required>
+                    <option value="">请选择角色</option>
+                    <option value="tenant">租客</option>
+                    <option value="landlord">房东</option>
+                    <option value="admin">管理员</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="captcha">验证码</label>
+                    <input id="captcha" maxlength="4" name="captcha" placeholder="请输入验证码" required type="text">
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <canvas height="40" id="captchaCanvas"
+                            style="cursor: pointer; border: 1px solid #ddd; border-radius: 4px;"
+                            width="120"></canvas>
+                </div>
+            </div>
+
+            <button class="btn" style="width: 100%; margin-bottom: 1rem;" type="submit">登录</button>
+
+            <div style="text-align: center;">
+                <p>还没有账号？ <a href="register.html" style="color: #ff6b6b;">立即注册</a></p>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ---------------- 工具函数（验证码 / 提示 / 表单校验） ---------------- -->
+<script>
+    function generateCaptcha() {
+        const canvas = document.getElementById('captchaCanvas');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        ctx.fillStyle = '#f5f5f5';
+        ctx.fillRect(0, 0, width, height);
+
+        const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+        let captcha = '';
+        for (let i = 0; i < 4; i++) {
+            captcha += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+
+        ctx.font = '30px Arial';
+        ctx.fillStyle = '#333';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        for (let i = 0; i < 5; i++) {
+            ctx.strokeStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
+            ctx.beginPath();
+            ctx.moveTo(Math.random() * width, Math.random() * height);
+            ctx.lineTo(Math.random() * width, Math.random() * height);
+            ctx.stroke();
+        }
+
+        for (let i = 0; i < 30; i++) {
+            ctx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
+            ctx.beginPath();
+            ctx.arc(Math.random() * width, Math.random() * height, 1, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        for (let i = 0; i < captcha.length; i++) {
+            const x = (width / 4) * (i + 0.5);
+            const y = height / 2 + (Math.random() - 0.5) * 10;
+            const rotation = (Math.random() - 0.5) * 0.5;
+
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(rotation);
+            ctx.fillText(captcha.charAt(i), 0, 0);
+            ctx.restore();
+        }
+
+        sessionStorage.setItem('captcha', captcha.toLowerCase());
+    }
+
+    function validateForm(formId) {
+        const form = document.getElementById(formId);
+        const inputs = form.querySelectorAll("input[required], select[required]");
+        let isValid = true;
+
+        inputs.forEach(input => {
+            if (!input.value.trim()) {
+                isValid = false;
+                input.style.borderColor = "#dc3545";
+                input.addEventListener("input", () => {
+                    input.style.borderColor = "#ddd";
+                });
+            }
+        });
+        return isValid;
+    }
+
+    function showMessage(message, type = "success") {
+        const div = document.createElement("div");
+        div.className = `alert alert-${type}`;
+        div.textContent = message;
+        document.body.insertBefore(div, document.body.firstChild);
+        setTimeout(() => div.remove(), 3000);
+    }
+</script>
+
+
+<!-- ---------------- 登录页面核心逻辑（接后端） ---------------- -->
+<script>
+    function initLoginPage() {
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            if (!validateForm("loginForm")) {
+                showMessage("请填写完整信息", "error");
+                return;
+            }
+
+            const userCaptcha = document.getElementById("captcha").value.toLowerCase();
+            const realCaptcha = sessionStorage.getItem("captcha");
+
+            if (userCaptcha !== realCaptcha) {
+                showMessage("验证码错误", "error");
+                generateCaptcha();
+                return;
+            }
+
+            const formData = new FormData(e.target);
+            const data = {
+                username: formData.get("username"),
+                password: formData.get("password"),
+                role: formData.get("role")
+            };
+
+            try {
+                const response = await fetch("http://localhost:8082/api/auth/login", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.code !== 200) {
+                    showMessage(result.msg || "登录失败", "error");
+                    return;
+                }
+
+                // 存token和用户信息
+                localStorage.setItem("token", result.token);
+                localStorage.setItem("user", JSON.stringify(result.data));
+
+                showMessage("登录成功", "success");
+
+                const realRole = result.data.role;
+
+                setTimeout(() => {
+                    if (realRole === "tenant") {
+                        window.location.href = "tenant.html";
+                    } else if (realRole === "landlord") {
+                        window.location.href = "landlord.html";
+                    } else if (realRole === "admin") {
+                        window.location.href = "admin.html";
+                    } else {
+                        showMessage("未知角色，无法跳转", "error");
+                    }
+                }, 1200);
+
+            } catch (e) {
+                showMessage("无法连接服务器，请检查后端是否运行", "error");
+            }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        generateCaptcha();
+        document.getElementById("captchaCanvas").addEventListener("click", generateCaptcha);
+        initLoginPage();
+    });
+</script>
+
+</body>
+</html>

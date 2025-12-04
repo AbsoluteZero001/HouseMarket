@@ -43,12 +43,13 @@ public class FavoritesController {
     /**
      * 取消收藏
      *
-     * @param userId  用户ID
      * @param houseId 房源ID
      * @return 删除结果
      */
-    @DeleteMapping
-    public Map<String, Object> removeFavorite(@RequestParam Long userId, @RequestParam Long houseId) {
+    @DeleteMapping("/{houseId}")
+    public Map<String, Object> removeFavorite(@PathVariable Long houseId) {
+        // 从JWT获取用户ID，这里需要修改为从认证上下文中获取
+        Long userId = 1L; // 临时硬编码，实际应该从SecurityContext获取
         boolean result = favoritesService.removeFavorite(userId, houseId);
 
         Map<String, Object> response = new HashMap<>();
@@ -66,11 +67,12 @@ public class FavoritesController {
     /**
      * 获取用户收藏列表
      *
-     * @param userId 用户ID
      * @return 收藏列表
      */
-    @GetMapping("/{userId}")
-    public Map<String, Object> getFavoritesByUserId(@PathVariable Long userId) {
+    @GetMapping
+    public Map<String, Object> getFavorites() {
+        // 从JWT获取用户ID，这里需要修改为从认证上下文中获取
+        Long userId = 1L; // 临时硬编码，实际应该从SecurityContext获取
         List<Favorites> favorites = favoritesService.getFavoritesByUserId(userId);
 
         Map<String, Object> data = new HashMap<>();
@@ -78,7 +80,7 @@ public class FavoritesController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
-        response.put("data", data);
+        response.put("data", favorites);
 
         return response;
     }

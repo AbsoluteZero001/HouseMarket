@@ -15,11 +15,4 @@
         <result property="isDeleted" column="is_deleted"/>
     </resultMap>
 
-    <select id="selectByUsername" resultMap="sysUserResultMap">
-        SELECT *
-        FROM sys_user
-        WHERE username = #{username}
-          AND is_deleted = 0
-    </select>
-
 </mapper>
