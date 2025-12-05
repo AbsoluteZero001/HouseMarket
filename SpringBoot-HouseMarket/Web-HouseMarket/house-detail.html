@@ -71,6 +71,38 @@
 
 <script src="assets/js/axios.js"></script>
 <script>
+    // 添加一个全局的axios实例，自动添加认证头
+    const apiClient = axios.create({
+        baseURL: '/api'
+    });
+
+    // 请求拦截器，自动添加token
+    apiClient.interceptors.request.use(config => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+    }, error => {
+        return Promise.reject(error);
+    });
+
+    // 响应拦截器，处理通用错误
+    apiClient.interceptors.response.use(response => {
+        return response;
+    }, error => {
+        if (error.response && error.response.status === 401) {
+            // token过期或无效，清除本地存储并跳转到登录页
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            showMessage('登录已过期，请重新登录', 'error');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 1500);
+        }
+        return Promise.reject(error);
+    });
+
     // 验证码生成函数
     function generateCaptcha() {
         const canvas = document.getElementById('captchaCanvas');
@@ -202,26 +234,6 @@
         }
     }
 
-    // 关闭模态框事件监听
-    function initModals() {
-        const modals = document.querySelectorAll('.modal');
-        modals.forEach(modal => {
-            const closeBtn = modal.querySelector('.close');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', () => {
-                    modal.style.display = 'none';
-                });
-            }
-
-            // 点击模态框外部关闭
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
-            });
-        });
-    }
-
     // 登出函数
     function logout() {
         // 清除用户数据
@@ -260,17 +272,17 @@
 </script>
 <script>
     // 房源详情页JS
-    function initHouseDetailPage() {
+    async function initHouseDetailPage() {
         // 获取URL参数
         const urlParams = new URLSearchParams(window.location.search);
         const houseId = parseInt(urlParams.get('id'));
         const action = urlParams.get('action');
 
         // 加载房源信息
-        loadHouseInfo(houseId);
+        await loadHouseInfo(houseId);
 
         // 预约表单提交事件
-        document.getElementById('bookForm').addEventListener('submit', (e) => {
+        document.getElementById('bookForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
             if (!validateForm('bookForm')) {
@@ -278,9 +290,35 @@
                 return;
             }
 
-            showMessage('预约提交成功，请等待房东确认', 'success');
-            hideModal('bookModal');
-            e.target.reset();
+            // 获取表单数据
+            const formData = new FormData(e.target);
+            const appointmentData = {
+                houseId: parseInt(formData.get('houseId')),
+                time: formData.get('time'),
+                location: formData.get('location'),
+                notes: formData.get('notes')
+            };
+
+            try {
+                // 提交预约请求
+                const response = await apiClient.post('/appointments', appointmentData);
+                const result = response.data;
+
+                if (result.success) {
+                    showMessage('预约提交成功，请等待房东确认', 'success');
+                    hideModal('bookModal');
+                    e.target.reset();
+                } else {
+                    showMessage(result.message || '预约提交失败', 'error');
+                }
+            } catch (error) {
+                console.error('预约提交错误:', error);
+                if (error.response && error.response.data && error.response.data.message) {
+                    showMessage(error.response.data.message, 'error');
+                } else {
+                    showMessage('预约提交失败，请稍后重试', 'error');
+                }
+            }
         });
 
         // 收藏按钮点击事件
@@ -308,44 +346,36 @@
     }
 
     // 加载房源信息
-    function loadHouseInfo(houseId) {
-        // 模拟房源数据
-        const mockHouses = [
-            {
-                id: 1,
-                title: '阳光小区 3室2厅',
-                type: '平层',
-                area: 120,
-                price: 3500,
-                address: '北京市朝阳区阳光路1号',
-                image: 'https://picsum.photos/seed/house1/800/500',
-                description: '阳光小区位于朝阳区核心地段，交通便利，周边配套设施完善。该房源为3室2厅2卫，南北通透，采光良好，家具家电齐全，拎包即可入住。'
-            },
-            {
-                id: 2,
-                title: '幸福家园 2室1厅',
-                type: '跃层',
-                area: 85,
-                price: 2800,
-                address: '北京市海淀区幸福路2号',
-                image: 'https://picsum.photos/seed/house2/800/500',
-                description: '幸福家园是海淀区高品质小区，环境优美，绿化率高。该房源为2室1厅1卫，跃层设计，空间利用率高，适合年轻夫妻或小家庭居住。'
-            }
-        ];
-
-        // 查找房源
-        const house = mockHouses.find(h => h.id === houseId);
-
-        if (!house) {
-            document.getElementById('houseInfo').innerHTML = '<p style="text-align: center; color: #666; margin: 2rem 0;">未找到该房源</p>';
+    async function loadHouseInfo(houseId) {
+        if (!houseId) {
+            document.getElementById('houseInfo').innerHTML = '<p style="text-align: center; color: #666; margin: 2rem 0;">参数错误</p>';
             return;
         }
 
+        try {
+            const response = await apiClient.get(`/houses/${houseId}`);
+            const result = response.data;
+
+            if (result.success) {
+                renderHouseInfo(result.data.house);
+            } else {
+                document.getElementById('houseInfo').innerHTML = '<p style="text-align: center; color: #666; margin: 2rem 0;">未找到该房源</p>';
+            }
+        } catch (error) {
+            console.error('获取房源信息错误:', error);
+            document.getElementById('houseInfo').innerHTML = '<p style="text-align: center; color: #666; margin: 2rem 0;">无法获取房源信息</p>';
+        }
+    }
+
+    // 渲染房源信息
+    function renderHouseInfo(house) {
+        if (!house) return;
+        
         // 渲染房源信息
         document.getElementById('houseInfo').innerHTML = `
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
                 <div>
-                    <img src="${house.image}" alt="${house.title}" style="width: 100%; height: auto; border-radius: 8px;">
+                    <img src="${house.image || 'https://picsum.photos/seed/house' + house.id + '/800/500'}" alt="${house.title}" style="width: 100%; height: auto; border-radius: 8px;">
                 </div>
                 <div>
                     <h2 style="margin-bottom: 1rem;">${house.title}</h2>
@@ -357,7 +387,7 @@
                     </div>
                     <div style="margin-top: 2rem;">
                         <h3 style="margin-bottom: 1rem;">房源描述</h3>
-                        <p style="line-height: 1.8;">${house.description}</p>
+                        <p style="line-height: 1.8;">${house.description || '暂无描述'}</p>
                     </div>
                 </div>
             </div>

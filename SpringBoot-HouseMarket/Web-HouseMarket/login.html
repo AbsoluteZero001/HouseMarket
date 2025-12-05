@@ -164,37 +164,43 @@
             };
 
             try {
-                const response = await axios.post("http://localhost:8082/api/auth/login", data);
+                // 修改为实际的后端API地址
+                const response = await axios.post("/api/login", data);
 
                 const result = response.data;
 
-                if (result.code !== 200) {
-                    showMessage(result.msg || "登录失败", "error");
+                if (!result.success) {
+                    showMessage(result.message || "登录失败", "error");
                     return;
                 }
 
                 // 存token和用户信息
-                localStorage.setItem("token", result.token);
-                localStorage.setItem("user", JSON.stringify(result.data));
+                localStorage.setItem("token", result.data.token);
+                localStorage.setItem("user", JSON.stringify(result.data.user));
 
                 showMessage("登录成功", "success");
 
-                const realRole = result.data.role;
+                const realRole = result.data.user.role;
 
                 setTimeout(() => {
-                    if (realRole === "tenant") {
+                    if (realRole === "TENANT") {
                         window.location.href = "tenant.html";
-                    } else if (realRole === "landlord") {
+                    } else if (realRole === "LANDLORD") {
                         window.location.href = "landlord.html";
-                    } else if (realRole === "admin") {
+                    } else if (realRole === "ADMIN") {
                         window.location.href = "admin.html";
                     } else {
                         showMessage("未知角色，无法跳转", "error");
                     }
                 }, 1200);
 
-            } catch (e) {
-                showMessage("无法连接服务器，请检查后端是否运行", "error");
+            } catch (error) {
+                console.error("登录错误:", error);
+                if (error.response && error.response.data && error.response.data.message) {
+                    showMessage(error.response.data.message, "error");
+                } else {
+                    showMessage("无法连接服务器，请检查后端是否运行", "error");
+                }
             }
         });
     }
