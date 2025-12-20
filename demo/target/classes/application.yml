@@ -1,6 +1,0 @@
-spring:
-  datasource:
-    username: root
-    password: 123456
-    url: jdbc:mysql://localhost:3306/房源市场?useSSL=false&serverTimezone=UTC&characterEncoding=utf8
-    driver-class-name: com.mysql.cj.jdbc.Driver
