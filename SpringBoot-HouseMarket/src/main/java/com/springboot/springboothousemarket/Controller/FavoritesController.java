@@ -14,7 +14,6 @@ import java.util.Map;
 @RequestMapping("/api/favorites")
 @RestController
 public class FavoritesController {
-
     private final FavoritesService favoritesService;
     private final HouseService houseService;
 

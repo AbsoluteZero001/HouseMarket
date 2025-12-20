@@ -23,7 +23,6 @@ public class AuthController {
 
     private final SysUserService userService;
     private final JwtUtil jwtUtil;
-
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public AuthController(SysUserService userService, JwtUtil jwtUtil) {

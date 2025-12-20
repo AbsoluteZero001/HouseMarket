@@ -1,4 +1,4 @@
-package com.springboot.springboothousemarket.Config;
+package com.springboot.springboothousemarket.Config; // 包声明，表示该类属于Config配置包
 
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
