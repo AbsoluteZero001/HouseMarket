@@ -56,7 +56,6 @@ public class HouseController { // 房源控制器类定义
     public Map<String, Object> getHouseById(@PathVariable Long id) { // 从路径中获取房源ID
         // 调用服务层方法根据ID获取房屋实体对象
         House house = houseService.getHouseById(id);
-
         // 创建数据容器，用于存放房屋实体信息
         Map<String, Object> data = new HashMap<>();
         data.put("house", house);
