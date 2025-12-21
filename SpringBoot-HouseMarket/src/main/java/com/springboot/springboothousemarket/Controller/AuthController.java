@@ -16,22 +16,52 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+
+/**
+ * 认证控制器类
+ * 处理用户注册、登录等相关认证操作
+ */
+
+/**
+ * // Swagger API文档标签
+ * 认证控制器类  // API基础路径
+ * 处理用户注册、登录等认证相关功能
+ */
 @Tag(name = "认证API")
+// 用户服务接口
 @RequestMapping("/api")
+// JWT工具类
 @RestController
+// BCrypt密码编码器
 public class AuthController {
 
+    /**
+     * 用户服务接口
+     */
     private final SysUserService userService;
+    /**
+     * JWT工具类
+     */
     private final JwtUtil jwtUtil;
+    /**
+     * BCrypt密码加密器
+     */
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
+    /**
+     * 构造函数
+     * @param userService 用户服务
+     * @param jwtUtil JWT工具类
+     */
     public AuthController(SysUserService userService, JwtUtil jwtUtil) {
         this.userService = userService;
         this.jwtUtil = jwtUtil;
     }
 
     /**
-     * 用户注册
+     * 用户注册接口
+     * @param req 注册请求参数
+     * @return ResponseEntity 响应实体
      */
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
