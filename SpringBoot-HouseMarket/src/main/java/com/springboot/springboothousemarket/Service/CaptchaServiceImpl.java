@@ -1,6 +1,5 @@
-package com.springboot.springboothousemarket.Service.impl;
+package com.springboot.springboothousemarket.Service;
 
-import com.springboot.springboothousemarket.Service.CaptchaService;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
@@ -12,24 +11,32 @@ public class CaptchaServiceImpl implements CaptchaService {
 
     @Override
     public BufferedImage createCaptcha() {
-        int width = 100;
+        int width = 120;
         int height = 40;
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
-        Graphics g = image.getGraphics();
+        Graphics2D g = image.createGraphics();
+
+        // 背景
         g.setColor(Color.LIGHT_GRAY);
         g.fillRect(0, 0, width, height);
 
-        g.setColor(Color.BLACK);
-        g.setFont(new Font("Arial", Font.BOLD, 24));
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        Random random = new Random();
+        // 随机验证码
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         StringBuilder captchaText = new StringBuilder();
-        for (int i = 0; i < 5; i++) {
+        Random random = new Random();
+        for (int i = 0; i < 4; i++) {
             char c = chars.charAt(random.nextInt(chars.length()));
             captchaText.append(c);
-            g.drawString(String.valueOf(c), 15 * i + 10, 30);
         }
+
+        // 绘制字符
+        g.setFont(new Font("Arial", Font.BOLD, 30));
+        g.setColor(Color.BLACK);
+        g.drawString(captchaText.toString(), 20, 30);
+
         g.dispose();
+
+        // TODO: 这里可以把 captchaText 存到 session 或 Redis，用于前端验证
         return image;
     }
 }
