@@ -1,6 +1,5 @@
 package com.springboot.springboothousemarket.Mapper;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.springboot.springboothousemarket.Entity.SysUser;
 import org.apache.ibatis.annotations.Mapper;
@@ -18,8 +17,5 @@ public interface SysUserMapper extends BaseMapper<SysUser> {
      * @param username 用户名
      * @return 匹配的用户对象，如果未找到则返回null
      */
-    default SysUser selectByUsername(String username) {
-        // 使用QueryWrapper构建查询条件，查询用户名等于指定参数的用户记录
-        return selectOne(new QueryWrapper<SysUser>().eq("username", username));
-    }
+    SysUser selectByUsername(String username);
 }

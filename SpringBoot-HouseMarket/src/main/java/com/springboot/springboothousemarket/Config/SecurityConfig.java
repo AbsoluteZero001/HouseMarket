@@ -34,6 +34,7 @@ public class SecurityConfig {
 
     /**
      * 配置认证管理器Bean
+     *
      * @param config 认证配置
      * @return 认证管理器
      * @throws Exception 可能抛出的异常
@@ -45,30 +46,51 @@ public class SecurityConfig {
 
     /**
      * 配置安全过滤器链
+     *
      * @param http HTTP安全配置
      * @return 安全过滤器链
      * @throws Exception 可能抛出的异常
      */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        // 禁用CSRF保护
-        http.csrf(AbstractHttpConfigurer::disable)
-                // 配置请求授权
+        http
+                // 1. 禁用 CSRF（前后端分离项目一般禁用）
+                .csrf(AbstractHttpConfigurer::disable)
+
+                // 2. 配置请求授权规则
                 .authorizeHttpRequests(auth -> auth
-                        // 允许所有匿名用户访问的路径
-                        .requestMatchers("/api/register", "/api/login", "/house", "/house/**",
-                                "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
-                                "/", "/index.html", "/Web/**", "/webjars/**",
-                                "/css/**", "/js/**", "/images/**", "/favicon.ico",
-                                "/HouseMarket/**", "/HouseMarket/login.html", "/HouseMarket/register.html").permitAll()
-                        // 其他所有请求都需要认证
-                        .anyRequest().authenticated())
-                // 配置会话管理为无状态
+                        // 放行注册、登录接口
+                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        // 放行验证码接口
+                        .requestMatchers("/captcha").permitAll()
+                        // 放行首页、静态资源、Swagger 文档
+                        .requestMatchers(
+                                "/",
+                                "/index.html",
+                                "/register.html",
+                                "/login.html",
+                                "/HouseMarket/**",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/favicon.ico",
+                                "/webjars/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**"
+                        ).permitAll()
+                        // 其他请求必须认证
+                        .anyRequest().authenticated()
+                )
+
+                // 3. 配置会话管理为无状态
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        // 添加JWT过滤器在用户名密码认证过滤器之前
+        // 4. 在用户名密码认证过滤器之前加入 JWT 过滤器
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
+
+
 }
