@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>房屋租售系统 - 房源详情</title>
+    <link href="css/style.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="particles-container">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+</div>
+<div class="decoration decoration-1"></div>
+<div class="decoration decoration-2"></div>
+<header>
+    <div class="container">
+        <nav>
+            <div class="logo">房屋租售系统</div>
+            <ul class="nav-links">
+                <li><a href="tenant.html">返回首页</a></li>
+                <li><span id="username"></span></li>
+                <li><a class="btn btn-secondary" href="#" id="logoutBtn">登出</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<div class="container">
+    <!-- 房源详情 -->
+    <section class="section active" id="house-detail">
+        <div style="margin: 2rem 0;">
+            <h2 id="houseTitle"></h2>
+            <div style="display: flex; gap: 2rem; margin-top: 2rem;">
+                <!-- 房源图片 -->
+                <div style="flex: 1;">
+                    <div id="houseImages" style="border: 1px solid #ddd; border-radius: 8px; padding: 1rem; background: white;">
+                        <img id="mainImage" src="" alt="房源图片" style="width: 100%; height: 400px; object-fit: cover; border-radius: 4px;">
+                        <div id="imageThumbnails" style="display: flex; gap: 1rem; margin-top: 1rem; overflow-x: auto;"></div>
+                    </div>
+                </div>
+                
+                <!-- 房源信息 -->
+                <div style="flex: 1;">
+                    <div class="card">
+                        <div class="card-body">
+                            <h3>房源信息</h3>
+                            <div style="margin: 1rem 0;">
+                                <div class="house-price" style="font-size: 2rem;"></div>
+                                <div class="house-meta" style="margin: 1rem 0;">
+                                    <span id="houseType"></span>
+                                    <span id="houseArea"></span>
+                                </div>
+                                <div class="house-address" style="margin: 1rem 0;"></div>
+                            </div>
+                            
+                            <div style="margin: 1rem 0;">
+                                <h4>房东信息</h4>
+                                <div id="landlordInfo"></div>
+                            </div>
+                            
+                            <div style="margin: 2rem 0; display: flex; gap: 1rem;">
+                                <button class="btn" onclick="bookHouse()">预约看房</button>
+                                <button class="btn btn-secondary" id="favoriteBtn" onclick="toggleFavorite()"></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 房源描述 -->
+            <div class="card" style="margin: 2rem 0;">
+                <div class="card-body">
+                    <h3>房源描述</h3>
+                    <div id="houseDescription" style="margin: 1rem 0;"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- 预约看房模态框 -->
+<div class="modal" id="bookModal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h3 style="margin-bottom: 1.5rem;">预约看房</h3>
+        
+        <form id="bookForm">
+            <input id="bookHouseId" type="hidden">
+            
+            <div class="form-group">
+                <label for="bookDate">预约日期</label>
+                <input id="bookDate" name="date" required type="date">
+            </div>
+            
+            <div class="form-group">
+                <label for="bookTime">预约时间</label>
+                <input id="bookTime" name="time" required type="time">
+            </div>
+            
+            <div class="form-group">
+                <label for="bookLocation">见面地点</label>
+                <input id="bookLocation" name="location" placeholder="请输入见面地点" required type="text">
+            </div>
+            
+            <div class="form-group">
+                <label for="bookMessage">留言</label>
+                <textarea id="bookMessage" name="message" placeholder="请输入留言内容" rows="3"></textarea>
+            </div>
+            
+            <button class="btn" style="width: 100%; margin-top: 1rem;" type="submit">提交预约</button>
+        </form>
+    </div>
+</div>
+
+<script src="assets/js/utils.js"></script>
+<script>
+    let houseId = null;
+    let isFavorited = false;
+    
+    // 页面加载完成后初始化
+    document.addEventListener('DOMContentLoaded', () => {
+        // 获取URL参数
+        const urlParams = new URLSearchParams(window.location.search);
+        houseId = urlParams.get('id');
+        const action = urlParams.get('action');
+        
+        // 初始化用户信息
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            document.getElementById('username').textContent = user.username;
+        }
+        
+        // 获取房源详情
+        if (houseId) {
+            fetchHouseDetail();
+        }
+        
+        // 如果有action参数，显示对应的模态框
+        if (action === 'book') {
+            setTimeout(() => {
+                showModal('bookModal');
+            }, 500);
+        }
+        
+        // 绑定预约表单提交事件
+        const bookForm = document.getElementById('bookForm');
+        if (bookForm) {
+            bookForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await submitBookRequest();
+            });
+        }
+        
+        // 登出按钮事件
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                logout();
+            });
+        }
+    });
+    
+    // 获取房源详情
+    async function fetchHouseDetail() {
+        try {
+            showProgressBar();
+            
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/houses/${houseId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('获取房源详情失败');
+            }
+            
+            const result = await response.json();
+            const house = result.data.house;
+            
+            // 填充房源信息
+            document.getElementById('houseTitle').textContent = house.title;
+            document.querySelector('.house-price').textContent = `¥${house.price}/月`;
+            document.getElementById('houseType').textContent = `户型：${house.houseType}`;
+            document.getElementById('houseArea').textContent = `面积：${house.area}㎡`;
+            document.querySelector('.house-address').textContent = house.address;
+            document.getElementById('houseDescription').textContent = house.description || '暂无描述';
+            
+            // 填充房东信息
+            // 假设house对象中包含landlord信息，或者需要额外请求
+            document.getElementById('landlordInfo').textContent = '房东：未知房东';
+            
+            // 处理图片
+            let images = [];
+            if (house.images) {
+                try {
+                    images = JSON.parse(house.images);
+                } catch (e) {
+                    console.error('解析图片失败:', e);
+                }
+            }
+            
+            // 如果没有图片，使用默认图片
+            if (images.length === 0) {
+                images.push(`https://picsum.photos/seed/house${houseId}/800/600`);
+            }
+            
+            // 设置主图
+            document.getElementById('mainImage').src = images[0];
+            
+            // 生成缩略图
+            const thumbnailContainer = document.getElementById('imageThumbnails');
+            thumbnailContainer.innerHTML = images.map((image, index) => `
+                <img src="${image}" alt="房源图片${index + 1}" 
+                     style="width: 80px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer; 
+                            ${index === 0 ? 'border: 2px solid #ff6b6b;' : 'border: 2px solid transparent;'}" 
+                     onclick="setMainImage('${image}', this)">
+            `).join('');
+            
+            // 检查是否已收藏
+            await checkFavoriteStatus();
+        } catch (error) {
+            console.error('获取房源详情失败:', error);
+            showMessage('获取房源详情失败', 'error');
+        } finally {
+            hideProgressBar();
+        }
+    }
+    
+    // 设置主图
+    function setMainImage(imageUrl, thumbnail) {
+        // 更新主图
+        document.getElementById('mainImage').src = imageUrl;
+        
+        // 更新缩略图边框
+        document.querySelectorAll('#imageThumbnails img').forEach(img => {
+            img.style.border = '2px solid transparent';
+        });
+        thumbnail.style.border = '2px solid #ff6b6b';
+    }
+    
+    // 检查收藏状态
+    async function checkFavoriteStatus() {
+        try {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user'));
+            
+            const response = await fetch(`/api/favorites/check?userId=${user.id}&houseId=${houseId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('检查收藏状态失败');
+            }
+            
+            const result = await response.json();
+            isFavorited = result.data.favorited;
+            
+            // 更新收藏按钮状态
+            const favoriteBtn = document.getElementById('favoriteBtn');
+            if (isFavorited) {
+                favoriteBtn.classList.add('favorited');
+                favoriteBtn.title = '取消收藏';
+            } else {
+                favoriteBtn.classList.remove('favorited');
+                favoriteBtn.title = '收藏';
+            }
+        } catch (error) {
+            console.error('检查收藏状态失败:', error);
+        }
+    }
+    
+    // 切换收藏状态
+    async function toggleFavorite() {
+        try {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user'));
+            
+            const favoriteBtn = document.getElementById('favoriteBtn');
+            
+            if (isFavorited) {
+                // 取消收藏
+                const response = await fetch(`/api/favorites/${houseId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('取消收藏失败');
+                }
+                
+                isFavorited = false;
+                favoriteBtn.classList.remove('favorited');
+                favoriteBtn.title = '收藏';
+                showMessage('取消收藏成功', 'success');
+            } else {
+                // 添加收藏
+                const response = await fetch('/api/favorites', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        userId: user.id,
+                        houseId: houseId
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('添加收藏失败');
+                }
+                
+                isFavorited = true;
+                favoriteBtn.classList.add('favorited');
+                favoriteBtn.title = '取消收藏';
+                showMessage('收藏成功', 'success');
+            }
+        } catch (error) {
+            console.error('切换收藏状态失败:', error);
+            showMessage(error.message, 'error');
+        }
+    }
+    
+    // 预约看房
+    function bookHouse() {
+        // 设置房屋ID
+        document.getElementById('bookHouseId').value = houseId;
+        
+        // 显示预约模态框
+        showModal('bookModal');
+    }
+    
+    // 提交预约请求
+    async function submitBookRequest() {
+        try {
+            showProgressBar();
+            
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user'));
+            
+            const form = document.getElementById('bookForm');
+            const formData = new FormData(form);
+            
+            const bookData = {
+                houseId: houseId,
+                tenantId: user.id,
+                appointmentTime: `${formData.get('date')} ${formData.get('time')}`,
+                location: formData.get('location'),
+                message: formData.get('message')
+            };
+            
+            const response = await fetch('/api/appointments', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(bookData)
+            });
+            
+            if (!response.ok) {
+                throw new Error('提交预约请求失败');
+            }
+            
+            const result = await response.json();
+            showMessage(result.message || '预约提交成功', 'success');
+            
+            // 隐藏模态框
+            hideModal('bookModal');
+            form.reset();
+        } catch (error) {
+            console.error('提交预约请求失败:', error);
+            showMessage(error.message, 'error');
+        } finally {
+            hideProgressBar();
+        }
+    }
+</script>
+</body>
+</html>

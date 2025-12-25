@@ -259,102 +259,302 @@
         // 初始化图片预览
         initImagePreview('houseImage', 'imagePreview');
         initImagePreview('editHouseImage', 'editImagePreview');
+
+        // 绑定表单提交事件
+        bindFormEvents();
+
+        // 获取当前用户信息
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            document.getElementById('username').textContent = user.username;
+        }
+    }
+
+    // 绑定表单事件
+    function bindFormEvents() {
+        // 新增房源表单提交
+        const addHouseForm = document.getElementById('addHouseForm');
+        if (addHouseForm) {
+            addHouseForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await addHouse();
+            });
+        }
+
+        // 编辑房源表单提交
+        const editHouseForm = document.getElementById('editHouseForm');
+        if (editHouseForm) {
+            editHouseForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await updateHouse();
+            });
+        }
     }
 
     // 初始化房源列表
-    function initHouseList() {
+    async function initHouseList() {
         // 显示加载进度条
         showProgressBar();
         
-        // 模拟房源数据
-        const houses = [
-            {id: 1, title: '阳光小区 3室2厅', type: '平层', area: 120, price: 3500, address: '北京市朝阳区阳光路1号'},
-            {id: 2, title: '幸福家园 2室1厅', type: '跃层', area: 85, price: 2800, address: '北京市海淀区幸福路2号'},
-            {id: 3, title: '和谐社区 4室2厅', type: '复式', area: 150, price: 4500, address: '北京市西城区和谐路3号'}
-        ];
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/houses', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
 
-        const tbody = document.getElementById('houseTable').getElementsByTagName('tbody')[0];
-        tbody.innerHTML = houses.map(house => `
-            <tr>
-                <td>${house.id}</td>
-                <td>${house.title}</td>
-                <td>${house.type}</td>
-                <td>${house.area}㎡</td>
-                <td>¥${house.price}/月</td>
-                <td>${house.address}</td>
-                <td>
-                    <button class="btn btn-secondary btn-sm" onclick="editHouse(${house.id})">编辑</button>
-                    <button class="btn btn-danger btn-sm" onclick="deleteHouse(${house.id})" style="margin-left: 0.5rem;">删除</button>
-                </td>
-            </tr>
-        `).join('');
+            if (!response.ok) {
+                throw new Error('获取房源列表失败');
+            }
 
-        // 隐藏加载进度条
-        setTimeout(() => {
+            const result = await response.json();
+            const houses = result.data.houses;
+
+            const tbody = document.getElementById('houseTable').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = houses.map(house => `
+                <tr>
+                    <td>${house.id}</td>
+                    <td>${house.title}</td>
+                    <td>${house.houseType}</td>
+                    <td>${house.area}㎡</td>
+                    <td>¥${house.price}/月</td>
+                    <td>${house.address}</td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm" onclick="editHouse(${house.id})">编辑</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteHouse(${house.id})" style="margin-left: 0.5rem;">删除</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('初始化房源列表失败:', error);
+            showMessage('获取房源列表失败', 'error');
+        } finally {
+            // 隐藏加载进度条
             hideProgressBar();
-        }, 500);
+        }
     }
 
     // 初始化预约记录
-    function initAppointmentList() {
+    async function initAppointmentList() {
         // 显示加载进度条
         showProgressBar();
         
-        // 模拟预约数据
-        const appointments = [
-            {
-                id: 1,
-                house: '阳光小区 3室2厅',
-                tenant: '张三',
-                time: '2025-12-01 14:00',
-                location: '小区门口',
-                status: '待处理'
-            },
-            {
-                id: 2,
-                house: '幸福家园 2室1厅',
-                tenant: '李四',
-                time: '2025-12-02 10:00',
-                location: '单元门口',
-                status: '已批准'
+        try {
+            // 模拟预约数据
+            const appointments = [
+                {
+                    id: 1,
+                    house: '阳光小区 3室2厅',
+                    tenant: '张三',
+                    time: '2025-12-01 14:00',
+                    location: '小区门口',
+                    status: '待处理'
+                },
+                {
+                    id: 2,
+                    house: '幸福家园 2室1厅',
+                    tenant: '李四',
+                    time: '2025-12-02 10:00',
+                    location: '单元门口',
+                    status: '已批准'
+                }
+            ];
+
+            const tbody = document.getElementById('appointmentTable').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = appointments.map(appointment => `
+                <tr>
+                    <td>${appointment.id}</td>
+                    <td>${appointment.house}</td>
+                    <td>${appointment.tenant}</td>
+                    <td>${appointment.time}</td>
+                    <td>${appointment.location}</td>
+                    <td>${appointment.status}</td>
+                    <td>
+                        ${appointment.status === '待处理' ?
+                '<button class="btn btn-success btn-sm" onclick="approveAppointment(' + appointment.id + ')">批准</button>' +
+                '<button class="btn btn-danger btn-sm" onclick="rejectAppointment(' + appointment.id + ')" style="margin-left: 0.5rem;">拒绝</button>' :
+                '<button class="btn btn-secondary btn-sm" disabled>查看</button>'
             }
-        ];
-
-        const tbody = document.getElementById('appointmentTable').getElementsByTagName('tbody')[0];
-        tbody.innerHTML = appointments.map(appointment => `
-            <tr>
-                <td>${appointment.id}</td>
-                <td>${appointment.house}</td>
-                <td>${appointment.tenant}</td>
-                <td>${appointment.time}</td>
-                <td>${appointment.location}</td>
-                <td>${appointment.status}</td>
-                <td>
-                    ${appointment.status === '待处理' ?
-            '<button class="btn btn-success btn-sm" onclick="approveAppointment(' + appointment.id + ')">批准</button>' +
-            '<button class="btn btn-danger btn-sm" onclick="rejectAppointment(' + appointment.id + ')" style="margin-left: 0.5rem;">拒绝</button>' :
-            '<button class="btn btn-secondary btn-sm" disabled>查看</button>'
-        }
-                </td>
-            </tr>
-        `).join('');
-
-        // 隐藏加载进度条
-        setTimeout(() => {
+                    </td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('初始化预约记录失败:', error);
+            showMessage('获取预约记录失败', 'error');
+        } finally {
+            // 隐藏加载进度条
             hideProgressBar();
-        }, 500);
+        }
+    }
+
+    // 获取房源详情
+    async function getHouseDetails(houseId) {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/houses/${houseId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('获取房源详情失败');
+        }
+
+        const result = await response.json();
+        return result.data.house;
     }
 
     // 编辑房源
-    function editHouse(houseId) {
-        showModal('editHouseModal');
+    async function editHouse(houseId) {
+        try {
+            const house = await getHouseDetails(houseId);
+            
+            // 填充表单数据
+            document.getElementById('editHouseId').value = house.id;
+            document.getElementById('editHouseTitle').value = house.title;
+            document.getElementById('editHouseType').value = house.houseType;
+            document.getElementById('editHouseArea').value = house.area;
+            document.getElementById('editHousePrice').value = house.price;
+            document.getElementById('editHouseAddress').value = house.address;
+            document.getElementById('editHouseDescription').value = house.description || '';
+            
+            // 如果有图片，显示预览
+            if (house.images) {
+                const images = JSON.parse(house.images);
+                if (images.length > 0) {
+                    document.getElementById('editImagePreview').src = images[0];
+                    document.getElementById('editImagePreview').style.display = 'block';
+                }
+            }
+            
+            showModal('editHouseModal');
+        } catch (error) {
+            console.error('编辑房源失败:', error);
+            showMessage('获取房源详情失败', 'error');
+        }
     }
 
     // 删除房源
-    function deleteHouse(houseId) {
+    async function deleteHouse(houseId) {
         if (confirm('确定要删除这套房源吗？')) {
-            showMessage('房源删除成功', 'success');
+            try {
+                showProgressBar();
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/houses/${houseId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('删除房源失败');
+                }
+
+                showMessage('房源删除成功', 'success');
+                initHouseList();
+            } catch (error) {
+                console.error('删除房源失败:', error);
+                showMessage('删除房源失败', 'error');
+            } finally {
+                hideProgressBar();
+            }
+        }
+    }
+
+    // 新增房源
+    async function addHouse() {
+        try {
+            showProgressBar();
+            
+            const form = document.getElementById('addHouseForm');
+            const formData = new FormData(form);
+            
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user'));
+            
+            // 构建请求数据
+            const houseData = {
+                title: formData.get('title'),
+                houseType: formData.get('type'),
+                area: parseFloat(formData.get('area')),
+                price: parseFloat(formData.get('price')),
+                address: formData.get('address'),
+                description: formData.get('description'),
+                landlordId: user.id,
+                status: 0, // 待审核
+                images: JSON.stringify([]) // 暂时空数组，后续可扩展图片上传
+            };
+            
+            const response = await fetch('/api/houses', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(houseData)
+            });
+
+            if (!response.ok) {
+                throw new Error('发布房源失败');
+            }
+
+            showMessage('发布房源成功', 'success');
+            hideModal('addHouseModal');
+            form.reset();
             initHouseList();
+        } catch (error) {
+            console.error('新增房源失败:', error);
+            showMessage('发布房源失败', 'error');
+        } finally {
+            hideProgressBar();
+        }
+    }
+
+    // 更新房源
+    async function updateHouse() {
+        try {
+            showProgressBar();
+            
+            const form = document.getElementById('editHouseForm');
+            const formData = new FormData(form);
+            
+            const token = localStorage.getItem('token');
+            const houseId = formData.get('id');
+            
+            // 构建请求数据
+            const houseData = {
+                title: formData.get('title'),
+                houseType: formData.get('type'),
+                area: parseFloat(formData.get('area')),
+                price: parseFloat(formData.get('price')),
+                address: formData.get('address'),
+                description: formData.get('description')
+            };
+            
+            const response = await fetch(`/api/houses/${houseId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(houseData)
+            });
+
+            if (!response.ok) {
+                throw new Error('更新房源失败');
+            }
+
+            showMessage('更新房源成功', 'success');
+            hideModal('editHouseModal');
+            initHouseList();
+        } catch (error) {
+            console.error('更新房源失败:', error);
+            showMessage('更新房源失败', 'error');
+        } finally {
+            hideProgressBar();
         }
     }
 

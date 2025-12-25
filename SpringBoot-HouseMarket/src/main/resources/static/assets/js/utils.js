@@ -277,6 +277,8 @@ rippleStyle.textContent = `
 document.head.appendChild(rippleStyle);
 
 // 进度条功能
+let progressInterval = null;
+
 function showProgressBar() {
     // 检查是否已存在进度条
     let progressBar = document.getElementById('progress-bar');
@@ -288,15 +290,22 @@ function showProgressBar() {
         document.body.insertBefore(progressBar, document.body.firstChild);
     }
 
+    // 清除可能存在的旧interval
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+    }
+
     // 重置进度条动画
     progressBar.style.width = '0%';
     progressBar.style.display = 'block';
 
     // 模拟进度
     let width = 0;
-    const interval = setInterval(() => {
+    progressInterval = setInterval(() => {
         if (width >= 100) {
-            clearInterval(interval);
+            clearInterval(progressInterval);
+            progressInterval = null;
             setTimeout(() => {
                 progressBar.style.display = 'none';
             }, 300);
@@ -313,6 +322,12 @@ function hideProgressBar() {
     const progressBar = document.getElementById('progress-bar');
     if (progressBar) {
         progressBar.style.display = 'none';
+    }
+    
+    // 清除interval
+    if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
     }
 }
 

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
@@ -7,259 +8,272 @@
     <link href="css/style.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
+
 <body>
-<div class="particles-container">
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-    <div class="particle"></div>
-</div>
-<div class="decoration decoration-1"></div>
-<div class="decoration decoration-2"></div>
-<header>
-    <div class="container">
-        <nav>
-            <div class="logo">房屋租售系统</div>
-            <ul class="nav-links">
-                <li><a class="active" href="tenant.html">首页</a></li>
-                <li><a href="#" onclick="showSection('appointment')">预约记录 <span class="badge">3</span></a></li>
-                <li><a href="#" onclick="showSection('favorites')">我的收藏 <span class="badge">5</span></a></li>
-                <li><a href="#" onclick="showSection('profile')">个人中心</a></li>
-                <li><span id="username"></span></li>
-                <li><a class="btn btn-secondary" href="#" id="logoutBtn">登出</a></li>
-            </ul>
-        </nav>
+    <div class="particles-container">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
     </div>
-</header>
-
-<div class="container">
-    <!-- 房源搜索和筛选 -->
-    <section class="section active" id="house-search">
-        <div class="filter-container">
-            <h3 style="margin-bottom: 1.5rem;">房源搜索</h3>
-
-            <form id="searchForm">
-                <div class="filter-row">
-                    <div class="form-group">
-                        <label for="searchKeyword">关键词</label>
-                        <input id="searchKeyword" name="keyword" placeholder="请输入关键词" type="text">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="searchType">户型</label>
-                        <select id="searchType" name="type">
-                            <option value="">全部户型</option>
-                            <option value="平层">平层</option>
-                            <option value="跃层">跃层</option>
-                            <option value="错层">错层</option>
-                            <option value="复式">复式</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="minArea">最小面积 (㎡)</label>
-                        <input id="minArea" min="0" name="minArea" placeholder="最小" type="number">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="maxArea">最大面积 (㎡)</label>
-                        <input id="maxArea" min="0" name="maxArea" placeholder="最大" type="number">
-                    </div>
-                </div>
-
-                <div class="filter-row">
-                    <div class="form-group">
-                        <label for="minPrice">最低价格 (元/月)</label>
-                        <input id="minPrice" min="0" name="minPrice" placeholder="最低" type="number">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="maxPrice">最高价格 (元/月)</label>
-                        <input id="maxPrice" min="0" name="maxPrice" placeholder="最高" type="number">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="searchAddress">地址</label>
-                        <input id="searchAddress" name="address" placeholder="请输入地址" type="text">
-                    </div>
-                </div>
-
-                <div class="filter-row" style="justify-content: flex-end;">
-                    <button class="btn" type="submit">搜索</button>
-                    <button class="btn btn-secondary" onclick="resetFilters()" style="margin-left: 1rem;" type="reset">
-                        重置
-                    </button>
-                </div>
-            </form>
+    <div class="decoration decoration-1"></div>
+    <div class="decoration decoration-2"></div>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">房屋租售系统</div>
+                <ul class="nav-links">
+                    <li><a class="active" href="tenant.html">首页</a></li>
+                    <li><a href="#" onclick="showSection('appointment')">预约记录 <span class="badge">3</span></a></li>
+                    <li><a href="#" onclick="showSection('favorites')">我的收藏 <span class="badge">5</span></a></li>
+                    <li><a href="#" onclick="showSection('profile')">个人中心</a></li>
+                    <li><span id="username"></span></li>
+                    <li><a class="btn btn-secondary" href="#" id="logoutBtn">登出</a></li>
+                </ul>
+            </nav>
         </div>
+    </header>
 
-        <!-- 房源列表 -->
-        <div style="margin: 2rem 0;">
-            <h3>房源列表</h3>
-            <div class="house-list" id="houseList">
-                <!-- 房源数据将通过JavaScript动态生成 -->
+    <div class="container">
+        <!-- 房源搜索和筛选 -->
+        <section class="section active" id="house-search">
+            <div class="filter-container">
+                <h3 style="margin-bottom: 1.5rem;">房源搜索</h3>
+
+                <form id="searchForm">
+                    <div class="filter-row">
+                        <div class="form-group">
+                            <label for="searchKeyword">关键词</label>
+                            <input id="searchKeyword" name="keyword" placeholder="请输入关键词" type="text">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="searchType">户型</label>
+                            <select id="searchType" name="type">
+                                <option value="">全部户型</option>
+                                <option value="平层">平层</option>
+                                <option value="跃层">跃层</option>
+                                <option value="错层">错层</option>
+                                <option value="复式">复式</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="minArea">最小面积 (㎡)</label>
+                            <input id="minArea" min="0" name="minArea" placeholder="最小" type="number">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="maxArea">最大面积 (㎡)</label>
+                            <input id="maxArea" min="0" name="maxArea" placeholder="最大" type="number">
+                        </div>
+                    </div>
+
+                    <div class="filter-row">
+                        <div class="form-group">
+                            <label for="minPrice">最低价格 (元/月)</label>
+                            <input id="minPrice" min="0" name="minPrice" placeholder="最低" type="number">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="maxPrice">最高价格 (元/月)</label>
+                            <input id="maxPrice" min="0" name="maxPrice" placeholder="最高" type="number">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="searchAddress">地址</label>
+                            <input id="searchAddress" name="address" placeholder="请输入地址" type="text">
+                        </div>
+                    </div>
+
+                    <div class="filter-row" style="justify-content: flex-end;">
+                        <button class="btn" type="submit">搜索</button>
+                        <button class="btn btn-secondary" onclick="resetFilters()" style="margin-left: 1rem;"
+                            type="reset">
+                            重置
+                        </button>
+                    </div>
+                </form>
             </div>
 
-            <!-- 分页 -->
-            <ul class="pagination" id="pagination"></ul>
-        </div>
-    </section>
+            <!-- 房源列表 -->
+            <div style="margin: 2rem 0;">
+                <h3>房源列表</h3>
+                <div class="house-list" id="houseList">
+                    <!-- 房源数据将通过JavaScript动态生成 -->
+                </div>
 
-    <!-- 预约记录 -->
-    <section class="section" id="appointment" style="display: none;">
-        <h2 style="margin: 2rem 0;">我的预约</h2>
-
-        <div class="card">
-            <div class="card-body">
-                <table class="table" id="appointmentTable">
-                    <thead>
-                    <tr>
-                        <th>订单ID</th>
-                        <th>房源</th>
-                        <th>房东</th>
-                        <th>预约时间</th>
-                        <th>预约地点</th>
-                        <th>状态</th>
-                        <th>操作</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <!-- 预约记录将通过JavaScript动态生成 -->
-                    </tbody>
-                </table>
+                <!-- 分页 -->
+                <ul class="pagination" id="pagination"></ul>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- 我的收藏 -->
-    <section class="section" id="favorites" style="display: none;">
-        <h2 style="margin: 2rem 0;">我的收藏</h2>
+        <!-- 预约记录 -->
+        <section class="section" id="appointment" style="display: none;">
+            <h2 style="margin: 2rem 0;">我的预约</h2>
 
-        <div class="house-list" id="favoritesList">
-            <!-- 收藏数据将通过JavaScript动态生成 -->
-        </div>
-    </section>
-
-    <!-- 个人中心 -->
-    <section class="section" id="profile" style="display: none;">
-        <h2 style="margin: 2rem 0;">个人中心</h2>
-
-        <div class="form-container">
-            <h3>个人信息</h3>
-            <form id="profileForm">
-                <div class="form-group">
-                    <label for="profileUsername">用户名</label>
-                    <input disabled id="profileUsername" name="username" type="text">
+            <div class="card">
+                <div class="card-body">
+                    <table class="table" id="appointmentTable">
+                        <thead>
+                            <tr>
+                                <th>订单ID</th>
+                                <th>房源</th>
+                                <th>房东</th>
+                                <th>预约时间</th>
+                                <th>预约地点</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- 预约记录将通过JavaScript动态生成 -->
+                        </tbody>
+                    </table>
                 </div>
+            </div>
+        </section>
 
-                <div class="form-group">
-                    <label for="profileRole">角色</label>
-                    <input disabled id="profileRole" name="role" type="text">
-                </div>
+        <!-- 我的收藏 -->
+        <section class="section" id="favorites" style="display: none;">
+            <h2 style="margin: 2rem 0;">我的收藏</h2>
 
-                <div class="form-group">
-                    <label for="newPassword">新密码</label>
-                    <input id="newPassword" maxlength="20" minlength="6" name="newPassword"
-                           placeholder="不修改密码请留空" type="password">
-                </div>
+            <div class="house-list" id="favoritesList">
+                <!-- 收藏数据将通过JavaScript动态生成 -->
+            </div>
+        </section>
 
-                <div class="form-group">
-                    <label for="confirmNewPassword">确认新密码</label>
-                    <input id="confirmNewPassword" name="confirmNewPassword" placeholder="请再次输入新密码"
-                           type="password">
-                </div>
+        <!-- 个人中心 -->
+        <section class="section" id="profile" style="display: none;">
+            <h2 style="margin: 2rem 0;">个人中心</h2>
 
-                <button class="btn" type="submit">保存修改</button>
-            </form>
-        </div>
-    </section>
-</div>
+            <div class="form-container">
+                <h3>个人信息</h3>
+                <form id="profileForm">
+                    <div class="form-group">
+                        <label for="profileUsername">用户名</label>
+                        <input disabled id="profileUsername" name="username" type="text">
+                    </div>
 
-<script src="assets/js/utils.js"></script>
-<script>
-    // 租客页面JS
-    function initTenantPage() {
-        // 初始化房源列表
-        initHouseList();
+                    <div class="form-group">
+                        <label for="profileRole">角色</label>
+                        <input disabled id="profileRole" name="role" type="text">
+                    </div>
 
-        // 搜索表单提交事件
-        document.getElementById('searchForm').addEventListener('submit', (e) => {
-            e.preventDefault();
+                    <div class="form-group">
+                        <label for="newPassword">新密码</label>
+                        <input id="newPassword" maxlength="20" minlength="6" name="newPassword" placeholder="不修改密码请留空"
+                            type="password">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmNewPassword">确认新密码</label>
+                        <input id="confirmNewPassword" name="confirmNewPassword" placeholder="请再次输入新密码" type="password">
+                    </div>
+
+                    <button class="btn" type="submit">保存修改</button>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <script src="assets/js/utils.js"></script>
+    <script>
+        // 租客页面JS
+        function initTenantPage() {
+            // 初始化房源列表
             initHouseList();
-        });
 
-        // 初始化收藏列表
-        initFavoritesList();
-    }
+            // 搜索表单提交事件
+            document.getElementById('searchForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                initHouseList();
+            });
 
-    // 初始化房源列表
-    function initHouseList() {
-        // 显示加载进度条
-        showProgressBar();
-        
-        // 模拟房源数据
-        const mockHouses = [
-            {
-                id: 1,
-                title: '阳光小区 3室2厅',
-                type: '平层',
-                area: 120,
-                price: 3500,
-                address: '北京市朝阳区阳光路1号',
-                image: 'https://picsum.photos/seed/house1/300/200'
-            },
-            {
-                id: 2,
-                title: '幸福家园 2室1厅',
-                type: '跃层',
-                area: 85,
-                price: 2800,
-                address: '北京市海淀区幸福路2号',
-                image: 'https://picsum.photos/seed/house2/300/200'
-            },
-            {
-                id: 3,
-                title: '和谐社区 4室2厅',
-                type: '复式',
-                area: 150,
-                price: 4500,
-                address: '北京市西城区和谐路3号',
-                image: 'https://picsum.photos/seed/house3/300/200'
-            },
-            {
-                id: 4,
-                title: '美好家园 1室1厅',
-                type: '平层',
-                area: 50,
-                price: 1800,
-                address: '北京市东城区美好路4号',
-                image: 'https://picsum.photos/seed/house4/300/200'
-            },
-            {
-                id: 5,
-                title: '温馨小区 3室1厅',
-                type: '错层',
-                area: 100,
-                price: 3200,
-                address: '北京市丰台区温馨路5号',
-                image: 'https://picsum.photos/seed/house5/300/200'
+            // 初始化收藏列表
+            initFavoritesList();
+
+            // 初始化预约记录
+            initAppointmentList();
+
+            // 获取当前用户信息
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                document.getElementById('username').textContent = user.username;
+                document.getElementById('profileUsername').value = user.username;
+                document.getElementById('profileRole').value = user.role;
             }
-        ];
+        }
 
-        // 获取收藏列表
-        const favorites = getFavorites();
+        // 初始化房源列表
+        async function initHouseList() {
+            // 显示加载进度条
+            showProgressBar();
 
-        const houseList = document.getElementById('houseList');
-        houseList.innerHTML = mockHouses.map(house => {
-            const isFavorited = favorites.some(fav => fav.id === house.id);
-            return `
+            try {
+                const token = localStorage.getItem('token');
+
+                // 获取搜索参数
+                const keyword = document.getElementById('searchKeyword').value;
+                const type = document.getElementById('searchType').value;
+                const minArea = document.getElementById('minArea').value;
+                const maxArea = document.getElementById('maxArea').value;
+                const minPrice = document.getElementById('minPrice').value;
+                const maxPrice = document.getElementById('maxPrice').value;
+                const address = document.getElementById('searchAddress').value;
+
+                // 构建查询参数
+                let queryParams = new URLSearchParams();
+                if (keyword) queryParams.append('keyword', keyword);
+                if (type) queryParams.append('type', type);
+                if (minArea) queryParams.append('minArea', minArea);
+                if (maxArea) queryParams.append('maxArea', maxArea);
+                if (minPrice) queryParams.append('minPrice', minPrice);
+                if (maxPrice) queryParams.append('maxPrice', maxPrice);
+                if (address) queryParams.append('address', address);
+
+                const response = await fetch(`/api/houses?${queryParams.toString()}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('获取房源列表失败');
+                }
+
+                const result = await response.json();
+                const houses = result.data.houses;
+
+                // 获取收藏状态
+                const favorites = await getUserFavorites();
+                const favoriteHouseIds = favorites.map(fav => fav.house.id);
+
+                const houseList = document.getElementById('houseList');
+                houseList.innerHTML = houses.map(house => {
+                    const isFavorited = favoriteHouseIds.includes(house.id);
+                    // 处理图片显示
+                    let imageUrl = 'https://picsum.photos/seed/house' + house.id + '/300/200';
+                    if (house.images) {
+                        try {
+                            const images = JSON.parse(house.images);
+                            if (images.length > 0) {
+                                imageUrl = images[0];
+                            }
+                        } catch (e) {
+                            console.error('解析图片失败:', e);
+                        }
+                    }
+
+                    return `
         <div class="house-card">
-            <img src="${house.image}" alt="${house.title}" class="house-image">
+            <img src="${imageUrl}" alt="${house.title}" class="house-image">
             <div class="house-info">
                 <h4 class="house-title">${house.title}</h4>
                 <div class="house-meta">
-                    <span>户型：${house.type}</span>
+                    <span>户型：${house.houseType}</span>
                     <span>面积：${house.area}㎡</span>
                 </div>
                 <div class="house-price">¥${house.price}/月</div>
@@ -272,38 +286,54 @@
             </div>
         </div>
     `;
-        }).join('');
-    }
-
-    // 初始化收藏列表
-    function initFavoritesList() {
-        // 显示加载进度条
-        showProgressBar();
-        
-        // 获取收藏列表
-        const favorites = getFavorites();
-
-        const favoritesList = document.getElementById('favoritesList');
-
-        if (favorites.length === 0) {
-            favoritesList.innerHTML = '<p style="text-align: center; color: #666; margin: 2rem 0;">您还没有收藏任何房源</p>';
-
-            // 隐藏加载进度条
-            setTimeout(() => {
+                }).join('');
+            } catch (error) {
+                console.error('初始化房源列表失败:', error);
+                showMessage('获取房源列表失败', 'error');
+            } finally {
+                // 隐藏加载进度条
                 hideProgressBar();
-            }, 500);
-            
-            return;
+            }
         }
 
-        // 渲染收藏列表
-        favoritesList.innerHTML = favorites.map(house => `
+        // 初始化收藏列表
+        async function initFavoritesList() {
+            // 显示加载进度条
+            showProgressBar();
+
+            try {
+                const favorites = await getUserFavorites();
+
+                const favoritesList = document.getElementById('favoritesList');
+
+                if (favorites.length === 0) {
+                    favoritesList.innerHTML = '<p style="text-align: center; color: #666; margin: 2rem 0;">您还没有收藏任何房源</p>';
+                    return;
+                }
+
+                // 渲染收藏列表
+                favoritesList.innerHTML = favorites.map(fav => {
+                    const house = fav.house;
+                    // 处理图片显示
+                    let imageUrl = 'https://picsum.photos/seed/house' + house.id + '/300/200';
+                    if (house.images) {
+                        try {
+                            const images = JSON.parse(house.images);
+                            if (images.length > 0) {
+                                imageUrl = images[0];
+                            }
+                        } catch (e) {
+                            console.error('解析图片失败:', e);
+                        }
+                    }
+
+                    return `
         <div class="house-card">
-            <img src="${house.image}" alt="${house.title}" class="house-image">
+            <img src="${imageUrl}" alt="${house.title}" class="house-image">
             <div class="house-info">
                 <h4 class="house-title">${house.title}</h4>
                 <div class="house-meta">
-                    <span>户型：${house.type}</span>
+                    <span>户型：${house.houseType}</span>
                     <span>面积：${house.area}㎡</span>
                 </div>
                 <div class="house-price">¥${house.price}/月</div>
@@ -315,161 +345,238 @@
                 </div>
             </div>
         </div>
-    `).join('');
-
-        // 隐藏加载进度条
-        setTimeout(() => {
-            hideProgressBar();
-        }, 500);
-    }
-
-    // 查看房源详情
-    function viewHouseDetail(houseId) {
-        window.location.href = `house-detail.html?id=${houseId}`;
-    }
-
-    // 预约看房
-    function bookHouse(houseId) {
-        window.location.href = `house-detail.html?id=${houseId}&action=book`;
-    }
-
-    // 获取收藏列表
-    function getFavorites() {
-        const favorites = localStorage.getItem('favorites');
-        return favorites ? JSON.parse(favorites) : [];
-    }
-
-    // 保存收藏列表
-    function saveFavorites(favorites) {
-        localStorage.setItem('favorites', JSON.stringify(favorites));
-    }
-
-    // 切换收藏状态
-    function toggleFavorite(houseId, button) {
-        // 模拟房源数据
-        const mockHouses = [
-            {
-                id: 1,
-                title: '阳光小区 3室2厅',
-                type: '平层',
-                area: 120,
-                price: 3500,
-                address: '北京市朝阳区阳光路1号',
-                image: 'https://picsum.photos/seed/house1/300/200'
-            },
-            {
-                id: 2,
-                title: '幸福家园 2室1厅',
-                type: '跃层',
-                area: 85,
-                price: 2800,
-                address: '北京市海淀区幸福路2号',
-                image: 'https://picsum.photos/seed/house2/300/200'
-            },
-            {
-                id: 3,
-                title: '和谐社区 4室2厅',
-                type: '复式',
-                area: 150,
-                price: 4500,
-                address: '北京市西城区和谐路3号',
-                image: 'https://picsum.photos/seed/house3/300/200'
-            },
-            {
-                id: 4,
-                title: '美好家园 1室1厅',
-                type: '平层',
-                area: 50,
-                price: 1800,
-                address: '北京市东城区美好路4号',
-                image: 'https://picsum.photos/seed/house4/300/200'
-            },
-            {
-                id: 5,
-                title: '温馨小区 3室1厅',
-                type: '错层',
-                area: 100,
-                price: 3200,
-                address: '北京市丰台区温馨路5号',
-                image: 'https://picsum.photos/seed/house5/300/200'
+    `;
+                }).join('');
+            } catch (error) {
+                console.error('初始化收藏列表失败:', error);
+                showMessage('获取收藏列表失败', 'error');
+            } finally {
+                // 隐藏加载进度条
+                hideProgressBar();
             }
-        ];
-
-        const house = mockHouses.find(h => h.id === houseId);
-        if (!house) return;
-
-        let favorites = getFavorites();
-
-        if (button.classList.contains('favorited')) {
-            // 取消收藏
-            favorites = favorites.filter(fav => fav.id !== houseId);
-            button.textContent = '收藏';
-            button.classList.remove('favorited');
-            showMessage('取消收藏成功', 'success');
-        } else {
-            // 添加收藏
-            favorites.push(house);
-            button.textContent = '取消收藏';
-            button.classList.add('favorited');
-            showMessage('收藏成功', 'success');
         }
 
-        // 保存收藏列表
-        saveFavorites(favorites);
+        // 初始化预约记录
+        async function initAppointmentList() {
+            // 显示加载进度条
+            showProgressBar();
 
-        // 如果当前显示的是收藏列表，更新收藏列表
-        const currentSection = document.querySelector('.section.active');
-        if (currentSection && currentSection.id === 'favorites') {
-            initFavoritesList();
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/appointments', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('获取预约记录失败');
+                }
+
+                const result = await response.json();
+                const appointments = result.data.appointments;
+
+                const tbody = document.getElementById('appointmentTable').getElementsByTagName('tbody')[0];
+                tbody.innerHTML = appointments.map(appointment => `
+                <tr>
+                    <td>${appointment.id}</td>
+                    <td>${appointment.house.title}</td>
+                    <td>${appointment.landlord.username}</td>
+                    <td>${appointment.appointmentTime}</td>
+                    <td>${appointment.location}</td>
+                    <td>${getStatusText(appointment.status)}</td>
+                    <td>
+                        ${appointment.status === 'pending' ?
+                        '<button class="btn btn-danger btn-sm" onclick="cancelAppointment(' + appointment.id + ')">取消预约</button>' :
+                        '<button class="btn btn-secondary btn-sm" disabled>查看</button>'
+                    }
+                    </td>
+                </tr>
+            `).join('');
+            } catch (error) {
+                console.error('初始化预约记录失败:', error);
+                showMessage('获取预约记录失败', 'error');
+            } finally {
+                // 隐藏加载进度条
+                hideProgressBar();
+            }
         }
-    }
 
-    // 重置筛选条件
-    function resetFilters() {
-        document.getElementById('searchForm').reset();
-        initHouseList();
-    }
-
-    // 重写showSection函数，添加收藏列表初始化
-    window.showSection = function(sectionId) {
-        // 隐藏所有section
-        document.querySelectorAll('.section').forEach(section => {
-            section.style.display = 'none';
-        });
-
-        // 显示指定section
-        document.getElementById(sectionId).style.display = 'block';
-
-        // 更新导航激活状态
-        document.querySelectorAll('.nav-links a').forEach(link => {
-            link.classList.remove('active');
-        });
-
-        // 如果是导航链接，添加激活状态
-        const activeLink = document.querySelector(`.nav-links a[onclick="showSection('${sectionId}')"]`);
-        if (activeLink) {
-            activeLink.classList.add('active');
+        // 获取状态文本
+        function getStatusText(status) {
+            const statusMap = {
+                'pending': '待处理',
+                'approved': '已批准',
+                'rejected': '已拒绝',
+                'completed': '已完成',
+                'cancelled': '已取消'
+            };
+            return statusMap[status] || status;
         }
 
-        // 如果切换到收藏列表，初始化收藏列表
-        if (sectionId === 'favorites') {
-            initFavoritesList();
+        // 查看房源详情
+        function viewHouseDetail(houseId) {
+            window.location.href = `house-detail.html?id=${houseId}`;
         }
-    }
 
-    // 页面加载完成后初始化
-    document.addEventListener('DOMContentLoaded', () => {
-        initTenantPage();
-        
-        // 登出按钮事件
-        const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                logout();
+        // 预约看房
+        function bookHouse(houseId) {
+            window.location.href = `house-detail.html?id=${houseId}&action=book`;
+        }
+
+        // 获取用户收藏列表
+        async function getUserFavorites() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/favorites', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('获取收藏列表失败');
+                }
+
+                const result = await response.json();
+                return result.data;
+            } catch (error) {
+                console.error('获取收藏列表失败:', error);
+                return [];
+            }
+        }
+
+        // 切换收藏状态
+        async function toggleFavorite(houseId, button) {
+            try {
+                const token = localStorage.getItem('token');
+                const user = JSON.parse(localStorage.getItem('user'));
+
+                if (button.classList.contains('favorited')) {
+                    // 取消收藏
+                    const response = await fetch(`/api/favorites/${houseId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('取消收藏失败');
+                    }
+
+                    button.classList.remove('favorited');
+                    showMessage('取消收藏成功', 'success');
+                } else {
+                    // 添加收藏
+                    const response = await fetch('/api/favorites', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            userId: user.id,
+                            houseId: houseId
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('添加收藏失败');
+                    }
+
+                    button.classList.add('favorited');
+                    showMessage('收藏成功', 'success');
+                }
+
+                // 如果当前显示的是收藏列表，更新收藏列表
+                const currentSection = document.querySelector('.section.active');
+                if (currentSection && currentSection.id === 'favorites') {
+                    initFavoritesList();
+                }
+            } catch (error) {
+                console.error('切换收藏状态失败:', error);
+                showMessage(error.message, 'error');
+            }
+        }
+
+        // 取消预约
+        async function cancelAppointment(appointmentId) {
+            if (confirm('确定要取消这个预约吗？')) {
+                try {
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`/api/appointments/${appointmentId}/cancel`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('取消预约失败');
+                    }
+
+                    showMessage('预约已取消', 'success');
+                    initAppointmentList();
+                } catch (error) {
+                    console.error('取消预约失败:', error);
+                    showMessage(error.message, 'error');
+                }
+            }
+        }
+
+        // 重置筛选条件
+        function resetFilters() {
+            document.getElementById('searchForm').reset();
+            initHouseList();
+        }
+
+        // 重写showSection函数，添加收藏列表和预约记录初始化
+        window.showSection = function (sectionId) {
+            // 隐藏所有section
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
             });
+
+            // 显示指定section
+            document.getElementById(sectionId).style.display = 'block';
+
+            // 更新导航激活状态
+            document.querySelectorAll('.nav-links a').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // 如果是导航链接，添加激活状态
+            const activeLink = document.querySelector(`.nav-links a[onclick="showSection('${sectionId}')"]`);
+            if (activeLink) {
+                activeLink.classList.add('active');
+            }
+
+            // 如果切换到收藏列表，初始化收藏列表
+            if (sectionId === 'favorites') {
+                initFavoritesList();
+            }
+
+            // 如果切换到预约记录，初始化预约记录
+            if (sectionId === 'appointment') {
+                initAppointmentList();
+            }
         }
-    });
-</script>
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            initTenantPage();
+
+            // 登出按钮事件
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    logout();
+                });
+            }
+        });
+    </script>
 </body>
+
 </html>
