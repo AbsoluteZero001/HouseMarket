@@ -22,54 +22,51 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
 
-    /**
-     * 构造函数，通过依赖注入方式获取JwtUtil实例
-     *
-     * @param jwtUtil JWT工具类实例
-     */
     public JwtFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
     }
 
-    /**
-     * 核心过滤方法，在每次请求时执行
-     * @param request HTTP请求对象
-     * @param response HTTP响应对象
-     * @param chain 过滤器链
-     * @throws ServletException Servlet异常
-     * @throws IOException IO异常
-     */
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-            throws ServletException, IOException {
+    protected void doFilterInternal(
+            HttpServletRequest request,
+            HttpServletResponse response,
+            FilterChain chain
+    ) throws ServletException, IOException {
 
-        // 从请求头中获取Authorization字段
-        final String requestTokenHeader = request.getHeader("Authorization");
+        String authHeader = request.getHeader("Authorization");
 
-        String username = null;
-        String jwtToken = null;
-
-        // JWT Token is in the form "Bearer token". Remove Bearer word and get only the Token
-        if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
-            jwtToken = requestTokenHeader.substring(7);
-            try {
-                username = jwtUtil.extractUsername(jwtToken);
-            } catch (Exception e) {
-                logger.warn("Unable to get JWT Token");
-            }
+        // 1. 请求中没有 JWT，直接放行（这是正常情况）
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            chain.doFilter(request, response);
+            return;
         }
 
-        // Once we get the token validate it.
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+        String jwtToken = authHeader.substring(7);
+        String username;
 
-            // We have to configure UserDetails service class to fetch user details from database
-            UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
-                    username, null, null);
-            usernamePasswordAuthenticationToken
-                    .setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+        try {
+            username = jwtUtil.extractUsername(jwtToken);
+        } catch (Exception e) {
+            // Token 非法 / 过期，不是系统错误，不打 WARN
+            chain.doFilter(request, response);
+            return;
         }
+
+        // 2. 已解析出用户名，且当前未认证，才注入认证信息
+        if (username != null &&
+                SecurityContextHolder.getContext().getAuthentication() == null) {
+
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(username, null, null);
+
+            authentication.setDetails(
+                    new WebAuthenticationDetailsSource().buildDetails(request)
+            );
+
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+        }
+
         chain.doFilter(request, response);
     }
-
 }
+
