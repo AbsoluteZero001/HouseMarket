@@ -182,6 +182,32 @@
     <script>
         // 租客页面JS
         function initTenantPage() {
+            // 获取当前用户信息
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+                if (user && user.id) {
+                    document.getElementById('username').textContent = user.username;
+                    document.getElementById('profileUsername').value = user.username;
+                    document.getElementById('profileRole').value = user.role;
+                } else {
+                    // 用户信息无效
+                    console.error("用户 ID 无效或不存在");
+                    alert("用户信息无效，请重新登录");
+                    // 清除无效的用户信息并重定向到登录页面
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('token');
+                    window.location.href = "/login.html";  // 重定向到登录页面
+                    return; // 立即返回，不继续执行后续初始化
+                }
+            } else {
+                // 未找到用户信息
+                console.error("未找到用户信息");
+                alert("未找到用户信息，请重新登录");
+                window.location.href = "/login.html";  // 强制跳转到登录页面
+                return; // 立即返回，不继续执行后续初始化
+            }
+
             // 初始化房源列表
             initHouseList();
 
@@ -196,15 +222,6 @@
 
             // 初始化预约记录
             initAppointmentList();
-
-            // 获取当前用户信息
-            const userStr = localStorage.getItem('user');
-            if (userStr) {
-                const user = JSON.parse(userStr);
-                document.getElementById('username').textContent = user.username;
-                document.getElementById('profileUsername').value = user.username;
-                document.getElementById('profileRole').value = user.role;
-            }
         }
 
         // 初始化房源列表

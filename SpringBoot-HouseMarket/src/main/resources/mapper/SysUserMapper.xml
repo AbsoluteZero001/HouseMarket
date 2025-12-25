@@ -6,20 +6,14 @@
         <id property="id" column="id"/>
         <result property="username" column="username"/>
         <result property="password" column="password"/>
-        <result property="realName" column="real_name"/>
         <result property="role" column="role"/>
-        <result property="phone" column="phone"/>
-        <result property="avatar" column="avatar"/>
-        <result property="createTime" column="create_time"/>
-        <result property="updateTime" column="update_time"/>
-        <result property="isDeleted" column="is_deleted"/>
+        <result property="status" column="status"/>
     </resultMap>
 
     <select id="selectByUsername" parameterType="string" resultMap="sysUserResultMap">
-        SELECT *
-        FROM sys_user
+        SELECT id, username, password, role, status
+        FROM users
         WHERE username = #{username}
-          AND is_deleted = 0
     </select>
 
 </mapper>

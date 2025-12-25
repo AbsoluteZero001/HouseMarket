@@ -208,6 +208,30 @@
 <script>
     // 管理员页面JS
     function initAdminPage() {
+        // 获取当前用户信息
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            if (user && user.id) {
+                document.getElementById('username').textContent = user.username;
+            } else {
+                // 用户信息无效
+                console.error("用户 ID 无效或不存在");
+                alert("用户信息无效，请重新登录");
+                // 清除无效的用户信息并重定向到登录页面
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                window.location.href = "/login.html";  // 重定向到登录页面
+                return; // 立即返回，不继续执行后续初始化
+            }
+        } else {
+            // 未找到用户信息
+            console.error("未找到用户信息");
+            alert("未找到用户信息，请重新登录");
+            window.location.href = "/login.html";  // 强制跳转到登录页面
+            return; // 立即返回，不继续执行后续初始化
+        }
+
         // 初始化预约管理
         initAppointmentManage();
 

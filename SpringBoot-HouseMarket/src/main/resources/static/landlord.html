@@ -248,10 +248,30 @@
 
 <script src="assets/js/utils.js"></script>
 <script>
-    // 房东页面JS
     function initLandlordPage() {
-        // 初始化房源列表
-        initHouseList();
+        // 获取当前用户信息
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            if (user && user.id) {
+                // 如果用户信息有效，继续初始化页面内容
+                document.getElementById('username').textContent = user.username;
+                initHouseList(user.id);  // 传递有效的 user.id
+            } else {
+                // 用户信息无效
+                console.error("用户 ID 无效或不存在");
+                alert("用户信息无效，请重新登录");
+                // 清除无效的用户信息并重定向到登录页面
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                window.location.href = "/login.html";  // 重定向到登录页面
+            }
+        } else {
+            // 未找到用户信息
+            console.error("未找到用户信息");
+            alert("未找到用户信息，请重新登录");
+            window.location.href = "/login.html";  // 强制跳转到登录页面
+        }
 
         // 初始化预约记录
         initAppointmentList();
@@ -262,47 +282,18 @@
 
         // 绑定表单提交事件
         bindFormEvents();
-
-        // 获取当前用户信息
-        const userStr = localStorage.getItem('user');
-        if (userStr) {
-            const user = JSON.parse(userStr);
-            document.getElementById('username').textContent = user.username;
-        }
-    }
-
-    // 绑定表单事件
-    function bindFormEvents() {
-        // 新增房源表单提交
-        const addHouseForm = document.getElementById('addHouseForm');
-        if (addHouseForm) {
-            addHouseForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await addHouse();
-            });
-        }
-
-        // 编辑房源表单提交
-        const editHouseForm = document.getElementById('editHouseForm');
-        if (editHouseForm) {
-            editHouseForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                await updateHouse();
-            });
-        }
     }
 
     // 初始化房源列表
-    async function initHouseList() {
+    async function initHouseList(userId) {
         // 显示加载进度条
         showProgressBar();
         
         try {
             const token = localStorage.getItem('token');
-            const user = JSON.parse(localStorage.getItem('user'));
 
             // 获取房东自己的房源列表
-            const response = await fetch(`/api/houses/landlord/${user.id}`, {
+            const response = await fetch(`/api/houses/landlord/${userId}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }

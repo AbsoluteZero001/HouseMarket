@@ -1,7 +1,9 @@
 package com.springboot.springboothousemarket.Controller;
 
+import com.springboot.springboothousemarket.Entity.SysUser;
 import com.springboot.springboothousemarket.Service.CaptchaService;
 import com.springboot.springboothousemarket.Service.RegisterRequestService;
+import com.springboot.springboothousemarket.Service.SysUserService;
 import com.springboot.springboothousemarket.Util.JwtUtil;
 import com.springboot.springboothousemarket.dto.LoginRequest;
 import com.springboot.springboothousemarket.dto.LoginResponse;
@@ -22,11 +24,13 @@ public class RegisterRequestController {
     private final RegisterRequestService service;
     private final CaptchaService captchaService;
     private final JwtUtil jwtUtil;
+    private final SysUserService sysUserService;
 
-    public RegisterRequestController(RegisterRequestService service, CaptchaService captchaService, JwtUtil jwtUtil) {
+    public RegisterRequestController(RegisterRequestService service, CaptchaService captchaService, JwtUtil jwtUtil, SysUserService sysUserService) {
         this.service = service;
         this.captchaService = captchaService;
         this.jwtUtil = jwtUtil;
+        this.sysUserService = sysUserService;
     }
 
     @PostMapping("/register")
@@ -48,9 +52,20 @@ public class RegisterRequestController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         try {
-            RegisterRequest user = service.login(request.getUsername(), request.getPassword(), request.getRole());
-            String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
-            return ResponseEntity.ok(new LoginResponse(200, "登录成功", user, token));
+            // 验证用户登录
+            RegisterRequest tempUser = service.login(request.getUsername(), request.getPassword(), request.getRole());
+            if (tempUser == null) {
+                return ResponseEntity.badRequest().body(new LoginResponse(400, "登录失败", null, null));
+            }
+
+            // 获取完整的用户信息（包含ID）
+            SysUser fullUser = sysUserService.getUserByUsername(request.getUsername());
+            if (fullUser == null) {
+                return ResponseEntity.badRequest().body(new LoginResponse(400, "用户信息不存在", null, null));
+            }
+
+            String token = jwtUtil.generateToken(fullUser.getUsername(), fullUser.getRole());
+            return ResponseEntity.ok(new LoginResponse(200, "登录成功", fullUser, token));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new LoginResponse(400, e.getMessage(), null, null));
         }
