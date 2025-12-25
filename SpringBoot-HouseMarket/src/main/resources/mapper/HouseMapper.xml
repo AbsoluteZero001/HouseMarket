@@ -9,7 +9,7 @@
         <result property="description" column="description"/>
         <result property="address" column="address"/>
         <result property="price" column="price"/>
-        <result property="houseType" column="house_type"/>
+        <result property="houseType" column="type"/>
         <result property="images" column="images"/>
         <result property="status" column="status"/>
         <result property="createTime" column="create_time"/>
@@ -19,26 +19,26 @@
 
     <select id="selectByLandlordId" resultMap="houseResultMap">
         SELECT *
-        FROM house
+        FROM houses
         WHERE landlord_id = #{landlordId}
           AND is_deleted = 0
     </select>
 
     <select id="selectByConditions" parameterType="map" resultMap="houseResultMap">
         SELECT *
-        FROM house
+        FROM houses
         WHERE is_deleted = 0
         <if test="keyword != null and keyword != ''">
             AND (title LIKE CONCAT('%', #{keyword}, '%') OR description LIKE CONCAT('%', #{keyword}, '%'))
         </if>
         <if test="type != null and type != ''">
-            AND house_type = #{type}
+            AND type = #{type}
         </if>
         <if test="minArea != null">
-            AND price >= #{minArea}
+            AND area >= #{minArea}
         </if>
         <if test="maxArea != null">
-            AND price &lt;= #{maxArea}
+            AND area &lt;= #{maxArea}
         </if>
         <if test="minPrice != null">
             AND price >= #{minPrice}

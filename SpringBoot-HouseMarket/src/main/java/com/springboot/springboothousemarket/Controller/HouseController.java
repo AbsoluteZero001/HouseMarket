@@ -2,8 +2,12 @@ package com.springboot.springboothousemarket.Controller; // 包声明，表示�
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.springboot.springboothousemarket.Entity.House;
+import com.springboot.springboothousemarket.Entity.SysUser;
 import com.springboot.springboothousemarket.Service.HouseService;
+import com.springboot.springboothousemarket.Service.SysUserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -21,14 +25,17 @@ import java.util.Map;
 public class HouseController { // 房源控制器类定义
 
     private final HouseService houseService; // 房源服务接口，用于处理业务逻辑
+    private final SysUserService sysUserService; // 用户服务接口，用于获取用户信息
 
     /**
      * 构造函数，通过依赖注入方式获取HouseService实例
      *
      * @param houseService 房源服务接口实现
+     * @param sysUserService 用户服务接口实现
      */
-    public HouseController(HouseService houseService) {
+    public HouseController(HouseService houseService, SysUserService sysUserService) {
         this.houseService = houseService;
+        this.sysUserService = sysUserService;
     }
 
     /**
@@ -38,6 +45,9 @@ public class HouseController { // 房源控制器类定义
      */
     @PostMapping // POST请求映射，处理创建资源的请求
     public House createHouse(@RequestBody House house) { // 接收请求体中的房源信息
+        // 设置当前登录用户为房东
+        Long userId = getCurrentUserId();
+        house.setLandlordId(userId); // 设置当前用户为房东
         return houseService.createHouse(house); // 调用服务层方法创建房源
     }
 
@@ -77,6 +87,14 @@ public class HouseController { // 房源控制器类定义
      */
     @PutMapping("/{id}") // PUT请求映射，处理更新资源的请求
     public House updateHouse(@PathVariable Long id, @RequestBody House house) { // 从路径获取ID，从请求体获取更新数据
+        // 验证房源是否属于当前用户
+        House existingHouse = houseService.getHouseById(id);
+        if (existingHouse != null) {
+            Long currentUserId = getCurrentUserId();
+            if (!existingHouse.getLandlordId().equals(currentUserId)) {
+                throw new SecurityException("没有权限修改此房源");
+            }
+        }
         return houseService.updateHouse(id, house); // 调用服务层方法更新房源
     }
 
@@ -87,6 +105,14 @@ public class HouseController { // 房源控制器类定义
      */
     @DeleteMapping("/{id}") // DELETE请求映射，处理删除资源的请求
     public boolean deleteHouse(@PathVariable Long id) { // 从路径中获取房源ID
+        // 验证房源是否属于当前用户
+        House existingHouse = houseService.getHouseById(id);
+        if (existingHouse != null) {
+            Long currentUserId = getCurrentUserId();
+            if (!existingHouse.getLandlordId().equals(currentUserId)) {
+                throw new SecurityException("没有权限删除此房源");
+            }
+        }
         return houseService.deleteHouse(id); // 调用服务层方法删除房源
     }
 
@@ -137,6 +163,29 @@ public class HouseController { // 房源控制器类定义
      */
     @GetMapping("/landlord/{landlordId}") // GET请求映射，处理获取特定房东房源列表的请求
     public List<House> getHousesByLandlordId(@PathVariable Long landlordId) { // 从路径中获取房东ID
+        // 验证访问权限：只能访问自己的房源
+        Long currentUserId = getCurrentUserId();
+        if (!landlordId.equals(currentUserId)) {
+            throw new SecurityException("没有权限访问此房源列表");
+        }
         return houseService.getHousesByLandlordId(landlordId); // 调用服务层方法获取指定房东的房源列表
+    }
+
+    /**
+     * 获取当前登录用户的ID
+     *
+     * @return 用户ID
+     */
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated() && !authentication.getName().equals("anonymousUser")) {
+            String username = authentication.getName();
+            // 通过用户名获取用户ID
+            SysUser user = sysUserService.getUserByUsername(username);
+            if (user != null) {
+                return user.getId();
+            }
+        }
+        return null;
     }
 }

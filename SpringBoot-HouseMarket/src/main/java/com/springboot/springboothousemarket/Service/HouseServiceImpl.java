@@ -50,7 +50,10 @@ public class HouseServiceImpl extends ServiceImpl<HouseMapper, House> implements
 
     @Override
     public List<House> getHousesByLandlordId(Long landlordId) {
-        return houseMapper.selectByLandlordId(landlordId);
+        QueryWrapper<House> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("landlord_id", landlordId)
+                .eq("is_deleted", 0);
+        return houseMapper.selectList(queryWrapper);
     }
 
     @Override

@@ -46,14 +46,15 @@ public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> impl
     }
 
     @Override
+    public SysUser getUserByUsername(String username) {
+        return sysUserMapper.selectByUsername(username);
+    }
+
+    @Override
     public List<SysUser> getAllUsers() {
         QueryWrapper<SysUser> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("is_deleted", 0);
         return sysUserMapper.selectList(queryWrapper);
     }
 
-    @Override
-    public SysUser getUserByUsername(String username) {
-        return sysUserMapper.selectByUsername(username);
-    }
 }

@@ -299,7 +299,10 @@
         
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('/api/houses', {
+            const user = JSON.parse(localStorage.getItem('user'));
+
+            // 获取房东自己的房源列表
+            const response = await fetch(`/api/houses/landlord/${user.id}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -309,8 +312,7 @@
                 throw new Error('获取房源列表失败');
             }
 
-            const result = await response.json();
-            const houses = result.data.houses;
+            const houses = await response.json();
 
             const tbody = document.getElementById('houseTable').getElementsByTagName('tbody')[0];
             tbody.innerHTML = houses.map(house => `
@@ -483,7 +485,6 @@
                 price: parseFloat(formData.get('price')),
                 address: formData.get('address'),
                 description: formData.get('description'),
-                landlordId: user.id,
                 status: 0, // 待审核
                 images: JSON.stringify([]) // 暂时空数组，后续可扩展图片上传
             };
