@@ -1,11 +1,10 @@
-package com.springboot.springboothousemarket.Service.Impl;
+package com.springboot.springboothousemarket.Service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.springboot.springboothousemarket.Entity.Houses;
 import com.springboot.springboothousemarket.Mapper.HousesMapper;
-import com.springboot.springboothousemarket.Service.HousesService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
