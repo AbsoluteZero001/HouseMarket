@@ -193,9 +193,9 @@ div[class*="decoration"] {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1600px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 40px;
 }
 
 header {
@@ -508,100 +508,101 @@ nav {
 
 .house-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.5rem;
-    margin: 1.5rem 0;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2rem;
+    margin: 2rem 0;
+    max-width: 100%;
 }
 
 .house-card {
     background: linear-gradient(145deg, #ffffff, #f8f9fa);
     border-radius: 20px;
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), 0 0 0 2px rgba(255, 107, 107, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15), 0 0 0 2px rgba(255, 107, 107, 0.1);
     overflow: hidden;
-    transition: all 0.4s ease;
+    transition: all 0.3s ease;
     backdrop-filter: blur(10px);
     border: 2px solid rgba(255, 255, 255, 0.8);
     position: relative;
     padding: 0;
+    display: flex;
+    flex-direction: row;
+    min-height: 250px;
+    height: auto;
+    width: 100%;
 }
 
 .house-card:hover {
-    transform: translateY(-15px) scale(1.03);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25), 0 0 0 3px rgba(255, 107, 107, 0.2);
-    border-color: rgba(255, 107, 107, 0.4);
+    transform: translateY(-5px) scale(1.01);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2), 0 0 0 2px rgba(255, 107, 107, 0.2);
+    border-color: rgba(255, 107, 107, 0.3);
 }
 
 .house-image-container {
     position: relative;
-    width: 100%;
-    padding-bottom: 60%; /* 调整比例 */
+    width: 40%;
+    min-width: 180px;
+    height: 100%;
     overflow: hidden;
     background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
-    border-bottom: 3px solid rgba(255, 107, 107, 0.2);
+    border-right: 3px solid rgba(255, 107, 107, 0.2);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 4/3;
 }
 
 .house-image {
-    position: absolute;
-    top: 0;
-    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
     transition: all 0.4s ease;
-    border-radius: 20px 20px 0 0;
+    display: block;
 }
 
 .house-image:hover {
-    transform: scale(1.1);
+    transform: scale(1.05);
     filter: brightness(1.05) contrast(1.05);
 }
 
-/* 图片悬停遮罩效果 */
-.house-image-container::before {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 60px;
-    background: linear-gradient(to top, rgba(255, 255, 255, 0.9), transparent);
-    z-index: 1;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.house-card:hover .house-image-container::before {
-    opacity: 1;
-}
-
 .house-info {
-    padding: 2rem;
+    padding: 1rem;
     position: relative;
     z-index: 2;
     background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.9));
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: visible;
+    overflow-x: hidden;
+    justify-content: space-between;
 }
 
 .house-title {
-    font-size: 1.6rem;
-    font-weight: 900;
-    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin-bottom: 0.3rem;
     color: #2d3436;
-    line-height: 1.3;
+    line-height: 1.2;
     transition: all 0.3s ease;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
 .house-title .house-id-badge {
     background: linear-gradient(45deg, #ff6b6b, #ff8e53);
     color: white;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     font-weight: 700;
-    padding: 0.3rem 0.8rem;
-    border-radius: 20px;
+    padding: 0.2rem 0.6rem;
+    border-radius: 15px;
     box-shadow: 0 4px 10px rgba(255, 107, 107, 0.3);
+    margin-left: 0.5rem;
+    white-space: nowrap;
 }
 
 .house-card:hover .house-title {
@@ -613,74 +614,85 @@ nav {
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    font-size: 2.2rem;
+    font-size: 1.5rem;
     font-weight: 900;
-    margin: 1rem 0;
-    display: block;
+    margin: 0.3rem 0;
+    display: inline-block;
     text-shadow: 0 2px 10px rgba(255, 107, 107, 0.2);
-    text-align: center;
-    padding: 0.5rem;
-    border-radius: 10px;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
     background-color: rgba(255, 107, 107, 0.05);
     border: 2px dashed rgba(255, 107, 107, 0.3);
+    align-self: flex-start;
+    line-height: 1;
 }
 
 /* 房源参数容器 */
 .house-params {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    margin: 1.5rem 0;
-    padding: 1.5rem;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 15px;
-    border: 2px solid rgba(255, 255, 255, 0.5);
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.05);
+    gap: 0.6rem;
+    margin: 0.5rem 0;
+    padding: 0.8rem;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.8) 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.05), 0 0 20px rgba(255, 255, 255, 0.3);
+    flex: 1;
+    overflow-y: visible;
+    max-height: none;
+    min-height: 80px;
+    position: relative;
 }
 
 /* 参数行 */
 .house-param-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.5rem;
-    padding: 0.75rem;
-    border-bottom: 2px solid rgba(0, 0, 0, 0.05);
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: 10px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.8rem;
+    padding: 0;
+    background: transparent;
+    border-radius: 0;
+    margin-bottom: 0.5rem;
 }
 
 .house-param-row:last-child {
     border-bottom: none;
+    margin-bottom: 0;
 }
 
 /* 参数项 */
 .house-param {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     flex: 1;
-    font-size: 1.1rem;
-    font-weight: 700;
+    font-size: 0.9rem;
+    font-weight: 600;
     color: #495057;
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
     background: rgba(255, 255, 255, 0.9);
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     transition: all 0.3s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .house-param:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    white-space: normal;
+    overflow: visible;
 }
 
 /* 参数图标 */
 .house-param::before {
     content: "";
     display: inline-block;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -701,104 +713,176 @@ nav {
 .house-param.house-address {
     color: #636e72;
     font-weight: 600;
-    font-size: 1rem;
-    line-height: 1.4;
+    font-size: 0.9rem;
+    line-height: 1.3;
     flex-direction: row;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    margin-top: 0.5rem;
+    gap: 0.5rem;
+    padding: 0.6rem 0.8rem;
+    margin-top: 0;
+    margin-bottom: 0;
     background: rgba(78, 205, 196, 0.1);
-    border: 2px solid rgba(78, 205, 196, 0.3);
+    border: 1px solid rgba(78, 205, 196, 0.3);
+    width: 100%;
+    grid-column: 1 / -1;
+    white-space: normal;
+    overflow: visible;
 }
 
 .house-param.house-address::before {
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2345b7d1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cline x1='12' y1='8' x2='12' y2='12'%3E%3C/line%3E%3Cline x1='12' y1='16' x2='12.01' y2='16'%3E%3C/line%3E%3C/svg%3E");
     margin-bottom: 0;
+    width: 20px;
+    height: 20px;
 }
 
 /* 描述样式 */
 .house-description {
     color: #636e72;
-    font-size: 1rem;
-    line-height: 1.7;
-    margin: 1.5rem 0;
-    padding: 1.5rem;
-    background: linear-gradient(to right, rgba(255, 107, 107, 0.05), rgba(78, 205, 196, 0.05));
-    border-radius: 12px;
-    border-left: 5px solid #ff6b6b;
-    border-right: 5px solid #4ecdc4;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    margin: 0.5rem 0;
+    padding: 0.6rem;
+    background: linear-gradient(to right, rgba(255, 107, 107, 0.03), rgba(78, 205, 196, 0.03));
+    border-radius: 8px;
+    border-left: 3px solid #ff6b6b;
+    border-right: 3px solid #4ecdc4;
     transition: all 0.3s ease;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.03);
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.02);
+    max-height: none;
+    overflow: visible;
+    flex-shrink: 0;
+    display: block;
+    width: 100%;
+    white-space: normal;
+    flex: 0 0 auto;
+    margin-bottom: 0.8rem;
 }
 
 .house-card:hover .house-description {
-    background: linear-gradient(to right, rgba(255, 107, 107, 0.08), rgba(78, 205, 196, 0.08));
-    transform: translateX(5px);
-    box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.05);
+    background: linear-gradient(to right, rgba(255, 107, 107, 0.05), rgba(78, 205, 196, 0.05));
+    transform: translateX(2px);
+    box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.03);
 }
 
 /* 操作按钮样式优化 */
 .house-card .btn {
-    margin-top: 1rem;
-    padding: 1rem 1.5rem;
-    font-weight: 700;
-    border-radius: 12px;
+    margin-top: 0.5rem;
+    padding: 0.6rem 1.2rem;
+    font-weight: 600;
+    border-radius: 8px;
     transition: all 0.3s ease;
-    font-size: 1.1rem;
-    letter-spacing: 0.5px;
+    font-size: 0.9rem;
+    letter-spacing: 0.3px;
     text-transform: uppercase;
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    flex: 1;
 }
 
 .house-card .btn:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 12px 25px rgba(255, 107, 107, 0.4);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 15px rgba(255, 107, 107, 0.4);
 }
 
 /* 按钮容器 */
 .house-actions {
     display: flex;
-    gap: 1.5rem;
-    margin-top: 2rem;
-    padding: 1.5rem;
+    gap: 1rem;
+    margin-top: 0.8rem;
+    padding: 0.8rem;
     background: rgba(255, 255, 255, 0.9);
-    border-radius: 15px;
-    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    flex-shrink: 0;
+    justify-content: space-between;
+    width: 100%;
 }
 
 .house-actions .btn {
     flex: 1;
     text-align: center;
-    font-size: 1.1rem;
-    padding: 1.2rem;
-    border-radius: 12px;
-    font-weight: 800;
+    font-size: 0.9rem;
+    padding: 0.7rem;
+    border-radius: 8px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.8px;
+    letter-spacing: 0.5px;
 }
 
 /* 响应式设计 */
+@media (max-width: 1200px) {
+    .house-list {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+
+    .house-card {
+        min-height: 280px;
+        max-height: 320px;
+    }
+}
+
 @media (max-width: 768px) {
+    .house-list {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .house-card {
+        min-height: 250px;
+        max-height: 300px;
+        flex-direction: column;
+    }
+
+    .house-image-container {
+        width: 100%;
+        height: 200px;
+        border-right: none;
+        border-bottom: 3px solid rgba(255, 107, 107, 0.2);
+    }
+    
     .house-info {
-        padding: 1.5rem;
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .house-list {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .house-card {
+        min-height: 350px;
+        flex-direction: column;
+    }
+
+    .house-image-container {
+        width: 100%;
+        height: 180px;
+        border-right: none;
+        border-bottom: 3px solid rgba(255, 107, 107, 0.2);
+    }
+
+    .house-info {
+        padding: 1rem;
     }
 
     .house-title {
-    font-size: 1.3rem;
+        font-size: 1.2rem;
     }
 
     .house-price {
-        font-size: 1.75rem;
+        font-size: 1.5rem;
     }
 
-    .house-param-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
+    .house-params {
+        max-height: none;
+        min-height: auto;
     }
 
     .house-actions {
+        gap: 0.8rem;
         flex-direction: column;
     }
 }
