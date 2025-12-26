@@ -38,8 +38,25 @@
 <div class="container">
     <!-- 房东首页 -->
     <section class="section active" id="dashboard">
-        <h2 style="margin: 2rem 0;">房东首页</h2>
-        <p>欢迎使用房屋租售系统房东后台</p>
+        <div
+                style="text-align: center; padding: 4rem 0; background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%); border-radius: 15px; margin: 2rem 0;">
+            <h1
+                    style="font-size: 3rem; font-weight: bold; margin-bottom: 1rem; background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: glow 2s ease-in-out infinite alternate;">
+                房东管理中心</h1>
+            <p style="font-size: 1.2rem; color: #fff; margin-bottom: 2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                欢迎使用房屋租售系统房东后台</p>
+            <div style="display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;">
+                <button class="btn" onclick="showSection('house-manage')"
+                        style="font-size: 1.1rem; padding: 0.75rem 1.5rem;">房源管理
+                </button>
+                <button class="btn btn-secondary" onclick="showSection('appointment')"
+                        style="font-size: 1.1rem; padding: 0.75rem 1.5rem;">预约记录
+                </button>
+                <button class="btn" onclick="showSection('profile')"
+                        style="font-size: 1.1rem; padding: 0.75rem 1.5rem;">个人中心
+                </button>
+            </div>
+        </div>
     </section>
 
     <!-- 房源管理 -->
@@ -49,25 +66,8 @@
             <button class="btn" onclick="showModal('addHouseModal')">发布新房源</button>
         </div>
 
-        <div class="card">
-            <div class="card-body">
-                <table class="table" id="houseTable">
-                    <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>标题</th>
-                        <th>户型</th>
-                        <th>面积</th>
-                        <th>价格</th>
-                        <th>地址</th>
-                        <th>操作</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <!-- 房源数据将通过JavaScript动态生成 -->
-                    </tbody>
-                </table>
-            </div>
+        <div class="house-list" id="houseList">
+            <!-- 房源数据将通过JavaScript动态生成为卡片形式 -->
         </div>
     </section>
 
@@ -339,39 +339,67 @@
 
             const houses = result.data?.houses || [];
 
-            const tbody = document.getElementById('houseTable').getElementsByTagName('tbody')[0];
+            const houseList = document.getElementById('houseList');
 
             if (houses.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7" style="text-align: center; padding: 2rem;">暂无房源数据</td>
-                    </tr>
+                houseList.innerHTML = `
+                    <div style="text-align: center; padding: 4rem 0; background: rgba(255,255,255,0.05); border-radius: 15px;">
+                        <h3 style="color: #fff; margin-bottom: 1rem;">暂无房源数据</h3>
+                        <p style="color: rgba(255,255,255,0.7);">点击"发布新房源"按钮添加您的第一套房源吧！</p>
+                    </div>
                 `;
             } else {
-                tbody.innerHTML = houses.map(house => `
-                    <tr>
-                        <td>${house.id}</td>
-                        <td>${house.title}</td>
-                        <td>${house.type}</td>
-                        <td>${house.area}㎡</td>
-                        <td>¥${house.price}/月</td>
-                        <td>${house.address}</td>
-                        <td>
-                            <button class="btn btn-secondary btn-sm" onclick="editHouse(${house.id})">编辑</button>
-                            <button class="btn btn-danger btn-sm" onclick="deleteHouse(${house.id})" style="margin-left: 0.5rem;">删除</button>
-                        </td>
-                    </tr>
-                `).join('');
+                houseList.innerHTML = houses.map(house => {
+                    // 处理图片显示
+                    let imageUrl = 'https://picsum.photos/seed/house' + house.id + '/400/300';
+                    if (house.images) {
+                        try {
+                            const imagesArray = JSON.parse(house.images);
+                            if (imagesArray && imagesArray.length > 0 && imagesArray[0]) {
+                                imageUrl = imagesArray[0];
+                            }
+                        } catch (e) {
+                            console.error('解析图片数组失败:', e);
+                        }
+                    }
+
+                    // 处理描述显示，限制长度
+                    const description = house.description || '无描述';
+                    const truncatedDesc = description.length > 100 ? description.substring(0, 100) + '...' : description;
+
+                    return `
+                        <div class="house-card">
+                            <img src="${imageUrl}" alt="${house.title}" class="house-image" style="height: 250px; object-fit: cover;">
+                            <div class="house-info">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                    <h4 class="house-title">${house.title}</h4>
+                                    <span class="house-price">¥${house.price}/月</span>
+                                </div>
+                                <div class="house-meta">
+                                    <span>户型：${house.type}</span>
+                                    <span>面积：${house.area}㎡</span>
+                                </div>
+                                <div class="house-address" style="margin: 0.5rem 0;">${house.address}</div>
+                                <div class="house-description" style="margin: 0.5rem 0; color: #666; font-size: 0.9rem; line-height: 1.4;">${truncatedDesc}</div>
+                                <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+                                    <button class="btn btn-secondary btn-sm" onclick="editHouse(${house.id})" style="flex: 1;">编辑</button>
+                                    <button class="btn btn-danger btn-sm" onclick="deleteHouse(${house.id})" style="flex: 1;">删除</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
             }
         } catch (error) {
             console.error('初始化房源列表失败:', error);
             showMessage('获取房源列表失败', 'error');
             // 显示空状态
-            const tbody = document.getElementById('houseTable').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: 2rem;">获取房源失败，请稍后重试</td>
-                </tr>
+            const houseList = document.getElementById('houseList');
+            houseList.innerHTML = `
+                <div style="text-align: center; padding: 4rem 0; background: rgba(255,255,255,0.05); border-radius: 15px;">
+                    <h3 style="color: #fff; margin-bottom: 1rem;">获取房源失败</h3>
+                    <p style="color: rgba(255,255,255,0.7);">请稍后重试或检查网络连接</p>
+                </div>
             `;
         } finally {
             // 隐藏加载进度条
@@ -385,37 +413,31 @@
         showProgressBar();
 
         try {
-            // 模拟预约数据
-            const appointments = [
-                {
-                    id: 1,
-                    house: '阳光小区 3室2厅',
-                    tenant: '张三',
-                    time: '2025-12-01 14:00',
-                    location: '小区门口',
-                    status: '待处理'
-                },
-                {
-                    id: 2,
-                    house: '幸福家园 2室1厅',
-                    tenant: '李四',
-                    time: '2025-12-02 10:00',
-                    location: '单元门口',
-                    status: '已批准'
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/appointments', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
                 }
-            ];
+            });
+
+            if (!response.ok) {
+                throw new Error('获取预约记录失败');
+            }
+
+            const result = await response.json();
+            const appointments = result.data.appointments;
 
             const tbody = document.getElementById('appointmentTable').getElementsByTagName('tbody')[0];
             tbody.innerHTML = appointments.map(appointment => `
                 <tr>
                     <td>${appointment.id}</td>
-                    <td>${appointment.house}</td>
-                    <td>${appointment.tenant}</td>
-                    <td>${appointment.time}</td>
+                    <td>${appointment.house.title}</td>
+                    <td>${appointment.tenant.username}</td>
+                    <td>${appointment.appointmentTime}</td>
                     <td>${appointment.location}</td>
-                    <td>${appointment.status}</td>
+                    <td>${getStatusText(appointment.status)}</td>
                     <td>
-                        ${appointment.status === '待处理' ?
+                        ${appointment.status === 'pending' ?
                 '<button class="btn btn-success btn-sm" onclick="approveAppointment(' + appointment.id + ')">批准</button>' +
                 '<button class="btn btn-danger btn-sm" onclick="rejectAppointment(' + appointment.id + ')" style="margin-left: 0.5rem;">拒绝</button>' :
                 '<button class="btn btn-secondary btn-sm" disabled>查看</button>'
@@ -426,10 +448,29 @@
         } catch (error) {
             console.error('初始化预约记录失败:', error);
             showMessage('获取预约记录失败', 'error');
+            // 显示空状态
+            const tbody = document.getElementById('appointmentTable').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem;">获取预约记录失败，请稍后重试</td>
+                    </tr>
+                `;
         } finally {
             // 隐藏加载进度条
             hideProgressBar();
         }
+    }
+
+    // 获取状态文本
+    function getStatusText(status) {
+        const statusMap = {
+            'pending': '待处理',
+            'approved': '已批准',
+            'rejected': '已拒绝',
+            'completed': '已完成',
+            'cancelled': '已取消'
+        };
+        return statusMap[status] || status;
     }
 
     // 获取房源详情
@@ -617,6 +658,18 @@
             // 如果有图片文件，处理图片上传
             const imageFile = document.getElementById('houseImage').files[0];
             if (imageFile) {
+                // 验证图片格式
+                const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                if (!validTypes.includes(imageFile.type)) {
+                    throw new Error('图片格式不支持，请上传JPEG、PNG、GIF或WEBP格式的图片');
+                }
+
+                // 验证图片大小（最大2MB）
+                const maxSize = 2 * 1024 * 1024;
+                if (imageFile.size > maxSize) {
+                    throw new Error('图片大小超过限制，请上传小于2MB的图片');
+                }
+
                 // 上传图片到后端
                 const imageFormData = new FormData();
                 imageFormData.append('image', imageFile);
@@ -630,11 +683,15 @@
                 });
 
                 if (imageResponse.ok) {
-                    const imageUrl = await imageResponse.text(); // 假设返回的是图片的URL
+                    const imageUrl = await imageResponse.text(); // 后端直接返回URL字符串
                     houseData.images = JSON.stringify([imageUrl]); // 将图片URL转换为JSON数组
                 } else {
-                    throw new Error('图片上传失败');
+                    const errorText = await imageResponse.text().catch(() => '未知错误');
+                    throw new Error(`图片上传失败: ${errorText}`);
                 }
+            } else {
+                // 如果没有图片文件，设置为空数组
+                houseData.images = '[]';
             }
 
             // 发送房源数据到后端
@@ -712,6 +769,18 @@
             // 如果有图片文件，处理图片上传
             const imageFile = document.getElementById('editHouseImage').files[0];
             if (imageFile) {
+                // 验证图片格式
+                const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                if (!validTypes.includes(imageFile.type)) {
+                    throw new Error('图片格式不支持，请上传JPEG、PNG、GIF或WEBP格式的图片');
+                }
+
+                // 验证图片大小（最大2MB）
+                const maxSize = 2 * 1024 * 1024;
+                if (imageFile.size > maxSize) {
+                    throw new Error('图片大小超过限制，请上传小于2MB的图片');
+                }
+
                 // 上传图片到后端
                 const imageFormData = new FormData();
                 imageFormData.append('image', imageFile);
@@ -725,10 +794,11 @@
                 });
 
                 if (imageResponse.ok) {
-                    const imageUrl = await imageResponse.text(); // 假设返回的是图片的URL
+                    const imageUrl = await imageResponse.text(); // 后端直接返回URL字符串
                     houseData.images = JSON.stringify([imageUrl]); // 将图片URL转换为JSON数组
                 } else {
-                    throw new Error('图片上传失败');
+                    const errorText = await imageResponse.text().catch(() => '未知错误');
+                    throw new Error(`图片上传失败: ${errorText}`);
                 }
             } else {
                 // 如果没有新图片，保持原有图片
@@ -773,15 +843,55 @@
     }
 
     // 批准预约
-    function approveAppointment(appointmentId) {
-        showMessage('预约已批准', 'success');
-        initAppointmentList();
+    async function approveAppointment(appointmentId) {
+        try {
+            showProgressBar();
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/appointments/${appointmentId}/approve`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('批准预约失败');
+            }
+
+            showMessage('预约已批准', 'success');
+            initAppointmentList(); // 更新预约记录
+        } catch (error) {
+            console.error('批准预约失败:', error);
+            showMessage('批准预约失败: ' + error.message, 'error');
+        } finally {
+            hideProgressBar();
+        }
     }
 
     // 拒绝预约
-    function rejectAppointment(appointmentId) {
-        showMessage('预约已拒绝', 'success');
-        initAppointmentList();
+    async function rejectAppointment(appointmentId) {
+        try {
+            showProgressBar();
+            const token = localStorage.getItem('token');
+            const response = await fetch(`/api/appointments/${appointmentId}/reject`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('拒绝预约失败');
+            }
+
+            showMessage('预约已拒绝', 'success');
+            initAppointmentList(); // 更新预约记录
+        } catch (error) {
+            console.error('拒绝预约失败:', error);
+            showMessage('拒绝预约失败: ' + error.message, 'error');
+        } finally {
+            hideProgressBar();
+        }
     }
 
     // 页面加载完成后初始化
