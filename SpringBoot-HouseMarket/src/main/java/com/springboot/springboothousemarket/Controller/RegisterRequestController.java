@@ -1,6 +1,6 @@
 package com.springboot.springboothousemarket.Controller;
 
-import com.springboot.springboothousemarket.Entity.SysUser;
+import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Service.CaptchaService;
 import com.springboot.springboothousemarket.Service.RegisterRequestService;
 import com.springboot.springboothousemarket.Service.SysUserService;
@@ -59,7 +59,7 @@ public class RegisterRequestController {
             }
 
             // 获取完整的用户信息（包含ID）
-            SysUser fullUser = sysUserService.getUserByUsername(request.getUsername());
+            Users fullUser = sysUserService.getUserByUsername(request.getUsername());
             if (fullUser == null) {
                 return ResponseEntity.badRequest().body(new LoginResponse(400, "用户信息不存在", null, null));
             }

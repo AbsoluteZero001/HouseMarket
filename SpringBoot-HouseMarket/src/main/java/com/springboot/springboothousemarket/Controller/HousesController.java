@@ -2,7 +2,7 @@ package com.springboot.springboothousemarket.Controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.springboot.springboothousemarket.Entity.Houses;
-import com.springboot.springboothousemarket.Entity.SysUser;
+import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Service.HousesService;
 import com.springboot.springboothousemarket.Service.SysUserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -166,7 +166,7 @@ public class HousesController {
             return null;
         }
 
-        SysUser user = sysUserService.getUserByUsername(authentication.getName());
+        Users user = sysUserService.getUserByUsername(authentication.getName());
         return user != null ? user.getId() : null;
     }
 }

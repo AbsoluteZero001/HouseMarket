@@ -2,59 +2,59 @@ package com.springboot.springboothousemarket.Service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.springboot.springboothousemarket.Entity.SysUser;
-import com.springboot.springboothousemarket.Mapper.SysUserMapper;
+import com.springboot.springboothousemarket.Entity.Users;
+import com.springboot.springboothousemarket.Mapper.UsersMapper;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-public class SysUserServiceImpl extends ServiceImpl<SysUserMapper, SysUser> implements SysUserService {
+public class SysUserServiceImpl extends ServiceImpl<UsersMapper, Users> implements SysUserService {
 
-    private final SysUserMapper sysUserMapper;
+    private final UsersMapper usersMapper;
 
-    public SysUserServiceImpl(SysUserMapper sysUserMapper) {
-        this.sysUserMapper = sysUserMapper;
+    public SysUserServiceImpl(UsersMapper usersMapper) {
+        this.usersMapper = usersMapper;
     }
 
     @Override
-    public SysUser createUser(SysUser sysUser) {
-        sysUser.setIsDeleted(0); // 默认未删除
-        sysUserMapper.insert(sysUser);
-        return sysUser;
+    public Users createUser(Users users) {
+        users.setIsDeleted(0); // 默认未删除
+        usersMapper.insert(users);
+        return users;
     }
 
     @Override
-    public SysUser getUserById(Long id) {
-        return sysUserMapper.selectById(id);
+    public Users getUserById(Long id) {
+        return usersMapper.selectById(id);
     }
 
     @Override
-    public SysUser updateUser(Long id, SysUser sysUser) {
-        sysUser.setId(id);
-        sysUserMapper.updateById(sysUser);
-        return sysUser;
+    public Users updateUser(Long id, Users users) {
+        users.setId(id);
+        usersMapper.updateById(users);
+        return users;
     }
 
     @Override
     public boolean deleteUser(Long id) {
-        SysUser user = getUserById(id);
+        Users user = getUserById(id);
         if (user == null) return false;
         user.setIsDeleted(1);
-        sysUserMapper.updateById(user);
+        usersMapper.updateById(user);
         return true;
     }
 
     @Override
-    public SysUser getUserByUsername(String username) {
-        return sysUserMapper.selectByUsername(username);
+    public Users getUserByUsername(String username) {
+        return usersMapper.selectByUsername(username);
     }
 
     @Override
-    public List<SysUser> getAllUsers() {
-        QueryWrapper<SysUser> queryWrapper = new QueryWrapper<>();
+    public List<Users> getAllUsers() {
+        QueryWrapper<Users> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("is_deleted", 0);
-        return sysUserMapper.selectList(queryWrapper);
+        return usersMapper.selectList(queryWrapper);
     }
 
 }

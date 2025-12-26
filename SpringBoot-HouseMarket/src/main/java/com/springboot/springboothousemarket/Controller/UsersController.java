@@ -1,6 +1,6 @@
 package com.springboot.springboothousemarket.Controller;
 
-import com.springboot.springboothousemarket.Entity.SysUser;
+import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Service.SysUserService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
@@ -20,12 +20,12 @@ public class UsersController {
 
     /**
      * 创建用户
-     * @param sysUser 用户信息
+     * @param users 用户信息
      * @return 创建结果
      */
     @PostMapping
-    public SysUser createUser(@RequestBody SysUser sysUser) {
-        return sysUserService.createUser(sysUser);
+    public Users createUser(@RequestBody Users users) {
+        return sysUserService.createUser(users);
     }
 
     /**
@@ -34,19 +34,19 @@ public class UsersController {
      * @return 用户信息
      */
     @GetMapping("/{id}")
-    public SysUser getUserById(@PathVariable Long id) {
+    public Users getUserById(@PathVariable Long id) {
         return sysUserService.getUserById(id);
     }
 
     /**
      * 更新用户信息
      * @param id 用户ID
-     * @param sysUser 更新的用户信息
+     * @param users 更新的用户信息
      * @return 更新结果
      */
     @PutMapping("/{id}")
-    public SysUser updateUser(@PathVariable Long id, @RequestBody SysUser sysUser) {
-        return sysUserService.updateUser(id, sysUser);
+    public Users updateUser(@PathVariable Long id, @RequestBody Users users) {
+        return sysUserService.updateUser(id, users);
     }
 
     /**
@@ -64,7 +64,7 @@ public class UsersController {
      * @return 用户列表
      */
     @GetMapping
-    public List<SysUser> getAllUsers() {
+    public List<Users> getAllUsers() {
         return sysUserService.getAllUsers();
     }
 
@@ -74,7 +74,7 @@ public class UsersController {
      * @return 用户信息
      */
     @GetMapping("/username/{username}")
-    public SysUser getUserByUsername(@PathVariable String username) {
+    public Users getUserByUsername(@PathVariable String username) {
         return sysUserService.getUserByUsername(username);
     }
 }

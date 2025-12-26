@@ -13,8 +13,8 @@ import java.time.LocalDateTime;
  */
 @Data
 @Schema(description = "用户信息")
-@TableName("sysuser")
-public class SysUser {
+@TableName("users")
+public class Users {
     /**
      * 主键ID
      * 自增类型，作为用户唯一标识

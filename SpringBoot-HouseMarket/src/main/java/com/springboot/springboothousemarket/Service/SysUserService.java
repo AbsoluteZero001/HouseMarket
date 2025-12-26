@@ -1,19 +1,19 @@
 package com.springboot.springboothousemarket.Service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.springboot.springboothousemarket.Entity.SysUser;
+import com.springboot.springboothousemarket.Entity.Users;
 
 import java.util.List;
 
-public interface SysUserService extends IService<SysUser> {
+public interface SysUserService extends IService<Users> {
 
     /**
      * 创建用户
      *
-     * @param sysUser 用户信息
+     * @param users 用户信息
      * @return 创建结果
      */
-    SysUser createUser(SysUser sysUser);
+    Users createUser(Users users);
 
     /**
      * 根据ID获取用户详情
@@ -21,16 +21,16 @@ public interface SysUserService extends IService<SysUser> {
      * @param id 用户ID
      * @return 用户信息
      */
-    SysUser getUserById(Long id);
+    Users getUserById(Long id);
 
     /**
      * 更新用户信息
      *
      * @param id      用户ID
-     * @param sysUser 更新的用户信息
+     * @param users 更新的用户信息
      * @return 更新结果
      */
-    SysUser updateUser(Long id, SysUser sysUser);
+    Users updateUser(Long id, Users users);
 
     /**
      * 删除用户
@@ -45,7 +45,7 @@ public interface SysUserService extends IService<SysUser> {
      *
      * @return 用户列表
      */
-    List<SysUser> getAllUsers();
+    List<Users> getAllUsers();
 
     /**
      * 根据用户名获取用户
@@ -53,5 +53,5 @@ public interface SysUserService extends IService<SysUser> {
      * @param username 用户名
      * @return 用户信息
      */
-    SysUser getUserByUsername(String username);
+    Users getUserByUsername(String username);
 }
