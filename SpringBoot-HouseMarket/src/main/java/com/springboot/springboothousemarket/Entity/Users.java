@@ -89,7 +89,6 @@ public class Users {
      * 用户账户创建的时间
      */
     @Schema(description = "注册时间")
-    @TableField("registerTime")
     private LocalDateTime createTime;
 
     /**

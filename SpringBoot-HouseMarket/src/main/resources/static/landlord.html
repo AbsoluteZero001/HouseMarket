@@ -25,7 +25,7 @@
             <div class="logo">房屋租售系统</div>
             <ul class="nav-links">
                 <li><a class="active" href="landlord.html">首页</a></li>
-                <li><a href="#" onclick="showSection('house-manage')">房源管理 <span class="badge">2</span></a></li>
+                <li><a href="#" onclick="showSection('house-manage')">房源管理</a></li>
                 <li><a href="#" onclick="showSection('appointment')">预约记录 <span class="badge">4</span></a></li>
                 <li><a href="#" onclick="showSection('profile')">个人中心</a></li>
                 <li><span id="username"></span></li>
@@ -60,8 +60,8 @@
     </section>
 
     <!-- 房源管理 -->
-    <section class="section" id="house-manage" style="display: none;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin: 2rem 0;">
+    <section class="section" id="house-manage" style="display: none; margin: 0; padding: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 1rem 0;">
             <h2>房源管理</h2>
             <button class="btn" onclick="showModal('addHouseModal')">发布新房源</button>
         </div>
@@ -99,21 +99,11 @@
 
     <!-- 个人中心 -->
     <section class="section" id="profile" style="display: none;">
-        <h2 style="margin: 2rem 0;">个人中心</h2>
+        <h2 style="margin: 2rem 0;">修改密码</h2>
 
         <div class="form-container">
-            <h3>个人信息</h3>
+            <h3>修改密码</h3>
             <form id="profileForm">
-                <div class="form-group">
-                    <label for="profileUsername">用户名</label>
-                    <input disabled id="profileUsername" name="username" type="text">
-                </div>
-
-                <div class="form-group">
-                    <label for="profileRole">角色</label>
-                    <input disabled id="profileRole" name="role" type="text">
-                </div>
-
                 <div class="form-group">
                     <label for="oldPassword">当前密码</label>
                     <input id="oldPassword" name="oldPassword" placeholder="请输入当前密码" type="password">
@@ -121,8 +111,7 @@
 
                 <div class="form-group">
                     <label for="newPassword">新密码</label>
-                    <input id="newPassword" maxlength="20" minlength="6" name="newPassword"
-                           placeholder="不修改密码请留空"
+                    <input id="newPassword" maxlength="20" minlength="6" name="newPassword" placeholder="请输入新密码"
                            type="password">
                 </div>
 
@@ -311,6 +300,15 @@
                 await updateHouse();
             });
         }
+
+        // 绑定修改密码表单
+        const profileForm = document.getElementById('profileForm');
+        if (profileForm) {
+            profileForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await updateProfile();
+            });
+        }
     }
 
     // 初始化房源列表
@@ -377,7 +375,7 @@
                                 <img src="${imageUrl}" alt="${house.title}" class="house-image">
                             </div>
                             <div class="house-info">
-                                <h4 class="house-title">${house.title} <span class="house-id-badge">ID: ${house.id}</span></h4>
+                                <h4 class="house-title">${house.title}</h4>
                                 <span class="house-price">¥${house.price}/月</span>
                                 
                                 <div class="house-params">
@@ -881,6 +879,88 @@
                 errorMsg = errorMsg.substring(12);
             }
             showMessage('更新房源失败: ' + errorMsg, 'error');
+        } finally {
+            hideProgressBar();
+        }
+    }
+
+    // 更新用户密码
+    async function updateProfile() {
+        try {
+            showProgressBar();
+
+            const form = document.getElementById('profileForm');
+            const formData = new FormData(form);
+
+            // 获取表单数据
+            const oldPassword = formData.get('oldPassword');
+            const newPassword = formData.get('newPassword');
+            const confirmNewPassword = formData.get('confirmNewPassword');
+
+            // 验证数据
+            if (!newPassword) {
+                throw new Error('请输入新密码');
+            }
+
+            if (newPassword !== confirmNewPassword) {
+                throw new Error('新密码和确认密码不一致');
+            }
+
+            if (newPassword.length < 6 || newPassword.length > 20) {
+                throw new Error('新密码长度必须在6-20个字符之间');
+            }
+
+            // 获取当前用户信息
+            const userStr = localStorage.getItem('user');
+            if (!userStr) {
+                throw new Error('未找到用户信息，请重新登录');
+            }
+
+            const user = JSON.parse(userStr);
+            if (!user.id) {
+                throw new Error('用户ID无效，请重新登录');
+            }
+
+            // 构建请求数据
+            const passwordData = {
+                oldPassword: oldPassword,
+                newPassword: newPassword
+            };
+
+            const token = localStorage.getItem('token');
+
+            // 发送请求到后端
+            const response = await fetch(`/user/${user.id}/password`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(passwordData)
+            });
+
+            // 记录完整响应
+            const responseText = await response.text();
+            console.log('更新密码响应状态:', response.status);
+            console.log('更新密码响应内容:', responseText);
+
+            // 检查响应状态
+            if (response.ok) {
+                showMessage('密码修改成功', 'success');
+                // 清空表单
+                form.reset();
+            } else {
+                // 直接显示错误信息
+                throw new Error('密码修改失败: ' + responseText);
+            }
+        } catch (error) {
+            console.error('更新密码失败:', error);
+            // 移除重复的错误前缀
+            let errorMsg = error.message;
+            if (errorMsg.startsWith('更新密码失败: ')) {
+                errorMsg = errorMsg.substring(12);
+            }
+            showMessage('密码修改失败: ' + errorMsg, 'error');
         } finally {
             hideProgressBar();
         }
