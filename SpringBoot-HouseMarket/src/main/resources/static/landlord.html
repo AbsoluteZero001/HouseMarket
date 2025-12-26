@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1.0" name="viewport">
@@ -7,6 +8,7 @@
     <link href="css/style.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
+
 <body>
 <div class="particles-container">
     <div class="particle"></div>
@@ -120,7 +122,8 @@
                 <div class="form-group">
                     <label for="newPassword">新密码</label>
                     <input id="newPassword" maxlength="20" minlength="6" name="newPassword"
-                           placeholder="不修改密码请留空" type="password">
+                           placeholder="不修改密码请留空"
+                           type="password">
                 </div>
 
                 <div class="form-group">
@@ -178,7 +181,7 @@
             <div class="form-group">
                 <label for="houseImage">图片</label>
                 <input accept="image/*" id="houseImage" name="image" type="file">
-                <img alt="图片预览" id="imagePreview" src="" 
+                <img alt="图片预览" id="imagePreview" src=""
                      style="display: none; max-width: 100%; margin-top: 1rem; border-radius: 4px;">
             </div>
 
@@ -237,7 +240,7 @@
             <div class="form-group">
                 <label for="editHouseImage">图片</label>
                 <input accept="image/*" id="editHouseImage" name="image" type="file">
-                <img alt="图片预览" id="editImagePreview" src="" 
+                <img alt="图片预览" id="editImagePreview" src=""
                      style="display: none; max-width: 100%; margin-top: 1rem; border-radius: 4px;">
             </div>
 
@@ -289,11 +292,32 @@
         bindFormEvents();
     }
 
+    // 绑定表单提交事件
+    function bindFormEvents() {
+        // 绑定新增房源表单
+        const addHouseForm = document.getElementById('addHouseForm');
+        if (addHouseForm) {
+            addHouseForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await addHouse();
+            });
+        }
+
+        // 绑定编辑房源表单
+        const editHouseForm = document.getElementById('editHouseForm');
+        if (editHouseForm) {
+            editHouseForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                await updateHouse();
+            });
+        }
+    }
+
     // 初始化房源列表
     async function initHouseList(userId) {
         // 显示加载进度条
         showProgressBar();
-        
+
         try {
             const token = localStorage.getItem('token');
 
@@ -305,29 +329,50 @@
             });
 
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('获取房源列表失败:', errorText);
                 throw new Error('获取房源列表失败');
             }
 
-            const houses = await response.json();
+            const result = await response.json();
+            console.log('房源列表响应:', result);
+
+            const houses = result.data?.houses || [];
 
             const tbody = document.getElementById('houseTable').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = houses.map(house => `
-                <tr>
-                    <td>${house.id}</td>
-                    <td>${house.title}</td>
-                    <td>${house.type}</td>
-                    <td>${house.area}㎡</td>
-                    <td>¥${house.price}/月</td>
-                    <td>${house.address}</td>
-                    <td>
-                        <button class="btn btn-secondary btn-sm" onclick="editHouse(${house.id})">编辑</button>
-                        <button class="btn btn-danger btn-sm" onclick="deleteHouse(${house.id})" style="margin-left: 0.5rem;">删除</button>
-                    </td>
-                </tr>
-            `).join('');
+
+            if (houses.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem;">暂无房源数据</td>
+                    </tr>
+                `;
+            } else {
+                tbody.innerHTML = houses.map(house => `
+                    <tr>
+                        <td>${house.id}</td>
+                        <td>${house.title}</td>
+                        <td>${house.type}</td>
+                        <td>${house.area}㎡</td>
+                        <td>¥${house.price}/月</td>
+                        <td>${house.address}</td>
+                        <td>
+                            <button class="btn btn-secondary btn-sm" onclick="editHouse(${house.id})">编辑</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteHouse(${house.id})" style="margin-left: 0.5rem;">删除</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
         } catch (error) {
             console.error('初始化房源列表失败:', error);
             showMessage('获取房源列表失败', 'error');
+            // 显示空状态
+            const tbody = document.getElementById('houseTable').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 2rem;">获取房源失败，请稍后重试</td>
+                </tr>
+            `;
         } finally {
             // 隐藏加载进度条
             hideProgressBar();
@@ -338,7 +383,7 @@
     async function initAppointmentList() {
         // 显示加载进度条
         showProgressBar();
-        
+
         try {
             // 模拟预约数据
             const appointments = [
@@ -408,7 +453,7 @@
     async function editHouse(houseId) {
         try {
             const house = await getHouseDetails(houseId);
-            
+
             // 填充表单数据
             document.getElementById('editHouseId').value = house.id;
             document.getElementById('editHouseTitle').value = house.title;
@@ -417,13 +462,13 @@
             document.getElementById('editHousePrice').value = house.price;
             document.getElementById('editHouseAddress').value = house.address;
             document.getElementById('editHouseDescription').value = house.description || '';
-            
+
             // 如果有图片，显示预览
             if (house.image) {
                 document.getElementById('editImagePreview').src = house.image;
                 document.getElementById('editImagePreview').style.display = 'block';
             }
-            
+
             showModal('editHouseModal');
         } catch (error) {
             console.error('编辑房源失败:', error);
@@ -437,6 +482,8 @@
             try {
                 showProgressBar();
                 const token = localStorage.getItem('token');
+                const user = JSON.parse(localStorage.getItem('user'));
+
                 const response = await fetch(`/api/houses/${houseId}`, {
                     method: 'DELETE',
                     headers: {
@@ -444,15 +491,39 @@
                     }
                 });
 
-                if (!response.ok) {
-                    throw new Error('删除房源失败');
+                // 记录响应信息
+                const responseText = await response.text();
+                console.log('删除响应状态:', response.status);
+                console.log('删除响应内容:', responseText);
+
+                let responseData;
+                try {
+                    responseData = JSON.parse(responseText);
+                    console.log('解析后的删除响应:', responseData);
+                } catch (parseError) {
+                    console.error('删除响应解析失败:', parseError);
                 }
 
-                showMessage('房源删除成功', 'success');
-                initHouseList();
+                if (!response.ok) {
+                    throw new Error('删除房源失败: ' + (responseData?.message || '未知错误'));
+                }
+
+                if (responseData?.success) {
+                    showMessage('房源删除成功', 'success');
+                    initHouseList(user.id);
+                } else {
+                    throw new Error('删除房源失败: ' + (responseData?.message || '未知错误'));
+                }
             } catch (error) {
                 console.error('删除房源失败:', error);
-                showMessage('删除房源失败', 'error');
+                // 移除重复的错误前缀
+                let errorMsg = error.message;
+                if (errorMsg.startsWith('删除房源失败: 删除房源失败: ')) {
+                    errorMsg = errorMsg.substring(14);
+                } else if (errorMsg.startsWith('删除房源失败: ')) {
+                    errorMsg = errorMsg.substring(12);
+                }
+                showMessage('删除房源失败: ' + errorMsg, 'error');
             } finally {
                 hideProgressBar();
             }
@@ -569,17 +640,41 @@
                 body: JSON.stringify(houseData)
             });
 
-            if (!response.ok) {
-                throw new Error('发布房源失败');
+            // 记录完整响应
+            const responseText = await response.text();
+            console.log('响应状态:', response.status);
+            console.log('响应内容:', responseText);
+
+            let responseData;
+            try {
+                responseData = JSON.parse(responseText);
+                console.log('解析后的响应:', responseData);
+            } catch (parseError) {
+                console.error('响应解析失败:', parseError);
+                showMessage('发布房源失败: 服务器返回无效的JSON格式', 'error');
+                return;
             }
 
-            showMessage('发布房源成功', 'success');
-            hideModal('addHouseModal');
-            form.reset();
-            initHouseList();
+            if (response.ok && responseData.success) {
+                showMessage('发布房源成功', 'success');
+                hideModal('addHouseModal');
+                form.reset();
+                // 清空图片预览
+                document.getElementById('imagePreview').style.display = 'none';
+                document.getElementById('imagePreview').src = '';
+                // 重新加载房源列表
+                initHouseList(user.id);
+            } else {
+                // 直接显示错误信息，不重复包装
+                const errorMsg = responseData.message || responseData.error || '未知错误';
+                console.error('发布房源失败:', errorMsg);
+                showMessage('发布房源失败: ' + errorMsg, 'error');
+            }
         } catch (error) {
             console.error('新增房源失败:', error);
-            showMessage('发布房源失败', 'error');
+            // 直接显示原始错误信息，不重复包装
+            const errorMsg = error.message || '未知错误';
+            showMessage('发布房源失败: ' + errorMsg, 'error');
         } finally {
             hideProgressBar();
         }
@@ -589,13 +684,13 @@
     async function updateHouse() {
         try {
             showProgressBar();
-            
+
             const form = document.getElementById('editHouseForm');
             const formData = new FormData(form);
-            
+
             const token = localStorage.getItem('token');
             const houseId = formData.get('id');
-            
+
             // 构建请求数据
             const houseData = {
                 title: formData.get('title'),
@@ -610,12 +705,30 @@
             // 如果有图片文件，处理图片上传
             const imageFile = document.getElementById('editHouseImage').files[0];
             if (imageFile) {
-                // 这里可以实现图片上传到服务器的逻辑
-                // 暂时只处理图片预览，实际图片上传需要后端支持
-                const imageUrl = URL.createObjectURL(imageFile);
-                houseData.image = imageUrl; // 设置图片URL
+                // 上传图片到后端
+                const imageFormData = new FormData();
+                imageFormData.append('image', imageFile);
+
+                const imageResponse = await fetch('/api/houses/upload-image', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: imageFormData
+                });
+
+                if (imageResponse.ok) {
+                    const imageUrl = await imageResponse.text(); // 假设返回的是图片的URL
+                    houseData.image = imageUrl; // 设置图片URL
+                } else {
+                    throw new Error('图片上传失败');
+                }
+            } else {
+                // 如果没有新图片，保持原有图片
+                const existingHouse = await getHouseDetails(houseId);
+                houseData.image = existingHouse.image;
             }
-            
+
             const response = await fetch(`/api/houses/${houseId}`, {
                 method: 'PUT',
                 headers: {
@@ -626,15 +739,27 @@
             });
 
             if (!response.ok) {
-                throw new Error('更新房源失败');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error('更新房源失败: ' + (errorData.message || '未知错误'));
             }
 
             showMessage('更新房源成功', 'success');
             hideModal('editHouseModal');
-            initHouseList();
+            // 清空图片预览
+            document.getElementById('editImagePreview').style.display = 'none';
+            document.getElementById('editImagePreview').src = '';
+            const user = JSON.parse(localStorage.getItem('user'));
+            initHouseList(user.id);
         } catch (error) {
             console.error('更新房源失败:', error);
-            showMessage('更新房源失败', 'error');
+            // 移除重复的错误前缀
+            let errorMsg = error.message;
+            if (errorMsg.startsWith('更新房源失败: 更新房源失败: ')) {
+                errorMsg = errorMsg.substring(14);
+            } else if (errorMsg.startsWith('更新房源失败: ')) {
+                errorMsg = errorMsg.substring(12);
+            }
+            showMessage('更新房源失败: ' + errorMsg, 'error');
         } finally {
             hideProgressBar();
         }
@@ -655,10 +780,10 @@
     // 页面加载完成后初始化
     document.addEventListener('DOMContentLoaded', () => {
         initLandlordPage();
-        
+
         // 初始化模态框
         initModals();
-        
+
         // 登出按钮事件
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
@@ -670,4 +795,5 @@
     });
 </script>
 </body>
+
 </html>

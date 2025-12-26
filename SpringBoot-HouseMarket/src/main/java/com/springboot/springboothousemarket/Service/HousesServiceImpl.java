@@ -8,6 +8,7 @@ import com.springboot.springboothousemarket.Mapper.HousesMapper;
 import com.springboot.springboothousemarket.Service.HousesService;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -15,7 +16,14 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
 
     @Override
     public Houses createHouse(Houses house, Long landlordId) {
-        house.setLandlordId(landlordId);  // 绑定房东ID
+        house.setLandlordId(landlordId); // 绑定房东ID
+        // 设置默认状态为可用
+        house.setStatus("available");
+        // 设置创建和更新时间
+        house.setCreateTime(LocalDateTime.now());
+        house.setUpdateTime(LocalDateTime.now());
+        // 设置未删除状态
+        house.setIsDeleted(0);
         save(house);
         return house;
     }
@@ -68,13 +76,20 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
                                   Double minPrice, Double maxPrice, String address, int page, int pageSize) {
 
         QueryWrapper<Houses> query = new QueryWrapper<>();
-        if (keyword != null && !keyword.isEmpty()) query.like("title", keyword);
-        if (type != null && !type.isEmpty()) query.eq("type", type);
-        if (minArea != null) query.ge("area", minArea);
-        if (maxArea != null) query.le("area", maxArea);
-        if (minPrice != null) query.ge("price", minPrice);
-        if (maxPrice != null) query.le("price", maxPrice);
-        if (address != null && !address.isEmpty()) query.like("address", address);
+        if (keyword != null && !keyword.isEmpty())
+            query.like("title", keyword);
+        if (type != null && !type.isEmpty())
+            query.eq("type", type);
+        if (minArea != null)
+            query.ge("area", minArea);
+        if (maxArea != null)
+            query.le("area", maxArea);
+        if (minPrice != null)
+            query.ge("price", minPrice);
+        if (maxPrice != null)
+            query.le("price", maxPrice);
+        if (address != null && !address.isEmpty())
+            query.like("address", address);
 
         return page(new Page<>(page, pageSize), query);
     }

@@ -89,7 +89,7 @@ public class HousesController {
                 .path(uniqueFileName)
                 .toUriString();
 
-        return imageUrl;  // 返回图片的 URL 地址
+        return imageUrl; // 返回图片的 URL 地址
     }
 
     /**
@@ -102,7 +102,7 @@ public class HousesController {
             throw new SecurityException("未登录或登录状态失效");
         }
 
-        house.setId(null);  // 防止前端传 id
+        house.setId(null); // 防止前端传 id
         house = houseService.createHouse(house, userId);
 
         Map<String, Object> data = new HashMap<>();
@@ -202,8 +202,7 @@ public class HousesController {
 
         Page<Houses> pageInfo = houseService.getHouses(
                 keyword, type, minArea, maxArea,
-                minPrice, maxPrice, address, page, pageSize
-        );
+                minPrice, maxPrice, address, page, pageSize);
 
         Map<String, Object> data = new HashMap<>();
         data.put("houses", pageInfo.getRecords());
