@@ -455,16 +455,71 @@
     }
 
     // 新增房源
+    // async function addHouse() {
+    //     try {
+    //         showProgressBar();
+    //
+    //         const form = document.getElementById('addHouseForm');
+    //         const formData = new FormData(form);
+    //
+    //         const token = localStorage.getItem('token');
+    //         const user = JSON.parse(localStorage.getItem('user'));
+    //
+    //         // 构建请求数据
+    //         const houseData = {
+    //             title: formData.get('title'),
+    //             type: formData.get('type'),
+    //             area: parseFloat(formData.get('area')),
+    //             price: parseFloat(formData.get('price')),
+    //             address: formData.get('address'),
+    //             description: formData.get('description'),
+    //             image: '' // 添加图片字段
+    //         };
+    //
+    //         // 如果有图片文件，处理图片上传
+    //         const imageFile = document.getElementById('houseImage').files[0];
+    //         if (imageFile) {
+    //             // 这里可以实现图片上传到服务器的逻辑
+    //             // 暂时只处理图片预览，实际图片上传需要后端支持
+    //             const imageUrl = URL.createObjectURL(imageFile);
+    //             houseData.image = imageUrl; // 设置图片URL
+    //         }
+    //
+    //         const response = await fetch('/api/houses', {
+    //             method: 'POST',
+    //             headers: {
+    //                 'Content-Type': 'application/json',
+    //                 'Authorization': `Bearer ${token}`
+    //             },
+    //             body: JSON.stringify(houseData)
+    //         });
+    //
+    //         if (!response.ok) {
+    //             throw new Error('发布房源失败');
+    //         }
+    //
+    //         showMessage('发布房源成功', 'success');
+    //         hideModal('addHouseModal');
+    //         form.reset();
+    //         initHouseList();
+    //     } catch (error) {
+    //         console.error('新增房源失败:', error);
+    //         showMessage('发布房源失败', 'error');
+    //     } finally {
+    //         hideProgressBar();
+    //     }
+    // }
+    // 新增房源
     async function addHouse() {
         try {
             showProgressBar();
-            
+
             const form = document.getElementById('addHouseForm');
             const formData = new FormData(form);
-            
+
             const token = localStorage.getItem('token');
             const user = JSON.parse(localStorage.getItem('user'));
-            
+
             // 构建请求数据
             const houseData = {
                 title: formData.get('title'),
@@ -479,13 +534,28 @@
             // 如果有图片文件，处理图片上传
             const imageFile = document.getElementById('houseImage').files[0];
             if (imageFile) {
-                // 这里可以实现图片上传到服务器的逻辑
-                // 暂时只处理图片预览，实际图片上传需要后端支持
-                const imageUrl = URL.createObjectURL(imageFile);
-                houseData.image = imageUrl; // 设置图片URL
+                // 上传图片到后端
+                const imageFormData = new FormData();
+                imageFormData.append('image', imageFile);
+
+                const imageResponse = await fetch('/api/houses/upload-image', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: imageFormData
+                });
+
+                if (imageResponse.ok) {
+                    const imageUrl = await imageResponse.text(); // 假设返回的是图片的URL
+                    houseData.image = imageUrl; // 设置图片URL
+                } else {
+                    throw new Error('图片上传失败');
+                }
             }
-            
-            const response = await fetch('/api/houses', {
+
+            // 发送房源数据到后端
+            const response = await fetch('/api/houses/add', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

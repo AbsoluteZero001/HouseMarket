@@ -13,7 +13,7 @@ import java.util.List;
  * 基于 MyBatis-Plus
  */
 @Mapper
-public interface HouseMapper extends BaseMapper<Houses> {
+public interface HousesMapper extends BaseMapper<Houses> {
 
     /**
      * 根据房东 ID 查询房源列表

@@ -6,10 +6,15 @@ import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Service.HousesService;
 import com.springboot.springboothousemarket.Service.UsersService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,36 +25,93 @@ import java.util.Map;
 public class HousesController {
 
     private final HousesService houseService;
-    private final UsersService UsersService;
+    private final UsersService usersService;
 
-    public HousesController(HousesService houseService, UsersService UsersService) {
+    @Value("${upload.dir:./uploads}")
+    private String uploadDir; // 图片保存的路径
+
+    public HousesController(HousesService houseService, UsersService usersService) {
         this.houseService = houseService;
-        this.UsersService = UsersService;
+        this.usersService = usersService;
     }
 
     /**
      * 根据房东ID获取房源列表
-     * 为前端landlord.html提供兼容接口
      */
     @GetMapping("/landlord/{landlordId}")
-    public List<Houses> getHousesByLandlordId(@PathVariable Long landlordId) {
-        return houseService.getHousesByLandlordId(landlordId);
+    public Map<String, Object> getHousesByLandlordId(@PathVariable Long landlordId) {
+        List<Houses> houses = houseService.getHousesByLandlordId(landlordId);
+        Map<String, Object> data = new HashMap<>();
+        data.put("houses", houses);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", data);
+        return response;
+    }
+
+    /**
+     * 图片上传接口
+     */
+    @PostMapping("/upload-image")
+    public String uploadImage(@RequestParam("image") MultipartFile imageFile) throws IOException {
+        // 获取文件名
+        String fileName = imageFile.getOriginalFilename();
+        if (fileName == null || fileName.isEmpty()) {
+            throw new IOException("文件名不能为空");
+        }
+
+        // 确保上传目录存在
+        File uploadDirFile = new File(uploadDir);
+        if (!uploadDirFile.exists()) {
+            uploadDirFile.mkdirs();
+        }
+
+        // 防止路径遍历攻击，只取文件名
+        fileName = new File(fileName).getName();
+
+        // 生成唯一文件名，避免重复
+        String fileExtension = "";
+        int lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex > 0) {
+            fileExtension = fileName.substring(lastDotIndex);
+            fileName = fileName.substring(0, lastDotIndex);
+        }
+        String uniqueFileName = fileName + "_" + System.currentTimeMillis() + fileExtension;
+
+        // 保存文件到本地
+        File targetFile = new File(uploadDirFile, uniqueFileName);
+        imageFile.transferTo(targetFile);
+
+        // 获取图片的访问路径
+        String imageUrl = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/uploads/")
+                .path(uniqueFileName)
+                .toUriString();
+
+        return imageUrl;  // 返回图片的 URL 地址
     }
 
     /**
      * 新增房源
-     * 这里不直接设置 landlordId，由 service 层根据当前用户处理关联
      */
-    @PostMapping
-    public Houses createHouse(@RequestBody Houses house) {
+    @PostMapping("/add")
+    public Map<String, Object> createHouse(@RequestBody Houses house) {
         Long userId = getCurrentUserId();
         if (userId == null) {
             throw new SecurityException("未登录或登录状态失效");
         }
 
         house.setId(null);  // 防止前端传 id
-        // 如果需要记录房东信息，请在 houseService.createHouse 内处理
-        return houseService.createHouse(house, userId);
+        house = houseService.createHouse(house, userId);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("house", house);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", data);
+        return response;
     }
 
     /**
@@ -75,7 +137,7 @@ public class HousesController {
      * 更新房源（只能更新自己的）
      */
     @PutMapping("/{id}")
-    public Houses updateHouse(@PathVariable Long id, @RequestBody Houses house) {
+    public Map<String, Object> updateHouse(@PathVariable Long id, @RequestBody Houses house) {
         Long currentUserId = getCurrentUserId();
         if (currentUserId == null) {
             throw new SecurityException("未登录或登录状态失效");
@@ -86,15 +148,22 @@ public class HousesController {
             throw new RuntimeException("房源不存在");
         }
 
-        // 权限校验交给 service 层，根据 userId 验证是否可修改
-        return houseService.updateHouse(id, house, currentUserId);
+        house = houseService.updateHouse(id, house, currentUserId);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("house", house);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", data);
+        return response;
     }
 
     /**
      * 删除房源（逻辑删除，且只能删除自己的）
      */
     @DeleteMapping("/{id}")
-    public boolean deleteHouse(@PathVariable Long id) {
+    public Map<String, Object> deleteHouse(@PathVariable Long id) {
         Long currentUserId = getCurrentUserId();
         if (currentUserId == null) {
             throw new SecurityException("未登录或登录状态失效");
@@ -105,8 +174,15 @@ public class HousesController {
             throw new RuntimeException("房源不存在");
         }
 
-        // 权限校验交给 service 层
-        return houseService.deleteHouse(id, currentUserId);
+        boolean isDeleted = houseService.deleteHouse(id, currentUserId);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("deleted", isDeleted);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", data);
+        return response;
     }
 
     /**
@@ -145,14 +221,21 @@ public class HousesController {
      * 获取当前房东的所有房源
      */
     @GetMapping("/my")
-    public List<Houses> getMyHouses() {
+    public Map<String, Object> getMyHouses() {
         Long currentUserId = getCurrentUserId();
         if (currentUserId == null) {
             throw new SecurityException("未登录或登录状态失效");
         }
 
-        // 由 service 层根据 userId 查询
-        return houseService.getHousesByLandlordId(currentUserId);
+        List<Houses> houses = houseService.getHousesByLandlordId(currentUserId);
+
+        Map<String, Object> data = new HashMap<>();
+        data.put("houses", houses);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("data", data);
+        return response;
     }
 
     /**
@@ -166,7 +249,7 @@ public class HousesController {
             return null;
         }
 
-        Users user = UsersService.getUserByUsername(authentication.getName());
+        Users user = usersService.getUserByUsername(authentication.getName());
         return user != null ? user.getId() : null;
     }
 }

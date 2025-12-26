@@ -22,6 +22,8 @@ spring:
       write-dates-as-timestamps: false
     time-zone: Asia/Shanghai
     default-property-inclusion: non_null
+upload:
+  dir: ./uploads
 
 
 # SpringDoc Swagger配置

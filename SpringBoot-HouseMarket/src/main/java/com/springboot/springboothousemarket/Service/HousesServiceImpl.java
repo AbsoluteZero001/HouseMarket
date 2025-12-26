@@ -4,14 +4,14 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.springboot.springboothousemarket.Entity.Houses;
-import com.springboot.springboothousemarket.Mapper.HouseMapper;
+import com.springboot.springboothousemarket.Mapper.HousesMapper;
 import com.springboot.springboothousemarket.Service.HousesService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-public class HousesServiceImpl extends ServiceImpl<HouseMapper, Houses> implements HousesService {
+public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> implements HousesService {
 
     @Override
     public Houses createHouse(Houses house, Long landlordId) {
