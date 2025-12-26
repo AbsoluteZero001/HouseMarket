@@ -5,7 +5,7 @@ import com.springboot.springboothousemarket.Entity.Users;
 
 import java.util.List;
 
-public interface SysUserService extends IService<Users> {
+public interface UsersService extends IService<Users> {
 
     /**
      * 创建用户

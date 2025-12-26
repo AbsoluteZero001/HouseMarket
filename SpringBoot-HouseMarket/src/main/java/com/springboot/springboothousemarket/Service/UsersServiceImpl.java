@@ -9,11 +9,11 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
-public class SysUserServiceImpl extends ServiceImpl<UsersMapper, Users> implements SysUserService {
+public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements UsersService {
 
     private final UsersMapper usersMapper;
 
-    public SysUserServiceImpl(UsersMapper usersMapper) {
+    public UsersServiceImpl(UsersMapper usersMapper) {
         this.usersMapper = usersMapper;
     }
 

@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.springboot.springboothousemarket.Entity.Houses;
 import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Service.HousesService;
-import com.springboot.springboothousemarket.Service.SysUserService;
+import com.springboot.springboothousemarket.Service.UsersService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,9 +20,9 @@ import java.util.Map;
 public class HousesController {
 
     private final HousesService houseService;
-    private final SysUserService sysUserService;
+    private final UsersService sysUserService;
 
-    public HousesController(HousesService houseService, SysUserService sysUserService) {
+    public HousesController(HousesService houseService, UsersService sysUserService) {
         this.houseService = houseService;
         this.sysUserService = sysUserService;
     }

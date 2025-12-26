@@ -3,7 +3,7 @@ package com.springboot.springboothousemarket.Controller;
 import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Service.CaptchaService;
 import com.springboot.springboothousemarket.Service.RegisterRequestService;
-import com.springboot.springboothousemarket.Service.SysUserService;
+import com.springboot.springboothousemarket.Service.UsersService;
 import com.springboot.springboothousemarket.Util.JwtUtil;
 import com.springboot.springboothousemarket.dto.LoginRequest;
 import com.springboot.springboothousemarket.dto.LoginResponse;
@@ -24,9 +24,9 @@ public class RegisterRequestController {
     private final RegisterRequestService service;
     private final CaptchaService captchaService;
     private final JwtUtil jwtUtil;
-    private final SysUserService sysUserService;
+    private final UsersService sysUserService;
 
-    public RegisterRequestController(RegisterRequestService service, CaptchaService captchaService, JwtUtil jwtUtil, SysUserService sysUserService) {
+    public RegisterRequestController(RegisterRequestService service, CaptchaService captchaService, JwtUtil jwtUtil, UsersService sysUserService) {
         this.service = service;
         this.captchaService = captchaService;
         this.jwtUtil = jwtUtil;

@@ -1,7 +1,7 @@
 package com.springboot.springboothousemarket.Controller;
 
 import com.springboot.springboothousemarket.Entity.Users;
-import com.springboot.springboothousemarket.Service.SysUserService;
+import com.springboot.springboothousemarket.Service.UsersService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,9 +12,9 @@ import java.util.List;
 @RestController
 public class UsersController {
 
-    private final SysUserService sysUserService;
+    private final UsersService sysUserService;
 
-    public UsersController(SysUserService sysUserService) {
+    public UsersController(UsersService sysUserService) {
         this.sysUserService = sysUserService;
     }
 
