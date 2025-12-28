@@ -29,10 +29,20 @@ public class RegisterRequestServiceImpl implements RegisterRequestService {
 
     @Override
     public RegisterRequest login(String username, String password, String role) {
-        RegisterRequest user = mapper.login(username, password, role);
+        // 首先根据用户名和密码查询用户
+        RegisterRequest user = mapper.findUserByUsernameAndPassword(username, password);
+
         if (user == null) {
+            // 如果用户不存在，抛出用户名或密码错误
             throw new RuntimeException("用户名或密码错误");
         }
+
+        // 如果用户存在，检查角色是否匹配
+        if (!user.getRole().equals(role)) {
+            // 角色不匹配，抛出登录类型错误
+            throw new RuntimeException("登录类型错误");
+        }
+
         return user;
     }
 }
