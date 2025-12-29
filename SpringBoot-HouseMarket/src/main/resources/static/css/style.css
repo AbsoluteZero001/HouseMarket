@@ -177,9 +177,6 @@ div[class*="decoration"] {
         font-size: 12px;
     }
 }
-  pointer-events: none;
-}
-
 .decoration-1 {
   top: 10%;
   right: 10%;
