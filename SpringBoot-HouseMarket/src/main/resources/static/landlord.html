@@ -7,6 +7,9 @@
     <title>房屋租售系统 - 房东主页</title>
     <link href="css/style.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- WebSocket相关库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
 
 <body>
@@ -456,13 +459,15 @@
 
                 const tbody = document.getElementById('appointmentTable').getElementsByTagName('tbody')[0];
                 tbody.innerHTML = appointments.map(appointment => `
-                <tr>
+                <tr class="appointment-row">
                     <td>${appointment.id}</td>
-                    <td>${appointment.house.title}</td>
-                    <td>${appointment.tenant.username}</td>
-                    <td>${appointment.appointmentTime}</td>
+                    <td>${appointment.house?.title || '未知房屋'}</td>
+                    <td>${appointment.tenant?.username || '未知租客'}</td>
+                    <td>${appointment.time}</td>
                     <td>${appointment.location}</td>
-                    <td>${getStatusText(appointment.status)}</td>
+                    <td>
+                        <span class="status-badge status-${appointment.status}">${getStatusText(appointment.status)}</span>
+                    </td>
                     <td>
                         ${appointment.status === 'pending' ?
                         '<button class="btn btn-success btn-sm" onclick="approveAppointment(' + appointment.id + ')">批准</button>' +
@@ -472,6 +477,18 @@
                     </td>
                 </tr>
             `).join('');
+
+                // 添加表格行动画效果
+                const rows = tbody.querySelectorAll('tr');
+                rows.forEach((row, index) => {
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateY(20px)';
+                    row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    setTimeout(() => {
+                        row.style.opacity = '1';
+                        row.style.transform = 'translateY(0)';
+                    }, index * 50);
+                });
             } catch (error) {
                 console.error('初始化预约记录失败:', error);
                 showMessage('获取预约记录失败', 'error');
@@ -1074,6 +1091,45 @@
             }
         }
 
+        // WebSocket连接
+        let stompClient = null;
+
+        // 建立WebSocket连接
+        function connectWebSocket() {
+            console.log('Attempting to connect WebSocket...');
+            // 使用相对路径，自动匹配当前域名和端口
+            const socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+
+            // 启用调试模式
+            stompClient.debug = function (str) {
+                console.log('STOMP debug: ' + str);
+            };
+
+            stompClient.connect({}, (frame) => {
+                console.log('Connected: ' + frame);
+                showMessage('WebSocket连接成功', 'success');
+
+                // 订阅预约状态变更通知
+                stompClient.subscribe('/user/queue/appointment', (message) => {
+                    console.log('Received message: ' + message.body);
+                    const data = JSON.parse(message.body);
+                    // 显示消息提示
+                    showMessage(data.message || '有新的预约请求', 'success');
+                    // 重新初始化预约列表，显示新的预约
+                    initAppointmentList();
+                    // 更新预约数量徽章
+                    checkNewAppointments();
+                });
+            }, (error) => {
+                console.error('WebSocket连接失败: ' + error);
+                // 显示错误消息
+                showMessage('WebSocket连接失败，将尝试重新连接', 'error');
+                // 3秒后重试连接
+                setTimeout(connectWebSocket, 3000);
+            });
+        }
+
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', () => {
             initLandlordPage();
@@ -1081,11 +1137,18 @@
             // 初始化模态框
             initModals();
 
+            // 建立WebSocket连接
+            connectWebSocket();
+
             // 登出按钮事件
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', (e) => {
                     e.preventDefault();
+                    // 断开WebSocket连接
+                    if (stompClient) {
+                        stompClient.disconnect();
+                    }
                     logout();
                 });
             }

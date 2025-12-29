@@ -1,5 +1,7 @@
 package com.springboot.springboothousemarket.Config;
 
+import com.springboot.springboothousemarket.Entity.Users;
+import com.springboot.springboothousemarket.Service.UsersService;
 import com.springboot.springboothousemarket.Util.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -27,19 +29,26 @@ import java.util.stream.Collectors;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final UsersService usersService;
 
     private final Logger logger = LoggerFactory.getLogger(JwtFilter.class);
 
-    public JwtFilter(JwtUtil jwtUtil) {
+    public JwtFilter(JwtUtil jwtUtil, UsersService usersService) {
         this.jwtUtil = jwtUtil;
+        this.usersService = usersService;
     }
 
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain chain
-    ) throws ServletException, IOException {
+            FilterChain chain) throws ServletException, IOException {
+
+        // 跳过WebSocket请求，直接放行
+        if (request.getRequestURI().startsWith("/ws")) {
+            chain.doFilter(request, response);
+            return;
+        }
 
         String authHeader = request.getHeader("Authorization");
 
@@ -59,13 +68,13 @@ public class JwtFilter extends OncePerRequestFilter {
 
             // 3. 检查 Token 是否过期
             if (username != null && jwtUtil.isTokenExpired(jwtToken)) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);  // 返回 401
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 返回 401
                 response.getWriter().write("Token has expired");
                 return;
             }
         } catch (Exception e) {
             // Token 非法 / 解析失败
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);  // 返回 401
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 返回 401
             response.getWriter().write("Invalid Token: " + e.getMessage());
             return;
         }
@@ -73,14 +82,22 @@ public class JwtFilter extends OncePerRequestFilter {
         // 4. 如果用户名不为空，并且当前没有认证，才注入认证信息
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
+            // 从数据库中获取用户信息
+            Users user = usersService.getUserByUsername(username);
+            if (user == null) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 返回 401
+                response.getWriter().write("User not found");
+                return;
+            }
+
             // 从 JWT 中提取角色信息，并转换为 GrantedAuthority 对象
             List<GrantedAuthority> authorities = jwtUtil.extractRoles(jwtToken).stream()
-                    .map(role -> new SimpleGrantedAuthority(role))  // 转换为 GrantedAuthority
+                    .map(role -> new SimpleGrantedAuthority(role)) // 转换为 GrantedAuthority
                     .collect(Collectors.toList());
 
-            // 创建认证信息对象
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(username, null, authorities);
+            // 创建认证信息对象，使用 Users 对象作为 Principal
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null,
+                    authorities);
 
             // 设置认证信息到 Spring Security 上下文
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

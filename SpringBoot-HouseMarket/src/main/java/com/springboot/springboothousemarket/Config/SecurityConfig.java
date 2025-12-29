@@ -85,13 +85,13 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**")
+                                "/v3/api-docs/**",
+                                "/ws/**") // ⭐ 关键：放行 WebSocket 端点
                         .permitAll()
-                        // 允许访问 /api/houses 和 /api/appointments
-                        .requestMatchers("/api/houses/**").permitAll() // 新增的放行路径
-                        .requestMatchers("/api/appointments/**").permitAll() // 新增的放行路径
-                        // 允许访问 /api/favorites
-                        .requestMatchers("/api/favorites/**").permitAll() // 新增的放行路径
+                        // 保护API接口，需要认证
+                        .requestMatchers("/api/houses/**").authenticated() // 需要认证
+                        .requestMatchers("/api/appointments/**").authenticated() // 需要认证
+                        .requestMatchers("/api/favorites/**").authenticated() // 需要认证
                         // 其他请求必须认证
                         .anyRequest().authenticated())
 

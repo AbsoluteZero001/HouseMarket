@@ -7,6 +7,9 @@
     <title>房屋租售系统 - 租客主页</title>
     <link href="css/style.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- WebSocket相关库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.6.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
 </head>
 
 <body>
@@ -440,13 +443,15 @@
 
                 const tbody = document.getElementById('appointmentTable').getElementsByTagName('tbody')[0];
                 tbody.innerHTML = appointments.map(appointment => `
-                <tr>
+                <tr class="appointment-row">
                     <td>${appointment.id}</td>
-                    <td>${appointment.house.title}</td>
-                    <td>${appointment.landlord.username}</td>
-                    <td>${appointment.appointmentTime}</td>
+                    <td>${appointment.house?.title || '未知房屋'}</td>
+                    <td>${appointment.landlord?.username || '未知房东'}</td>
+                    <td>${appointment.time}</td>
                     <td>${appointment.location}</td>
-                    <td>${getStatusText(appointment.status)}</td>
+                    <td>
+                        <span class="status-badge status-${appointment.status}">${getStatusText(appointment.status)}</span>
+                    </td>
                     <td>
                         ${appointment.status === 'pending' ?
                         '<button class="btn btn-danger btn-sm" onclick="cancelAppointment(' + appointment.id + ')">取消预约</button>' :
@@ -455,6 +460,18 @@
                     </td>
                 </tr>
             `).join('');
+
+                // 添加表格行动画效果
+                const rows = tbody.querySelectorAll('tr');
+                rows.forEach((row, index) => {
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateY(20px)';
+                    row.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+                    setTimeout(() => {
+                        row.style.opacity = '1';
+                        row.style.transform = 'translateY(0)';
+                    }, index * 50);
+                });
             } catch (error) {
                 console.error('初始化预约记录失败:', error);
                 showMessage('获取预约记录失败', 'error');
@@ -596,6 +613,80 @@
             initHouseList();
         }
 
+        // WebSocket连接
+        let stompClient = null;
+
+        // 建立WebSocket连接
+        function connectWebSocket() {
+            console.log('Attempting to connect WebSocket...');
+            // 使用相对路径，自动匹配当前域名和端口
+            const socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+
+            // 启用调试模式
+            stompClient.debug = function (str) {
+                console.log('STOMP debug: ' + str);
+            };
+
+            stompClient.connect({}, (frame) => {
+                console.log('Connected: ' + frame);
+                showMessage('WebSocket连接成功', 'success');
+
+                // 订阅预约状态变更通知
+                stompClient.subscribe('/user/queue/appointment', (message) => {
+                    console.log('Received message: ' + message.body);
+                    const data = JSON.parse(message.body);
+                    // 更新预约状态
+                    updateAppointmentStatus(data.appointmentId, data.status);
+                    // 显示消息提示
+                    showMessage(data.message || '预约状态已更新', 'success');
+                });
+            }, (error) => {
+                console.error('WebSocket连接失败: ' + error);
+                // 显示错误消息
+                showMessage('WebSocket连接失败，将尝试重新连接', 'error');
+                // 3秒后重试连接
+                setTimeout(connectWebSocket, 3000);
+            });
+        }
+
+        // 更新预约状态
+        function updateAppointmentStatus(appointmentId, status) {
+            // 查找对应的预约行
+            const tbody = document.getElementById('appointmentTable').getElementsByTagName('tbody')[0];
+            const rows = tbody.getElementsByTagName('tr');
+
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                const idCell = row.cells[0];
+                if (parseInt(idCell.textContent) === appointmentId) {
+                    // 更新状态列
+                    const statusCell = row.cells[5];
+                    statusCell.innerHTML = `<span class="status-badge status-${status}">${getStatusText(status)}</span>`;
+
+                    // 更新操作列
+                    const actionCell = row.cells[6];
+                    if (status === 'approved' || status === 'rejected') {
+                        actionCell.innerHTML = '<button class="btn btn-secondary btn-sm" disabled>查看</button>';
+                    }
+
+                    // 添加动画效果
+                    row.style.backgroundColor = 'rgba(76, 175, 80, 0.2)';
+                    setTimeout(() => {
+                        row.style.backgroundColor = '';
+                    }, 2000);
+
+                    break;
+                }
+            }
+
+            // 如果当前显示的是预约记录页面，重新初始化预约列表
+            const appointmentSection = document.getElementById('appointment');
+            if (appointmentSection && appointmentSection.style.display !== 'none') {
+                initAppointmentList();
+            }
+        }
+
         // 重写showSection函数，添加收藏列表和预约记录初始化
         window.showSection = function (sectionId) {
             // 隐藏所有section
@@ -635,11 +726,18 @@
             // 初始化模态框
             initModals();
 
+            // 建立WebSocket连接
+            connectWebSocket();
+
             // 登出按钮事件
             const logoutBtn = document.getElementById('logoutBtn');
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', (e) => {
                     e.preventDefault();
+                    // 断开WebSocket连接
+                    if (stompClient) {
+                        stompClient.disconnect();
+                    }
                     logout();
                 });
             }

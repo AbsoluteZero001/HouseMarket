@@ -3,6 +3,9 @@ package com.springboot.springboothousemarket.Mapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.springboot.springboothousemarket.Entity.Appointment;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
  * 预约映射器接口
@@ -12,6 +15,12 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface AppointmentMapper extends BaseMapper<Appointment> {
 
-    // 该接口无需额外定义方法，直接继承BaseMapper中的方法即可满足需求
-    // BaseMapper已提供了对Appointment实体类的完整数据库操作方法
+    /**
+     * 根据用户ID和状态获取预约记录，带关联信息
+     *
+     * @param userId 用户ID
+     * @param status 预约状态
+     * @return 预约记录列表
+     */
+    List<Appointment> selectAppointmentsWithDetails(@Param("userId") Long userId, @Param("status") String status);
 }

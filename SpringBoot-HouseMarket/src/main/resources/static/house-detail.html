@@ -385,9 +385,9 @@
                 const bookData = {
                     houseId: houseId,
                     tenantId: user.id,
-                    appointmentTime: `${formData.get('date')} ${formData.get('time')}`,
+                    time: `${formData.get('date')} ${formData.get('time')}`,
                     location: formData.get('location'),
-                    message: formData.get('message'),
+                    notes: formData.get('message'),
                     status: 'pending'
                 };
 

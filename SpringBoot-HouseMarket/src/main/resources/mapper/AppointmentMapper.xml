@@ -2,17 +2,61 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.springboot.springboothousemarket.Mapper.AppointmentMapper">
 
+    <!-- 基础结果映射 -->
     <resultMap id="appointmentResultMap" type="com.springboot.springboothousemarket.Entity.Appointment">
         <id property="id" column="id"/>
-        <result property="houseId" column="houseId"/>
-        <result property="tenantId" column="tenantId"/>
-        <result property="landlordId" column="landlordId"/>
+        <result property="houseId" column="house_id"/>
+        <result property="tenantId" column="tenant_id"/>
+        <result property="landlordId" column="landlord_id"/>
         <result property="time" column="time"/>
         <result property="location" column="location"/>
         <result property="notes" column="notes"/>
         <result property="status" column="status"/>
-        <result property="createTime" column="createTime"/>
-        <result property="updateTime" column="updateTime"/>
+        <result property="createTime" column="create_time"/>
     </resultMap>
+
+    <!-- 关联查询结果映射 -->
+    <resultMap id="appointmentWithDetailsResultMap" type="com.springboot.springboothousemarket.Entity.Appointment"
+               extends="appointmentResultMap">
+        <!-- 关联房屋信息 -->
+        <association property="house" javaType="com.springboot.springboothousemarket.Entity.Houses">
+            <id property="id" column="h_id"/>
+            <result property="title" column="h_title"/>
+        </association>
+        <!-- 关联租客信息 -->
+        <association property="tenant" javaType="com.springboot.springboothousemarket.Entity.Users">
+            <id property="id" column="t_id"/>
+            <result property="username" column="t_username"/>
+        </association>
+        <!-- 关联房东信息 -->
+        <association property="landlord" javaType="com.springboot.springboothousemarket.Entity.Users">
+            <id property="id" column="l_id"/>
+            <result property="username" column="l_username"/>
+        </association>
+    </resultMap>
+
+    <!-- 自定义查询方法，根据用户ID和状态获取预约记录，带关联信息 -->
+    <select id="selectAppointmentsWithDetails" resultMap="appointmentWithDetailsResultMap">
+        SELECT
+        a.*,
+        h.id AS h_id, h.title AS h_title,
+        tu.id AS t_id, tu.username AS t_username,
+        lu.id AS l_id, lu.username AS l_username
+        FROM
+        appointments a
+        LEFT JOIN
+        houses h ON a.house_id = h.id
+        LEFT JOIN
+        users tu ON a.tenant_id = tu.id
+        LEFT JOIN
+        users lu ON a.landlord_id = lu.id
+        WHERE
+        a.tenant_id = #{userId} OR a.landlord_id = #{userId}
+        <if test="status != null and status != ''">
+            AND a.status = #{status}
+        </if>
+        ORDER BY
+        a.create_time DESC
+    </select>
 
 </mapper>
