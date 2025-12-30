@@ -258,11 +258,30 @@ public class AppointmentController {
     /**
      * 删除预约
      *
-     * @param id 预约ID
+     * @param id          预约ID
+     * @param currentUser 当前登录用户
      * @return 操作结果
      */
     @DeleteMapping("/{id}")
-    public Map<String, Object> deleteAppointment(@PathVariable Long id) {
+    public Map<String, Object> deleteAppointment(@PathVariable Long id, @AuthenticationPrincipal Users currentUser) {
+        // 获取预约信息
+        Appointment appointment = appointmentService.getById(id);
+        if (appointment == null) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "预约不存在");
+            return response;
+        }
+
+        // 检查权限：只有房东或租客可以删除预约
+        if (!appointment.getLandlordId().equals(currentUser.getId())
+                && !appointment.getTenantId().equals(currentUser.getId())) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "没有权限删除该预约");
+            return response;
+        }
+
         boolean result = appointmentService.deleteAppointment(id);
 
         Map<String, Object> response = new HashMap<>();

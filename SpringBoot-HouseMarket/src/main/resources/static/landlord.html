@@ -470,10 +470,11 @@
                     </td>
                     <td>
                         ${appointment.status === 'pending' ?
-                        '<button class="btn btn-success btn-sm" onclick="approveAppointment(' + appointment.id + ')">批准</button>' +
-                        '<button class="btn btn-danger btn-sm" onclick="rejectAppointment(' + appointment.id + ')" style="margin-left: 0.5rem;">拒绝</button>' :
+                    `<button class="btn btn-success btn-sm" onclick="approveAppointment(${appointment.id})">批准</button>
+                        <button class="btn btn-danger btn-sm" onclick="rejectAppointment(${appointment.id})" style="margin-left: 0.5rem;">拒绝</button>` :
                         '<button class="btn btn-secondary btn-sm" disabled>查看</button>'
                     }
+                        <button class="btn btn-danger btn-sm" onclick="deleteAppointment(${appointment.id})" style="margin-left: 0.5rem;"><i class="fas fa-trash"></i> 删除</button>
                     </td>
                 </tr>
             `).join('');
@@ -1052,6 +1053,40 @@
                 showMessage('拒绝预约失败: ' + error.message, 'error');
             } finally {
                 hideProgressBar();
+            }
+        }
+
+        // 删除预约
+        async function deleteAppointment(appointmentId) {
+            if (confirm('确定要删除这条预约记录吗？')) {
+                try {
+                    showProgressBar();
+                    const token = localStorage.getItem('token');
+                    const response = await fetch(`/api/appointments/${appointmentId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error('删除预约失败: ' + errorText);
+                    }
+
+                    const result = await response.json();
+                    if (result.success) {
+                        showMessage('预约已删除', 'success');
+                        initAppointmentList(); // 更新预约记录
+                    } else {
+                        throw new Error('删除预约失败: ' + (result.message || '未知错误'));
+                    }
+                } catch (error) {
+                    console.error('删除预约失败:', error);
+                    showMessage('删除预约失败: ' + error.message, 'error');
+                } finally {
+                    hideProgressBar();
+                }
             }
         }
 
