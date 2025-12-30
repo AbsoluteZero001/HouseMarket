@@ -1,240 +1,308 @@
-# 房屋租售系统
+# 房屋租赁市场系统
 
-一个基于Spring Boot开发的现代化房屋租售系统，支持租客和房东两种角色，提供房源管理、预约看房、收藏管理等功能。
+一个基于Spring Boot和现代Web技术的房屋租赁市场系统，支持租客预约房屋和房东管理预约功能。
 
-## 🌟 项目特性
+## 🚀 项目概述
 
-- 🎨 **现代化UI设计**：采用渐变背景、粒子动画等现代设计元素
-- 👥 **双角色系统**：支持租客和房东两种角色，功能分离清晰
-- 🔒 **安全认证**：基于JWT的身份认证和授权
-- 📱 **响应式设计**：适配不同屏幕尺寸
-- ⚡ **高性能**：使用Spring Boot 3和Java 21，提供卓越性能
-- 📦 **完整功能**：包含房源管理、预约看房、收藏管理等核心功能
-- 📋 **RESTful API**：提供完整的API文档，便于二次开发
+该项目是一个完整的房屋租赁市场系统，旨在连接租客和房东，提供便捷的房屋预约和管理服务。系统采用前后端分离架构，支持实时通信，具有现代化的UI设计和流畅的用户体验。
 
 ## 🛠️ 技术栈
 
-### 后端
-- **框架**：Spring Boot 3.2.4
-- **开发语言**：Java 21
-- **ORM框架**：MyBatis Plus 3.5.5
-- **数据库**：MySQL
-- **安全框架**：Spring Security
-- **认证方式**：JWT
-- **API文档**：Swagger/OpenAPI 3
-- **缓存**：Spring Cache
-- **构建工具**：Maven
+### 后端技术
+- **Spring Boot 3.2.4** - 企业级Java应用开发框架
+- **Java 21** - 最新LTS版本的Java编程语言
+- **MyBatis Plus** - 强大的ORM框架，简化数据库操作
+- **Spring Security** - 提供JWT认证和授权
+- **JWT (JSON Web Token)** - 用于用户身份验证和会话管理
+- **WebSocket (STOMP)** - 实现实时通信，支持预约状态实时更新
+- **RESTful API** - 标准化的API设计
+- **MySQL 8.0+** - 数据库管理系统
+- **Hibernate** - Java持久化框架
+- **Apache Commons** - 提供常用工具类
+- **Swagger/OpenAPI** - API文档生成和测试工具
 
-### 前端
-- **HTML5/CSS3**：现代化的页面结构和样式
-- **JavaScript**：原生JavaScript，无框架依赖
-- **图标库**：Font Awesome 6
-- **动画效果**：CSS动画和过渡效果
+### 前端技术
+- **HTML5** - 页面结构
+- **CSS3** - 样式设计，包含动画和响应式布局
+- **JavaScript** - 交互逻辑和WebSocket客户端
+- **Font Awesome** - 图标库
+- **SockJS & STOMP** - WebSocket通信协议
+- **WebJars** - 前端依赖管理
 
-## 📁 项目结构
+## ✨ 核心功能
+
+### 用户认证与授权
+- **多角色系统**：支持租客(TENANT)、房东(LANDLORD)和管理员(ADMIN)三种角色
+- **JWT令牌认证**：安全的无状态身份验证机制
+- **角色权限控制**：不同角色拥有不同功能权限
+- **验证码系统**：防止机器人注册和登录
+- **用户注册与登录**：支持安全的账户创建和访问
+
+### 房源管理
+- **房源发布**：房东可以发布房源信息（标题、类型、面积、价格、地址、描述等）
+- **房源展示**：支持图片展示、详细信息和筛选功能
+- **房源搜索**：按关键词、类型、价格范围、面积范围、地址等条件搜索
+- **房源收藏**：租客可以收藏感兴趣的房源
+- **房源详情**：查看房源完整信息和图片
+
+### 预约系统
+- **租客功能**：
+  - 浏览房源并发起预约请求
+  - 查看预约历史和状态
+  - 接收预约状态实时通知
+  - 取消预约请求
+  
+- **房东功能**：
+  - 查看所有预约请求
+  - 批准或拒绝预约
+  - 管理预约历史
+  - 接收新预约实时通知
+  - 查看租客信息
+
+### 实时通信
+- 基于WebSocket的STOMP协议
+- 租客提交预约后，房东实时收到通知
+- 房东处理预约后，租客实时收到状态更新
+- 无需页面刷新，实时数据同步
+
+### 管理员功能
+- 用户管理：查看、编辑、删除用户信息
+- 房源管理：审核房源、管理房源信息
+- 预约管理：监控所有预约状态
+- 系统统计：查看平台运营数据
+
+### UI/UX设计
+- 现代化的渐变背景和动画效果
+- 响应式设计，适配各种设备
+- 流畅的交互动画
+- 直观的状态展示（使用颜色编码的徽章）
+
+## 📦 项目结构
 
 ```
 SpringBoot-HouseMarket/
 ├── src/
 │   ├── main/
 │   │   ├── java/com/springboot/springboothousemarket/
-│   │   │   ├── Config/           # 配置类
-│   │   │   ├── Controller/       # 控制器
-│   │   │   ├── Entity/           # 实体类
-│   │   │   ├── Mapper/           # MyBatis映射接口
-│   │   │   ├── Service/          # 业务逻辑层
-│   │   │   ├── Util/             # 工具类
-│   │   │   ├── dto/              # 数据传输对象
-│   │   │   └── SpringBootHouseMarketApplication.java  # 主启动类
+│   │   │   ├── Config/              # 配置类（安全、WebSocket、MyBatis等）
+│   │   │   ├── Controller/          # 控制器层（API接口）
+│   │   │   ├── Entity/              # 实体类（数据库映射）
+│   │   │   ├── Mapper/              # MyBatis映射接口
+│   │   │   ├── Service/             # 服务层（业务逻辑）
+│   │   │   ├── Util/                # 工具类（JWT工具等）
+│   │   │   ├── dto/                 # 数据传输对象
+│   │   │   └── SpringBootHouseMarketApplication.java # 应用启动类
 │   │   └── resources/
-│   │       ├── mapper/           # MyBatis XML映射文件
-│   │       ├── static/           # 静态资源
-│   │       │   ├── assets/       # 静态资源文件
-│   │       │   ├── css/          # CSS样式文件
-│   │       │   ├── admin.html     # 管理员页面
-│   │       │   ├── house-detail.html  # 房源详情页
-│   │       │   ├── landlord.html  # 房东页面
-│   │       │   ├── login.html     # 登录页
-│   │       │   ├── register.html  # 注册页
-│   │       │   └── tenant.html    # 租客页面
-│   │       └── application.yml   # 应用配置
-│   └── test/                     # 测试代码
-├── .gitignore                    # Git忽略文件
-├── mvnw                          # Maven包装器（Windows）
-├── mvnw.cmd                      # Maven包装器（Linux/Mac）
-├── pom.xml                       # Maven依赖配置
-└── README.md                     # 项目说明文档
+│   │       ├── mapper/              # MyBatis XML映射文件
+│   │       ├── static/              # 静态资源（HTML、CSS、JS）
+│   │       │   ├── assets/          # 资源文件（js）
+│   │       │   ├── css/             # CSS样式文件
+│   │       │   ├── admin.html       # 管理员界面
+│   │       │   ├── house-detail.html # 房源详情页
+│   │       │   ├── landlord.html    # 房东界面
+│   │       │   ├── login.html       # 登录界面
+│   │       │   ├── register.html    # 注册界面
+│   │       │   └── tenant.html      # 租客界面
+│   │       ├── application.yml      # 应用配置文件
+│   │       └── application-private.yml # 私有配置文件 存放本地敏感信息
+│   └── test/                        # 测试代码
+├── pom.xml                          # Maven依赖管理
+└── README.md                        # 项目说明文档
 ```
 
-## 🚀 快速开始
+## 🔧 快速开始
 
 ### 环境要求
-
-- Java 21+
-- Maven 3.6+
+- Java 21
+- Maven 3.8+
 - MySQL 8.0+
+- Node.js (可选，用于前端开发)
 
-### 安装部署
+### 安装步骤
 
 1. **克隆项目**
-
    ```bash
-   git clone https://github.com/your-username/SpringBoot-HouseMarket.git
+   git clone <repository-url>
    cd SpringBoot-HouseMarket
    ```
 
 2. **配置数据库**
-
-   - 创建名为`房源市场`的数据库
-   - 修改`application.yml`中的数据库连接配置（可选，默认从环境变量获取）
-
-   ```yaml
-   spring:
-     datasource:
-       url: jdbc:mysql://localhost:3306/房源市场?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
-       username: your-username
-       password: your-password
-   ```
+   - 创建MySQL数据库（例如：房源市场）
+   - 修改 [application.yml] 中的数据库连接信息
+   - 设置环境变量 DB_USERNAME 和 DB_PASSWORD，或直接在配置文件中设置数据库用户名和密码
 
 3. **构建项目**
-
    ```bash
    mvn clean install
    ```
 
 4. **运行项目**
-
    ```bash
    mvn spring-boot:run
    ```
-
-   或运行打包后的jar文件：
-
+   
+   或者打包后运行：
    ```bash
+   mvn package
    java -jar target/SpringBoot-HouseMarket-0.0.1-SNAPSHOT.jar
    ```
 
 5. **访问系统**
+   - 打开浏览器访问 `http://localhost:8082`
+   - 系统会自动打开登录页面 `http://localhost:8082/login.html`
+   - 使用注册的账号登录系统
 
-   项目启动后，会自动打开浏览器访问登录页面：
-   ```
-   http://localhost:8082/login.html
-   ```
+### 数据库表结构
+系统使用以下主要数据表：
 
-### API文档
+- `users` - 用户信息表
+- `houses` - 房源信息表  
+- `appointments` - 预约信息表
+- `favorites` - 收藏信息表
 
-项目集成了Swagger/OpenAPI，可通过以下地址访问API文档：
+
+## 🔍 核心功能详解
+
+### 1. 用户认证流程
+
+**注册流程**：
+1. 用户填写注册信息（用户名、密码、角色）
+2. 系统验证信息格式和唯一性
+3. 密码加密后存储到数据库
+4. 用户状态设置为待审核或直接激活
+
+**登录流程**：
+1. 用户输入用户名、密码和角色
+2. 系统验证用户凭据
+3. 生成JWT令牌
+4. 返回用户信息和访问令牌
+
+**JWT令牌机制**：
+- 令牌有效期：10小时
+- 包含用户角色信息
+- 每次请求需要在Header中携带 `Authorization: Bearer <token>`
+- 令牌过期后需要重新登录
+
+### 2. 预约流程
+
+**租客端**：
+1. 浏览房源列表
+2. 选择感兴趣的房源
+3. 填写预约信息（时间、地点等）
+4. 提交预约请求
+5. 实时收到预约状态更新
+
+**房东端**：
+1. 登录系统
+2. 查看待处理的预约请求
+3. 批准或拒绝预约
+4. 查看预约历史记录
+5. 实时接收新预约通知
+
+### 3. WebSocket实时通信
+
+系统使用Spring Boot的WebSocket支持，通过STOMP协议实现实时通信：
+- 配置了 `/ws` 端点用于WebSocket连接
+- 使用 `/topic` 和 `/queue` 前缀进行消息路由
+- 租客和房东订阅不同的消息通道
+- 预约状态变化时，通过WebSocket实时推送通知
+
+### 4. 安全设计
+
+- JWT认证，无状态设计
+- 角色权限控制（租客/房东/管理员）
+- WebSocket连接也经过认证
+- 密码加密存储
+- 请求频率限制和防刷机制
+- SQL注入防护（MyBatis Plus内置）
+- XSS攻击防护
+
+## 🎨 界面设计
+
+- **现代化渐变背景**：使用紫色系渐变，营造高端感
+- **粒子动画效果**：增强视觉体验
+- **响应式布局**：适配桌面、平板和移动设备
+- **流畅的过渡动画**：悬停效果、滑动动画等
+- **直观的状态标识**：使用不同颜色的徽章表示预约状态
+- **用户友好的导航**：清晰的菜单结构和页面导航
+
+## 📋 已实现功能
+
+1. **用户系统**：注册、登录、角色管理、JWT认证
+2. **房源管理**：发布、编辑、删除、搜索、详情展示
+3. **预约系统**：预约创建、状态管理、实时通知
+4. **收藏功能**：租客收藏感兴趣的房源
+5. **实时通信**：基于WebSocket的预约状态更新
+6. **前端界面**：租客端、房东端、管理员端
+7. **安全机制**：JWT认证、角色权限控制
+8. **API文档**：通过Swagger自动生成API文档
+9. **文件上传**：房源图片上传功能
+10. **数据统计**：基本的用户和房源统计
+
+## 📋 未实现功能
+
+以下功能计划在后续版本中实现：
+
+1. **支付系统**：支持在线支付定金或租金
+2. **评价系统**：租客和房东互相评价
+3. **消息系统**：租客和房东之间的即时通讯
+4. **高级搜索和过滤**：按价格、面积、位置等多条件搜索
+5. **房源图片上传**：支持多张图片上传和预览
+6. **地图集成**：房源位置可视化
+7. **通知中心**：统一管理所有通知
+8. **数据统计和报表**：房东查看房源预约情况统计
+9. **邮件通知**：重要事件邮件提醒
+10. **手机验证码**：注册和找回密码功能
+
+## 🔮 未来规划
+
+- 微服务架构改造
+- 引入前端框架（React/Vue）
+- 移动端APP开发
+- 云部署支持
+- 大数据分析，提供智能推荐
+- AI驱动的房源推荐系统
+- 智能客服集成
+
+## 📊 API接口文档
+
+系统提供完整的RESTful API接口，可通过Swagger UI访问：
+- 访问地址：`http://localhost:8082/swagger-ui.html`
+- 提供所有API的在线文档和测试功能
+
+主要API模块：
+- `/api/v1/auth` - 认证相关接口
+- `/api/houses` - 房源管理接口
+- `/api/appointments` - 预约管理接口
+- `/api/favorites` - 收藏管理接口
+- `/api/users` - 用户管理接口
+
+## 🧪 测试
+
+运行单元测试：
+```bash
+mvn test
 ```
-http://localhost:8082/swagger-ui.html
+
+运行集成测试：
+```bash
+mvn verify
 ```
 
-## 📖 功能说明
-
-### 租客功能
-
-- 🔍 **房源搜索**：根据关键词、户型、面积、价格等条件搜索房源
-- 💖 **收藏管理**：收藏喜欢的房源，方便后续查看
-- 📅 **预约看房**：预约看房时间和地点
-- 👤 **个人中心**：修改密码、查看个人信息
-
-### 房东功能
-
-- 🏠 **房源管理**：发布、编辑、删除房源信息
-- 📊 **预约管理**：查看、批准或拒绝看房预约
-- 👤 **个人中心**：修改密码、查看个人信息
-
-## 🎯 使用指南
-
-### 1. 注册登录
-
-- 访问登录页面：`http://localhost:8082/login.html`
-- 点击"注册"链接进入注册页面
-- 填写注册信息，选择角色（租客或房东）
-- 注册成功后自动跳转到登录页面
-- 使用注册的账号密码登录
-
-### 2. 租客操作
-
-- **浏览房源**：登录后进入租客首页，浏览房源列表
-- **搜索房源**：使用搜索栏根据条件筛选房源
-- **收藏房源**：点击房源卡片上的"收藏"按钮
-- **预约看房**：点击"预约看房"按钮，填写预约信息
-- **查看预约**：点击"预约记录"查看已预约的看房信息
-
-### 3. 房东操作
-
-- **发布房源**：登录后进入房东首页，点击"发布新房源"
-- **管理房源**：点击"房源管理"查看和管理已发布的房源
-- **处理预约**：点击"预约记录"查看和处理看房预约
-
-## 🛡️ 安全配置
-
-- **JWT认证**：使用JWT进行身份认证，Token有效期默认24小时
-- **密码加密**：密码存储使用BCrypt加密
-- **CORS配置**：支持跨域请求
-- **SQL注入防护**：使用MyBatis Plus的参数化查询
-
-## ⚙️ 配置说明
-
-### 主要配置项
-
-| 配置项 | 说明 | 默认值 |
-|-------|------|--------|
-| `server.port` | 服务器端口 | 8082 |
-| `spring.datasource.url` | 数据库连接URL | jdbc:mysql://localhost:3306/房源市场 |
-| `spring.datasource.username` | 数据库用户名 | - |
-| `spring.datasource.password` | 数据库密码 | - |
-| `spring.application.name` | 应用名称 | SpringBoot-HouseMarket |
-| `springdoc.swagger-ui.path` | Swagger UI路径 | /swagger-ui.html |
-
-## 📝 开发指南
-
-### 代码规范
-
-- 遵循Spring Boot最佳实践
-- 使用Lombok简化代码
-- 接口返回统一格式
-- 异常处理使用@RestControllerAdvice
-
-### 数据库设计
-
-主要实体类：
-
-- `Users`：用户信息
-- `Houses`：房源信息
-- `Appointment`：预约记录
-- `Favorites`：收藏信息
-
-## 🤝 贡献
+## 🤝 贡献指南
 
 欢迎提交Issue和Pull Request！
 
-1. Fork 项目
+1. Fork 本仓库
 2. 创建特性分支 (`git checkout -b feature/AmazingFeature`)
 3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
 4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 打开 Pull Request
+5. 开启 Pull Request
 
 ## 📄 许可证
 
-本项目采用MIT许可证，详情请查看[LICENSE](LICENSE)文件。
-
-## 📞 联系方式
-
-如有问题或建议，欢迎通过以下方式联系：
-
-- GitHub Issues:https://github.com/AbsoluteZero001/HouseMarket/issues
-- Email:absolutezero.cold200@simplelogin.com
-
-## 📋 更新日志
-
-### v0.0.1-SNAPSHOT
-
-- 初始版本
-- 实现租客和房东角色功能
-- 房源管理、预约看房、收藏管理等核心功能
-- 现代化UI设计
+本项目采用MIT许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
 
 ---
 
-**感谢使用房屋租售系统！** 🎉
+**项目还在持续完善中，欢迎关注和参与！** 🚀
