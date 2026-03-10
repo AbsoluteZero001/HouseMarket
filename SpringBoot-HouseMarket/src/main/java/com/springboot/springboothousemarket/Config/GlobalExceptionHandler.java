@@ -16,6 +16,7 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+
     /**
      * 处理所有异常
      *
