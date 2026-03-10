@@ -15,15 +15,20 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     public Appointment createAppointment(Appointment appointment) {
         appointment.setStatus("pending"); // 默认状态为待处理
         appointment.setCreateTime(LocalDateTime.now());
-        appointment.setUpdateTime(LocalDateTime.now());
         this.save(appointment);
         return appointment;
     }
 
     @Override
     public List<Appointment> getAppointmentsByUserIdAndStatus(Long userId, String status) {
-        // 这里应该实现具体的查询逻辑，目前只是示意
-        return this.list();
+        // 使用自定义的mapper方法，查询预约记录并关联房屋、租客和房东信息
+        return this.baseMapper.selectAppointmentsWithDetails(userId, status);
+    }
+
+    @Override
+    public List<Appointment> getAppointmentsByLandlordId(Long landlordId, String status) {
+        // 使用自定义的mapper方法，查询房东收到的预约记录并关联房屋、租客和房东信息
+        return this.baseMapper.selectAppointmentsByLandlordIdWithDetails(landlordId, status);
     }
 
     @Override
@@ -31,7 +36,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         Appointment appointment = this.getById(id);
         if (appointment != null) {
             appointment.setStatus(status);
-            appointment.setUpdateTime(LocalDateTime.now());
+            // updateTime字段已从实体类中移除，因为数据库中没有这个字段
             return this.updateById(appointment);
         }
         return false;

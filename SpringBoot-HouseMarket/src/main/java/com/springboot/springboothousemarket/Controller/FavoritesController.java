@@ -2,7 +2,7 @@ package com.springboot.springboothousemarket.Controller;
 
 import com.springboot.springboothousemarket.Entity.Favorites;
 import com.springboot.springboothousemarket.Service.FavoritesService;
-import com.springboot.springboothousemarket.Service.HouseService;
+import com.springboot.springboothousemarket.Service.HousesService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,9 +15,9 @@ import java.util.Map;
 @RestController
 public class FavoritesController {
     private final FavoritesService favoritesService;
-    private final HouseService houseService;
+    private final HousesService houseService;
 
-    public FavoritesController(FavoritesService favoritesService, HouseService houseService) {
+    public FavoritesController(FavoritesService favoritesService, HousesService houseService) {
         this.favoritesService = favoritesService;
         this.houseService = houseService;
     }
@@ -79,7 +79,7 @@ public class FavoritesController {
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
-        response.put("data", favorites);
+        response.put("data", data);
 
         return response;
     }

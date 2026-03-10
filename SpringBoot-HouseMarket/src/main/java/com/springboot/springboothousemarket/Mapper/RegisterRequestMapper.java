@@ -10,5 +10,7 @@ public interface RegisterRequestMapper {
 
     int register(RegisterRequest request);
 
+    RegisterRequest findUserByUsernameAndPassword(String username, String password);
+
     RegisterRequest login(String username, String password, String role);
 }

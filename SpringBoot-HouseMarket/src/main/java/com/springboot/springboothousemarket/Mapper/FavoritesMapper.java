@@ -25,6 +25,7 @@ public interface FavoritesMapper extends BaseMapper<Favorites> {
 
     /**
      * 根据用户ID查询其所有收藏的房源
+     * 
      * @param userId 用户ID
      * @return 收藏列表
      */
@@ -32,7 +33,8 @@ public interface FavoritesMapper extends BaseMapper<Favorites> {
 
     /**
      * 根据用户ID和房源ID查询收藏记录
-     * @param userId 用户ID
+     *
+     * @param userId  用户ID
      * @param houseId 房源ID
      * @return 收藏记录实体
      */

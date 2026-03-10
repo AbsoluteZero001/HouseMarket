@@ -16,13 +16,22 @@ public interface AppointmentService extends IService<Appointment> {
     Appointment createAppointment(Appointment appointment);
 
     /**
-     * 根据用户ID获取预约列表
+     * 根据用户ID获取预约列表，包括作为租客和房东的预约
      *
      * @param userId 用户ID
      * @param status 预约状态
      * @return 预约列表
      */
     List<Appointment> getAppointmentsByUserIdAndStatus(Long userId, String status);
+
+    /**
+     * 根据房东ID获取收到的预约列表
+     *
+     * @param landlordId 房东ID
+     * @param status     预约状态
+     * @return 预约列表
+     */
+    List<Appointment> getAppointmentsByLandlordId(Long landlordId, String status);
 
     /**
      * 更新预约状态

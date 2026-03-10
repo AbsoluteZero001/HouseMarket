@@ -20,7 +20,7 @@ public class SwaggerConfig {
                         .description("进行房屋租售的在线平台") // 描述
                         .version("1.0")                  // 版本
                         .contact(new Contact()
-                                .name("成都工业职业技术学院EnderManTeam")
+                                .name("EnderManTeam")
                                 .url("http://localhost:8082/")
                                 .email("absolutezero.cold200@simplelogin.com")));
     }

@@ -3,13 +3,13 @@ package com.springboot.springboothousemarket.Util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -19,35 +19,17 @@ import java.util.function.Function;
 @Component
 public class JwtUtil {
 
-    /**
-     * JWT密钥，用于签名令牌
-     */
-    private final String SECRET_KEY = "housemarketsecret";
+    // 生成一个符合安全要求的密钥，大小 >= 256 位
+    private final SecretKey SIGNING_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
 
-    /**
-     * 获取用于签名的密钥
-     *
-     * @return 返回用于签名的SecretKey对象
-     */
     private SecretKey getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
-        return Keys.hmacShaKeyFor(keyBytes);
+        return SIGNING_KEY;
     }
 
-    /**
-     * 从令牌中提取用户名
-     * @param token
-     * @return 用户名
-     */
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
     }
 
-    /**
-     * 从令牌中提取过期时间
-     * @param token JWT令牌
-     * @return 过期时间
-     */
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
     }
@@ -61,7 +43,7 @@ public class JwtUtil {
         return Jwts.parserBuilder().setSigningKey(getSignInKey()).build().parseClaimsJws(token).getBody();
     }
 
-    private Boolean isTokenExpired(String token) {
+    public Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
@@ -71,14 +53,45 @@ public class JwtUtil {
         return createToken(claims, username);
     }
 
+    // 生成包含多个角色的token
+    public String generateToken(String username, List<String> roles) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", roles);
+        return createToken(claims, username);
+    }
+
     private String createToken(Map<String, Object> claims, String subject) {
-        return Jwts.builder().setClaims(claims).setSubject(subject).setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
-                .signWith(getSignInKey(), SignatureAlgorithm.HS256).compact();
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(subject)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10小时过期
+                .signWith(getSignInKey(), SignatureAlgorithm.HS256)
+                .compact();
     }
 
     public Boolean validateToken(String token, String username) {
         final String extractedUsername = extractUsername(token);
         return (extractedUsername.equals(username) && !isTokenExpired(token));
+    }
+
+    // 提取角色信息，支持单个角色和多个角色
+    public List<String> extractRoles(String token) {
+        Claims claims = extractAllClaims(token);
+
+        // 检查是否有新的 "roles" 字段（列表）
+        Object rolesObj = claims.get("roles");
+        if (rolesObj instanceof List) {
+            return (List<String>) rolesObj;
+        }
+
+        // 向后兼容：检查旧的 "role" 字段（单个字符串）
+        String role = claims.get("role", String.class);
+        if (role != null) {
+            return List.of(role);
+        }
+
+        // 如果没有角色信息，返回空列表
+        return List.of();
     }
 }

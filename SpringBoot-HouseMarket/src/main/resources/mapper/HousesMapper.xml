@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.springboot.springboothousemarket.Mapper.HousesMapper">
+
+    <resultMap id="houseResultMap" type="com.springboot.springboothousemarket.Entity.Houses">
+        <id property="id" column="id"/>
+        <result property="landlordId" column="landlord_id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="address" column="address"/>
+        <result property="price" column="price"/>
+        <result property="type" column="type"/>
+        <result property="area" column="area"/>
+        <result property="images" column="image"/>
+        <result property="status" column="status"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="isDeleted" column="is_deleted"/>
+    </resultMap>
+
+    <!-- 根据房东 ID 查询 -->
+    <select id="selectByLandlordId" resultMap="houseResultMap">
+        SELECT id,
+               landlord_id,
+               title,
+               description,
+               address,
+               price,
+               type,
+               area,
+               image,
+               status,
+               create_time,
+               update_time,
+               is_deleted
+        FROM houses
+        WHERE landlord_id = #{landlordId}
+          AND is_deleted = 0
+    </select>
+
+    <!-- 分页 + 条件查询 -->
+    <select id="selectPageByConditions" resultMap="houseResultMap">
+        SELECT
+        id, landlord_id, title, description, address,
+        price, type, area, image, status,
+        create_time, update_time, is_deleted
+        FROM houses
+        WHERE is_deleted = 0
+        <if test="keyword != null and keyword != ''">
+            AND (title LIKE CONCAT('%', #{keyword}, '%')
+            OR description LIKE CONCAT('%', #{keyword}, '%'))
+        </if>
+        <if test="type != null and type != ''">
+            AND type = #{type}
+        </if>
+        <if test="minArea != null">
+            AND area <![CDATA[ >= ]]> #{minArea}
+        </if>
+        <if test="maxArea != null">
+            AND area <![CDATA[ <= ]]> #{maxArea}
+        </if>
+        <if test="minPrice != null">
+            AND price <![CDATA[ >= ]]> #{minPrice}
+        </if>
+        <if test="maxPrice != null">
+            AND price <![CDATA[ <= ]]> #{maxPrice}
+        </if>
+        <if test="address != null and address != ''">
+            AND address LIKE CONCAT('%', #{address}, '%')
+        </if>
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

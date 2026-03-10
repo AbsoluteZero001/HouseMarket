@@ -24,6 +24,14 @@
         VALUES (#{username}, #{password}, #{role}, #{status})
     </insert>
 
+    <!-- 根据用户名和密码查询用户 -->
+    <select id="findUserByUsernameAndPassword" resultMap="BaseResultMap">
+        SELECT *
+        FROM users
+        WHERE username = #{username}
+          AND password = #{password}
+    </select>
+
     <!-- login() -->
     <select id="login" resultMap="BaseResultMap">
         SELECT *

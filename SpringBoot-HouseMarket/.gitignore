@@ -1,11 +1,11 @@
-HELP.md
+# Maven
 target/
 .mvn/wrapper/maven-wrapper.jar
-!**/src/main/**/target/
-!**/src/test/**/target/
+
+# 忽略本地 application 配置
 /src/main/resources/application-private.yml
 
-### STS ###
+# STS
 .apt_generated
 .classpath
 .factorypath
@@ -14,13 +14,16 @@ target/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
+# IntelliJ IDEA
+.idea/
 *.iws
 *.iml
 *.ipr
+# 保留共享配置
+!.idea/codeStyles/
+!.idea/runConfigurations/
 
-### NetBeans ###
+# NetBeans
 /nbproject/private/
 /nbbuild/
 /dist/
@@ -30,5 +33,5 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
+# VS Code
 .vscode/
