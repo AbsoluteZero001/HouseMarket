@@ -126,9 +126,12 @@ public class AppointmentController {
         } else if ("TENANT".equals(currentUser.getRole())) {
             // 租客角色，返回自己创建的预约
             appointments = appointmentService.getAppointmentsByUserIdAndStatus(currentUser.getId(), status);
+        } else if ("ADMIN".equals(currentUser.getRole())) {
+            // 管理员角色，返回所有预约
+            appointments = appointmentService.getAllAppointments(status);
         } else {
-            // 管理员角色，返回所有预约（暂时使用租户的查询逻辑）
-            appointments = appointmentService.getAppointmentsByUserIdAndStatus(currentUser.getId(), status);
+            // 其他角色，返回空列表
+            appointments = List.of();
         }
 
         Map<String, Object> data = new HashMap<>();
@@ -145,16 +148,42 @@ public class AppointmentController {
      * 批准预约
      *
      * @param id 预约ID
+     * @param currentUser 当前登录用户
      * @return 操作结果
      */
     @PutMapping("/{id}/approve")
-    public Map<String, Object> approveAppointment(@PathVariable Long id) {
+    public Map<String, Object> approveAppointment(@PathVariable Long id,
+                                                  @AuthenticationPrincipal Users currentUser) {
+        // 验证当前登录用户是否为房东
+        if (!"LANDLORD".equals(currentUser.getRole())) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "只有房东才能批准预约");
+            return response;
+        }
+
         // 获取预约信息
         Appointment appointment = appointmentService.getById(id);
         if (appointment == null) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "预约不存在");
+            return response;
+        }
+
+        // 验证当前用户是该预约的房东
+        if (!appointment.getLandlordId().equals(currentUser.getId())) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "只能批准自己房源的预约");
+            return response;
+        }
+
+        // 验证预约状态是否为pending
+        if (!"pending".equals(appointment.getStatus())) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "只能批准待处理的预约");
             return response;
         }
 
@@ -191,16 +220,42 @@ public class AppointmentController {
      * 拒绝预约
      *
      * @param id 预约ID
+     * @param currentUser 当前登录用户
      * @return 操作结果
      */
     @PutMapping("/{id}/reject")
-    public Map<String, Object> rejectAppointment(@PathVariable Long id) {
+    public Map<String, Object> rejectAppointment(@PathVariable Long id,
+                                                 @AuthenticationPrincipal Users currentUser) {
+        // 验证当前登录用户是否为房东
+        if (!"LANDLORD".equals(currentUser.getRole())) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "只有房东才能拒绝预约");
+            return response;
+        }
+
         // 获取预约信息
         Appointment appointment = appointmentService.getById(id);
         if (appointment == null) {
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", "预约不存在");
+            return response;
+        }
+
+        // 验证当前用户是该预约的房东
+        if (!appointment.getLandlordId().equals(currentUser.getId())) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "只能拒绝自己房源的预约");
+            return response;
+        }
+
+        // 验证预约状态是否为pending
+        if (!"pending".equals(appointment.getStatus())) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "只能拒绝待处理的预约");
             return response;
         }
 
@@ -237,16 +292,77 @@ public class AppointmentController {
      * 取消预约
      *
      * @param id 预约ID
+     * @param currentUser 当前登录用户
      * @return 操作结果
      */
     @PutMapping("/{id}/cancel")
-    public Map<String, Object> cancelAppointment(@PathVariable Long id) {
+    public Map<String, Object> cancelAppointment(@PathVariable Long id,
+                                                 @AuthenticationPrincipal Users currentUser) {
+        // 获取预约信息
+        Appointment appointment = appointmentService.getById(id);
+        if (appointment == null) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "预约不存在");
+            return response;
+        }
+
+        // 检查权限：租客可以取消自己的预约，房东可以取消自己房源的预约，管理员可以取消任何预约
+        boolean hasPermission = false;
+
+        if ("ADMIN".equals(currentUser.getRole())) {
+            hasPermission = true;
+        } else if ("TENANT".equals(currentUser.getRole()) &&
+                appointment.getTenantId().equals(currentUser.getId())) {
+            hasPermission = true;
+        } else if ("LANDLORD".equals(currentUser.getRole()) &&
+                appointment.getLandlordId().equals(currentUser.getId())) {
+            hasPermission = true;
+        }
+
+        if (!hasPermission) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "没有权限取消该预约");
+            return response;
+        }
+
+        // 验证预约状态是否为pending或approved
+        if (!"pending".equals(appointment.getStatus()) && !"approved".equals(appointment.getStatus())) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "只能取消待处理或已批准的预约");
+            return response;
+        }
+
         boolean result = appointmentService.cancelAppointment(id);
 
         Map<String, Object> response = new HashMap<>();
         if (result) {
             response.put("success", true);
             response.put("message", "预约已取消");
+
+            // 发送WebSocket通知给另一方
+            AppointmentMessage msg = new AppointmentMessage();
+            msg.setAppointmentId(id);
+            msg.setStatus("canceled");
+            msg.setTenantId(appointment.getTenantId());
+            msg.setLandlordId(appointment.getLandlordId());
+            msg.setMessage("预约已取消");
+
+            if ("TENANT".equals(currentUser.getRole())) {
+                // 租客取消，通知房东
+                messagingTemplate.convertAndSendToUser(
+                        appointment.getLandlordId().toString(),
+                        "/queue/appointment",
+                        msg);
+            } else if ("LANDLORD".equals(currentUser.getRole())) {
+                // 房东取消，通知租客
+                messagingTemplate.convertAndSendToUser(
+                        appointment.getTenantId().toString(),
+                        "/queue/appointment",
+                        msg);
+            }
         } else {
             response.put("success", false);
             response.put("message", "预约取消失败");

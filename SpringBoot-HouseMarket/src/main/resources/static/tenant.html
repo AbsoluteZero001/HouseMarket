@@ -619,6 +619,14 @@
         // 建立WebSocket连接
         function connectWebSocket() {
             console.log('Attempting to connect WebSocket...');
+            // 获取JWT令牌
+            const token = localStorage.getItem('token');
+            if (!token) {
+                console.error('未找到JWT令牌，无法建立WebSocket连接');
+                showMessage('未登录，无法建立实时连接', 'error');
+                return;
+            }
+
             // 使用相对路径，自动匹配当前域名和端口
             const socket = new SockJS('/ws');
             stompClient = Stomp.over(socket);
@@ -628,7 +636,12 @@
                 console.log('STOMP debug: ' + str);
             };
 
-            stompClient.connect({}, (frame) => {
+            // 连接时传递认证头
+            const headers = {
+                'Authorization': `Bearer ${token}`
+            };
+
+            stompClient.connect(headers, (frame) => {
                 console.log('Connected: ' + frame);
                 showMessage('WebSocket连接成功', 'success');
 

@@ -51,4 +51,19 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     public boolean deleteAppointment(Long id) {
         return this.removeById(id);
     }
+
+    @Override
+    public List<Appointment> getAllAppointments(String status) {
+        // 使用自定义查询方法获取所有预约
+        if (status != null && !status.isEmpty()) {
+            return this.lambdaQuery()
+                    .eq(Appointment::getStatus, status)
+                    .orderByDesc(Appointment::getCreateTime)
+                    .list();
+        } else {
+            return this.lambdaQuery()
+                    .orderByDesc(Appointment::getCreateTime)
+                    .list();
+        }
+    }
 }

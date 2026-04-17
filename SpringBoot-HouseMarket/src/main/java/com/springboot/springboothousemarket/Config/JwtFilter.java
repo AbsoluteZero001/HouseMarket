@@ -27,32 +27,37 @@ import java.util.stream.Collectors;
  */
 @Component
 public class JwtFilter extends OncePerRequestFilter {
+
     private final JwtUtil jwtUtil;
     private final UsersService usersService;
+
     private final Logger logger = LoggerFactory.getLogger(JwtFilter.class);
+
     public JwtFilter(JwtUtil jwtUtil, UsersService usersService) {
         this.jwtUtil = jwtUtil;
         this.usersService = usersService;
     }
+
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
-        // 跳过WebSocket请求，直接放行
-        if (request.getRequestURI().startsWith("/ws")) {
-            chain.doFilter(request, response);
-            return;
-        }
+
+        // WebSocket握手请求也需要认证，但认证方式不同
+        // WebSocket连接将在WebSocketAuthInterceptor中认证
         String authHeader = request.getHeader("Authorization");
+
         // 1. 如果请求中没有 JWT，直接放行（正常情况）
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             chain.doFilter(request, response);
             return;
         }
+
         // 从请求头中提取 Token
         String jwtToken = authHeader.substring(7);
         String username;
+
         try {
             // 2. 提取用户名
             username = jwtUtil.extractUsername(jwtToken);
@@ -69,8 +74,10 @@ public class JwtFilter extends OncePerRequestFilter {
             response.getWriter().write("Invalid Token: " + e.getMessage());
             return;
         }
+
         // 4. 如果用户名不为空，并且当前没有认证，才注入认证信息
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+
             // 从数据库中获取用户信息
             Users user = usersService.getUserByUsername(username);
             if (user == null) {
@@ -78,19 +85,24 @@ public class JwtFilter extends OncePerRequestFilter {
                 response.getWriter().write("User not found");
                 return;
             }
+
             // 从 JWT 中提取角色信息，并转换为 GrantedAuthority 对象
             List<GrantedAuthority> authorities = jwtUtil.extractRoles(jwtToken).stream()
                     .map(role -> new SimpleGrantedAuthority(role)) // 转换为 GrantedAuthority
                     .collect(Collectors.toList());
+
             // 创建认证信息对象，使用 Users 对象作为 Principal
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(user, null,
                     authorities);
+
             // 设置认证信息到 Spring Security 上下文
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
             // 打印日志
             logger.info("Authenticated user: " + username);
         }
+
         // 执行后续的过滤器链
         chain.doFilter(request, response);
     }
