@@ -57,4 +57,12 @@ public interface AppointmentService extends IService<Appointment> {
      * @return 是否删除成功
      */
     boolean deleteAppointment(Long id);
+
+    /**
+     * 获取所有预约（管理员用）
+     *
+     * @param status 预约状态筛选
+     * @return 所有预约列表
+     */
+    List<Appointment> getAllAppointments(String status);
 }

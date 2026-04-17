@@ -12,6 +12,8 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.util.List;
+
 /**
  * 安全配置类
  * 用于配置Spring Security的安全策略
@@ -96,9 +98,29 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
 
                 // 4. 配置会话管理为无状态
-                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+                .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
-        // 5. 在用户名密码认证过滤器之前加入 JWT 过滤器
+                // 5. 配置安全HTTP头
+                .headers(headers -> headers
+                        // 防止点击劫持
+                        .frameOptions(frameOptions -> frameOptions.sameOrigin())
+                        // 内容安全策略
+                        .contentSecurityPolicy(csp -> csp.policyDirectives(
+                                "default-src 'self'; " +
+                                        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com/ajax/libs; " +
+                                        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com/ajax/libs; " +
+                                        "img-src 'self' data: https: http:; " +
+                                        "font-src 'self' https://cdnjs.cloudflare.com/ajax/libs; " +
+                                        "connect-src 'self' ws://localhost:8082 wss://localhost:8082;"
+                        ))
+                        // XSS保护（Spring Security 6中已变更，暂时注释）
+                        // .xssProtection(xss -> xss.block(true))
+                        // 防止MIME类型嗅探
+                        .contentTypeOptions(contentTypeOptions -> {
+                        })
+                );
+
+        // 6. 在用户名密码认证过滤器之前加入 JWT 过滤器
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -107,9 +129,23 @@ public class SecurityConfig {
     // CORS 配置源
     private org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.addAllowedOriginPattern("*");
-        configuration.addAllowedMethod("*");
-        configuration.addAllowedHeader("*");
+        // 允许的源，生产环境应替换为具体域名
+        configuration.setAllowedOriginPatterns(List.of("http://localhost:8082", "http://localhost:3000", "http://localhost:5173")); // Vite开发服务器
+
+        // 允许的方法
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+
+        // 允许的头部
+        configuration.setAllowedHeaders(List.of(
+                "Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin",
+                "Access-Control-Request-Method", "Access-Control-Request-Headers"
+        ));
+
+        // 暴露的头部
+        configuration.setExposedHeaders(List.of(
+                "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"
+        ));
+
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 

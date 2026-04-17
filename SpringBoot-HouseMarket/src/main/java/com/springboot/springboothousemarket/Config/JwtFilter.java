@@ -44,12 +44,8 @@ public class JwtFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain chain) throws ServletException, IOException {
 
-        // 跳过WebSocket请求，直接放行
-        if (request.getRequestURI().startsWith("/ws")) {
-            chain.doFilter(request, response);
-            return;
-        }
-
+        // WebSocket握手请求也需要认证，但认证方式不同
+        // WebSocket连接将在WebSocketAuthInterceptor中认证
         String authHeader = request.getHeader("Authorization");
 
         // 1. 如果请求中没有 JWT，直接放行（正常情况）
