@@ -1,6 +1,6 @@
-<h1 align="center">疫苗预约系统 | Vaccine Appointment System</h1>
+<h1 align="center">房屋租赁市场系统 | House Rental Market System</h1>
 
-> 基于 Vue 3 + Spring Boot 3 构建的前后端分离全栈疫苗预约管理平台，集成 Spring Security、JWT、Redis、MySQL、Docker 与 GitHub Actions，支持在线预约、后台审核、库存管理及自动化部署。
+> 基于 Spring Boot + Spring Security + WebSocket 构建的房屋租赁市场系统，支持租客预约房屋、房东管理预约、实时通知与后台管理。
 
 <br/>
 
@@ -19,12 +19,12 @@
 
 <!-- 技术栈标签 -->
 <p align="center">
-  <img src="https://img.shields.io/badge/Java-17%2B-orange?style=flat-square&logo=openjdk" />
-  <img src="https://img.shields.io/badge/SpringBoot-3.1.5-green?style=flat-square&logo=springboot" />
-  <img src="https://img.shields.io/badge/Vue-3-brightgreen?style=flat-square&logo=vuedotjs" />
-  <img src="https://img.shields.io/badge/MySQL-8-blue?style=flat-square&logo=mysql" />
-  <img src="https://img.shields.io/badge/Redis-7-red?style=flat-square&logo=redis" />
-  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker" />
+  <img src="https://img.shields.io/badge/Java-21-orange?style=flat-square&logo=openjdk" />
+  <img src="https://img.shields.io/badge/SpringBoot-3.2.4-green?style=flat-square&logo=springboot" />
+  <img src="https://img.shields.io/badge/Spring_Security-6-6DB33F?style=flat-square&logo=springsecurity" />
+  <img src="https://img.shields.io/badge/MySQL-8.0-blue?style=flat-square&logo=mysql" />
+  <img src="https://img.shields.io/badge/WebSocket-STOMP-purple?style=flat-square&logo=websocket" />
+  <img src="https://img.shields.io/badge/JWT-Ready-black?style=flat-square&logo=jsonwebtokens" />
 </p>
 
 <br/>

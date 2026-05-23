@@ -1,6 +1,6 @@
-<h1 align="center">疫苗预约系统 | Vaccine Appointment System</h1>
+<h1 align="center">房屋租赁市场系统 | House Rental Market System</h1>
 
-> A full-stack vaccine appointment management platform built with Vue 3 + Spring Boot 3, integrating Spring Security, JWT, Redis, MySQL, Docker & GitHub Actions — supporting online booking, backend review, inventory management, and automated deployment.
+> A house rental market system built with Spring Boot + Spring Security + WebSocket, supporting house booking for tenants, appointment management for landlords, real-time notifications, and admin backend.
 
 <br/>
 
@@ -19,12 +19,12 @@
 
 <!-- Tech Stack Badges -->
 <p align="center">
-  <img src="https://img.shields.io/badge/Java-17%2B-orange?style=flat-square&logo=openjdk" />
-  <img src="https://img.shields.io/badge/SpringBoot-3.1.5-green?style=flat-square&logo=springboot" />
-  <img src="https://img.shields.io/badge/Vue-3-brightgreen?style=flat-square&logo=vuedotjs" />
-  <img src="https://img.shields.io/badge/MySQL-8-blue?style=flat-square&logo=mysql" />
-  <img src="https://img.shields.io/badge/Redis-7-red?style=flat-square&logo=redis" />
-  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker" />
+  <img src="https://img.shields.io/badge/Java-21-orange?style=flat-square&logo=openjdk" />
+  <img src="https://img.shields.io/badge/SpringBoot-3.2.4-green?style=flat-square&logo=springboot" />
+  <img src="https://img.shields.io/badge/Spring_Security-6-6DB33F?style=flat-square&logo=springsecurity" />
+  <img src="https://img.shields.io/badge/MySQL-8.0-blue?style=flat-square&logo=mysql" />
+  <img src="https://img.shields.io/badge/WebSocket-STOMP-purple?style=flat-square&logo=websocket" />
+  <img src="https://img.shields.io/badge/JWT-Ready-black?style=flat-square&logo=jsonwebtokens" />
 </p>
 
 <br/>
