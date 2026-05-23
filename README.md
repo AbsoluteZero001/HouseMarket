@@ -1,3 +1,36 @@
+<h1 align="center">疫苗预约系统 | Vaccine Appointment System</h1>
+
+> 基于 Vue 3 + Spring Boot 3 构建的前后端分离全栈疫苗预约管理平台，集成 Spring Security、JWT、Redis、MySQL、Docker 与 GitHub Actions，支持在线预约、后台审核、库存管理及自动化部署。
+
+<br/>
+
+<!-- 语言切换按钮 -->
+<p align="center">
+  <a href="README.md">
+    <img src="https://img.shields.io/badge/中文版本-点击查看-red?style=for-the-badge&logo=markdown&logoColor=white" />
+  </a>
+
+  <a href="README_EN.md">
+    <img src="https://img.shields.io/badge/English-Version-blue?style=for-the-badge&logo=markdown&logoColor=white" />
+  </a>
+</p>
+
+<br/>
+
+<!-- 技术栈标签 -->
+<p align="center">
+  <img src="https://img.shields.io/badge/Java-17%2B-orange?style=flat-square&logo=openjdk" />
+  <img src="https://img.shields.io/badge/SpringBoot-3.1.5-green?style=flat-square&logo=springboot" />
+  <img src="https://img.shields.io/badge/Vue-3-brightgreen?style=flat-square&logo=vuedotjs" />
+  <img src="https://img.shields.io/badge/MySQL-8-blue?style=flat-square&logo=mysql" />
+  <img src="https://img.shields.io/badge/Redis-7-red?style=flat-square&logo=redis" />
+  <img src="https://img.shields.io/badge/Docker-Ready-2496ED?style=flat-square&logo=docker" />
+</p>
+
+<br/>
+<br/>
+
+
 # 房屋租赁市场系统
 
 一个基于Spring Boot和现代Web技术的房屋租赁市场系统，支持租客预约房屋和房东管理预约功能。
