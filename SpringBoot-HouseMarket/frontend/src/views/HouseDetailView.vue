@@ -28,15 +28,15 @@
           <div class="house-price">{{ formatPrice(house.price) }}</div>
           <div class="house-meta">
             <span class="meta-item">
-              <span class="meta-icon">&#127968;</span>
+              <span class="meta-icon">🏠</span>
               {{ house.type }}
             </span>
             <span class="meta-item">
-              <span class="meta-icon">&#128208;</span>
+              <span class="meta-icon">📐</span>
               {{ house.area }} ㎡
             </span>
             <span class="meta-item">
-              <span class="meta-icon">&#128205;</span>
+              <span class="meta-icon">📍</span>
               {{ house.address }}
             </span>
           </div>
@@ -64,7 +64,7 @@
       <div class="landlord-section" v-if="house.landlordId">
         <h3>房东信息</h3>
         <div class="landlord-card">
-          <div class="landlord-avatar">&#127968;</div>
+          <div class="landlord-avatar">🏠</div>
           <div>
             <div class="landlord-name">房东 #{{ house.landlordId }}</div>
             <div class="landlord-sub">认证房东</div>

@@ -14,21 +14,21 @@
       <div v-if="activeTab === 'dashboard'" class="tab-content">
         <div class="stat-cards">
           <div class="stat-card">
-            <div class="stat-icon stat-icon-users">&#128101;</div>
+            <div class="stat-icon stat-icon-users">👥</div>
             <div class="stat-body">
               <h3>{{ users.length }}</h3>
               <p>用户总数</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon stat-icon-houses">&#127968;</div>
+            <div class="stat-icon stat-icon-houses">🏠</div>
             <div class="stat-body">
               <h3>{{ allHouses.length }}</h3>
               <p>房源总数</p>
             </div>
           </div>
           <div class="stat-card">
-            <div class="stat-icon stat-icon-apts">&#128197;</div>
+            <div class="stat-icon stat-icon-apts">📅</div>
             <div class="stat-body">
               <h3>{{ allAppointments.length }}</h3>
               <p>预约总数</p>

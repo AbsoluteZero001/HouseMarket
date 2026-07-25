@@ -18,8 +18,8 @@ defineProps({ modelValue: String })
 defineEmits(['update:modelValue'])
 
 const options = [
-  { value: 'TENANT', label: '我是租客', icon: '&#128101;' },
-  { value: 'LANDLORD', label: '我是房东', icon: '&#127968;' }
+  { value: 'TENANT', label: '我是租客', icon: '👥' },
+  { value: 'LANDLORD', label: '我是房东', icon: '🏠' }
 ]
 </script>
 

@@ -9,7 +9,7 @@
       </div>
       <div class="brand-content">
         <RouterLink to="/" class="brand-logo">
-          <span class="logo-icon">&#127968;</span>
+          <span class="logo-icon">🏠</span>
           <span class="logo-text">房源市场</span>
         </RouterLink>
         <h1 class="brand-title">找到属于你的<span class="highlight">理想家</span></h1>
@@ -38,7 +38,7 @@
           <div class="form-group">
             <label>用户名</label>
             <div class="input-wrap">
-              <span class="input-icon">&#128100;</span>
+              <span class="input-icon">👤</span>
               <input v-model="form.username" placeholder="请输入用户名" autocomplete="username" required />
             </div>
           </div>
@@ -46,7 +46,7 @@
           <div class="form-group">
             <label>密码</label>
             <div class="input-wrap">
-              <span class="input-icon">&#128274;</span>
+              <span class="input-icon">🔒</span>
               <input v-model="form.password" type="password" placeholder="请输入密码" autocomplete="current-password" required />
             </div>
           </div>
@@ -60,7 +60,7 @@
             <label>验证码</label>
             <div class="captcha-row">
               <div class="input-wrap" style="flex:1">
-                <span class="input-icon">&#128394;</span>
+                <span class="input-icon">🖊</span>
                 <input v-model="form.captcha" maxlength="4" placeholder="验证码" required />
               </div>
               <CaptchaCanvas ref="captchaRef" />
@@ -94,9 +94,9 @@ const captchaRef = ref(null)
 const form = reactive({ username: '', password: '', role: 'TENANT', captcha: '' })
 
 const features = [
-  { icon: '&#127968;', title: '海量房源', sub: '覆盖全城真实在售/租房源' },
-  { icon: '&#128269;', title: '精准搜索', sub: '多维筛选快速锁定心仪房源' },
-  { icon: '&#128197;', title: '一键预约', sub: '在线预约看房省时省心' }
+  { icon: '🏠', title: '海量房源', sub: '覆盖全城真实在售/租房源' },
+  { icon: '🔍', title: '精准搜索', sub: '多维筛选快速锁定心仪房源' },
+  { icon: '📅', title: '一键预约', sub: '在线预约看房省时省心' }
 ]
 
 async function handleLogin() {

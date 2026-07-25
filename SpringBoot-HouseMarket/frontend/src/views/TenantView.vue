@@ -25,7 +25,7 @@
         </div>
 
         <div v-else-if="houseStore.houses.length === 0" class="empty-state">
-          <span class="empty-icon">&#128269;</span>
+          <span class="empty-icon">🔍</span>
           <p>暂无符合条件的房源</p>
           <button class="btn btn-outline" @click="handleReset">清除筛选</button>
         </div>
@@ -62,7 +62,7 @@
       <!-- Favorites Section -->
       <div v-if="activeTab === 'favorites'" class="tab-content">
         <div v-if="favStore.favorites.length === 0" class="empty-state">
-          <span class="empty-icon">&#128151;</span>
+          <span class="empty-icon">💗</span>
           <p>还没有收藏房源</p>
           <button class="btn btn-outline" @click="activeTab = 'search'">去发现好房</button>
         </div>

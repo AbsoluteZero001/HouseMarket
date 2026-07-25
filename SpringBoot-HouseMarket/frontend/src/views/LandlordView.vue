@@ -17,21 +17,21 @@
         <div class="dashboard">
           <div class="stat-cards">
             <div class="stat-card">
-              <div class="stat-icon stat-icon-houses">&#127968;</div>
+              <div class="stat-icon stat-icon-houses">🏠</div>
               <div class="stat-body">
                 <h3>{{ houseStore.houses.length }}</h3>
                 <p>我的房源</p>
               </div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon stat-icon-pending">&#128276;</div>
+              <div class="stat-icon stat-icon-pending">🔔</div>
               <div class="stat-body">
                 <h3>{{ pendingCount }}</h3>
                 <p>待处理预约</p>
               </div>
             </div>
             <div class="stat-card">
-              <div class="stat-icon stat-icon-total">&#128203;</div>
+              <div class="stat-icon stat-icon-total">📋</div>
               <div class="stat-body">
                 <h3>{{ aptStore.appointments.length }}</h3>
                 <p>总预约数</p>
@@ -52,7 +52,7 @@
           <button class="btn" @click="openAddHouse">+ 发布新房源</button>
         </div>
         <div v-if="houseStore.houses.length === 0" class="empty-state">
-          <span class="empty-icon">&#127968;</span>
+          <span class="empty-icon">🏠</span>
           <p>还没有发布房源</p>
           <button class="btn" @click="openAddHouse">发布您的第一套房源</button>
         </div>

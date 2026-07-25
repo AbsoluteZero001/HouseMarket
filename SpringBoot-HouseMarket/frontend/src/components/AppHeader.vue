@@ -3,7 +3,7 @@
     <div class="header-inner">
       <div class="header-left">
         <RouterLink to="/" class="logo-link">
-          <span class="logo-icon">&#127968;</span>
+          <span class="logo-icon">🏠</span>
           <span class="logo-text">房源市场</span>
         </RouterLink>
         <nav class="nav-links">

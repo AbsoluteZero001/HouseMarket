@@ -3,9 +3,9 @@
     <transition name="alert-slide">
       <div class="alert" :class="'alert-' + type" v-if="visible">
         <span class="alert-icon">
-          <template v-if="type === 'success'">&#10003;</template>
-          <template v-else-if="type === 'error'">&#10007;</template>
-          <template v-else>&#9888;</template>
+          <template v-if="type === 'success'">✓</template>
+          <template v-else-if="type === 'error'">✗</template>
+          <template v-else>⚠</template>
         </span>
         <span>{{ message }}</span>
         <button class="alert-close" @click="$emit('close')">

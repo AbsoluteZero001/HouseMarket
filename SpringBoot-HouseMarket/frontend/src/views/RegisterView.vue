@@ -9,7 +9,7 @@
       </div>
       <div class="brand-content">
         <RouterLink to="/" class="brand-logo">
-          <span class="logo-icon">&#127968;</span>
+          <span class="logo-icon">🏠</span>
           <span class="logo-text">房源市场</span>
         </RouterLink>
         <h1 class="brand-title">开启你的<span class="highlight">找房之旅</span></h1>
@@ -38,7 +38,7 @@
           <div class="form-group">
             <label>用户名</label>
             <div class="input-wrap">
-              <span class="input-icon">&#128100;</span>
+              <span class="input-icon">👤</span>
               <input v-model="form.username" placeholder="3-20位字符" minlength="3" maxlength="20" autocomplete="username" required />
             </div>
           </div>
@@ -46,7 +46,7 @@
           <div class="form-group">
             <label>密码</label>
             <div class="input-wrap">
-              <span class="input-icon">&#128274;</span>
+              <span class="input-icon">🔒</span>
               <input v-model="form.password" type="password" placeholder="6-20位字符" minlength="6" maxlength="20" autocomplete="new-password" required />
             </div>
           </div>
@@ -54,7 +54,7 @@
           <div class="form-group">
             <label>确认密码</label>
             <div class="input-wrap">
-              <span class="input-icon">&#128274;</span>
+              <span class="input-icon">🔒</span>
               <input v-model="form.confirmPassword" type="password" placeholder="再次输入密码" minlength="6" maxlength="20" autocomplete="new-password" required />
             </div>
           </div>
@@ -79,7 +79,7 @@
             <label>验证码</label>
             <div class="captcha-row">
               <div class="input-wrap" style="flex:1">
-                <span class="input-icon">&#128394;</span>
+                <span class="input-icon">🖊</span>
                 <input v-model="form.captcha" maxlength="4" placeholder="验证码" required />
               </div>
               <CaptchaCanvas ref="captchaRef" />
@@ -117,14 +117,14 @@ const form = reactive({
 })
 
 const features = [
-  { icon: '&#128176;', title: '完全免费', sub: '注册即享全部功能零费用' },
-  { icon: '&#128737;', title: '安全保障', sub: '实名认证交易更放心' },
-  { icon: '&#9889;', title: '极速体验', sub: '30秒完成注册即刻找房' }
+  { icon: '💰', title: '完全免费', sub: '注册即享全部功能零费用' },
+  { icon: '🛡', title: '安全保障', sub: '实名认证交易更放心' },
+  { icon: '⚡', title: '极速体验', sub: '30秒完成注册即刻找房' }
 ]
 
 const roleOptions = [
-  { value: 'tenant', label: '我是租客', icon: '&#128101;' },
-  { value: 'landlord', label: '我是房东', icon: '&#127968;' }
+  { value: 'tenant', label: '我是租客', icon: '👥' },
+  { value: 'landlord', label: '我是房东', icon: '🏠' }
 ]
 
 async function handleRegister() {
