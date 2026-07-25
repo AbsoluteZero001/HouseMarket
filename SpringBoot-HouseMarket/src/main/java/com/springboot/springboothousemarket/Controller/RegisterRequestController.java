@@ -71,11 +71,6 @@ public class RegisterRequestController {
         }
     }
 
-    @GetMapping("/show")
-    public ResponseEntity<RegisterRequest> show() {
-        return ResponseEntity.ok(service.show());
-    }
-
     @GetMapping("/captcha")
     public void captcha(HttpServletResponse response) throws IOException {
         BufferedImage image = captchaService.createCaptcha(); // 生成验证码

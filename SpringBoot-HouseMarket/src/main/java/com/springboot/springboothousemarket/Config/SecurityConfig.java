@@ -14,137 +14,68 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import java.util.List;
 
-/**
- * 安全配置类
- * 用于配置Spring Security的安全策略
- */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
     private final JwtFilter jwtFilter;
 
-    /**
-     * 构造函数，注入JWT过滤器
-     *
-     * @param jwtFilter JWT过滤器
-     */
     public SecurityConfig(JwtFilter jwtFilter) {
         this.jwtFilter = jwtFilter;
     }
 
-    /**
-     * 配置认证管理器Bean
-     *
-     * @param config 认证配置
-     * @return 认证管理器
-     * @throws Exception 可能抛出的异常
-     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    /**
-     * 配置安全过滤器链
-     *
-     * @param http HTTP安全配置
-     * @return 安全过滤器链
-     * @throws Exception 可能抛出的异常
-     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 1. 禁用 CSRF（前后端分离项目一般禁用）
                 .csrf(AbstractHttpConfigurer::disable)
-
-                // 2. 配置 CORS
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // 3. 配置请求授权规则
                 .authorizeHttpRequests(auth -> auth
-                        // 放行注册、登录接口
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        // 放行验证码接口
-                        .requestMatchers("/captcha").permitAll()
-                        // 放行首页、静态资源、Swagger 文档
                         .requestMatchers(
-                                "/",
-                                "/admin.html",
-                                "/landlord.html",
-                                "/login.html",
-                                "/register.html",
-                                "/tenant.html",
-                                "/house-detail.html",
-                                "/HouseMarket/**",
-                                "/assets/**", // ⭐ 关键：放行 assets 目录
-                                "/css/**",
-                                "/js/**",
-                                "/images/**",
-                                "/uploads/**", // ⭐ 关键：放行上传的图片资源
-                                "/favicon.ico", // ⭐ 确保 favicon.ico 请求不被拦截
+                                "/api/v1/auth/**",
+                                "/captcha",
+                                "/uploads/**",
                                 "/webjars/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
-                                "/ws/**") // ⭐ 关键：放行 WebSocket 端点
-                        .permitAll()
-                        // 保护API接口，需要认证
-                        .requestMatchers("/api/houses/**").authenticated() // 需要认证
-                        .requestMatchers("/api/appointments/**").authenticated() // 需要认证
-                        .requestMatchers("/api/favorites/**").authenticated() // 需要认证
-                        // 其他请求必须认证
+                                "/ws/**"
+                        ).permitAll()
+                        .requestMatchers("/api/houses/**").authenticated()
+                        .requestMatchers("/api/appointments/**").authenticated()
+                        .requestMatchers("/api/favorites/**").authenticated()
                         .anyRequest().authenticated())
-
-                // 4. 配置会话管理为无状态
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // 5. 配置安全HTTP头
                 .headers(headers -> headers
-                        // 防止点击劫持
                         .frameOptions(frameOptions -> frameOptions.sameOrigin())
-                        // 内容安全策略
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
                                 "default-src 'self'; " +
-                                        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com/ajax/libs; " +
-                                        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com/ajax/libs; " +
+                                        "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
+                                        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; " +
                                         "img-src 'self' data: https: http:; " +
-                                        "font-src 'self' https://cdnjs.cloudflare.com/ajax/libs; " +
+                                        "font-src 'self' https://cdnjs.cloudflare.com; " +
                                         "connect-src 'self' ws://localhost:8082 wss://localhost:8082;"
                         ))
-                        // XSS保护（Spring Security 6中已变更，暂时注释）
-                        // .xssProtection(xss -> xss.block(true))
-                        // 防止MIME类型嗅探
-                        .contentTypeOptions(contentTypeOptions -> {
-                        })
+                        .contentTypeOptions(contentTypeOptions -> {})
                 );
 
-        // 6. 在用户名密码认证过滤器之前加入 JWT 过滤器
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
 
-    // CORS 配置源
     private org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        // 允许的源，生产环境应替换为具体域名
-        configuration.setAllowedOriginPatterns(List.of("http://localhost:8082", "http://localhost:3000", "http://localhost:5173")); // Vite开发服务器
-
-        // 允许的方法
+        configuration.setAllowedOriginPatterns(List.of("http://localhost:8082", "http://localhost:3000", "http://localhost:5173"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-
-        // 允许的头部
         configuration.setAllowedHeaders(List.of(
                 "Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin",
                 "Access-Control-Request-Method", "Access-Control-Request-Headers"
         ));
-
-        // 暴露的头部
-        configuration.setExposedHeaders(List.of(
-                "Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"
-        ));
-
+        configuration.setExposedHeaders(List.of("Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
 
