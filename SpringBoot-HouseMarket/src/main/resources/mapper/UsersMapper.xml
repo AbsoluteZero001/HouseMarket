@@ -12,7 +12,7 @@
 
     <select id="selectByUsername" parameterType="string" resultMap="sysUserResultMap">
         SELECT id, username, password, role, status
-        FROM users
+        FROM sysuser
         WHERE username = #{username}
     </select>
 

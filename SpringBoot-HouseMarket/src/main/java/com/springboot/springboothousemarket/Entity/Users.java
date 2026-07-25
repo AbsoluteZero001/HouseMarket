@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @Schema(description = "用户信息")
-@TableName("users")
+@TableName("sysuser")
 public class Users {
     /**
      * 主键ID
@@ -44,7 +44,7 @@ public class Users {
      * 用户的真实姓名信息
      */
     @Schema(description = "真实姓名")
-    @TableField("realName")
+    @TableField("real_name")
     private String realName;
 
     /**
@@ -89,6 +89,7 @@ public class Users {
      * 用户账户创建的时间
      */
     @Schema(description = "注册时间")
+    @TableField("register_time")
     private LocalDateTime createTime;
 
     /**
@@ -96,7 +97,7 @@ public class Users {
      * 用户信息最后一次更新的时间
      */
     @Schema(description = "更新时间")
-    @TableField("updateTime")
+    @TableField("update_time")
     private LocalDateTime updateTime;
 
     /**

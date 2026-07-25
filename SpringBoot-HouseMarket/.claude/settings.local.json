@@ -2,7 +2,18 @@
   "permissions": {
     "allow": [
       "Bash(mvn compile *)",
-      "Bash(mvn test *)"
+      "Bash(mvn test *)",
+      "Bash(git checkout *)",
+      "Bash(npm create *)",
+      "Bash(npm install *)",
+      "Bash(npx vite *)",
+      "Bash(./mvnw compile *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(git *)",
+      "Bash(ping -n 1 github.com)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" --connect-timeout 5 https://github.com)"
     ]
   }
 }

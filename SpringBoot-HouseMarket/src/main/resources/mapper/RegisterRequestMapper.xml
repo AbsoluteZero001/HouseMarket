@@ -15,19 +15,19 @@
     <!-- show() -->
     <select id="show" resultMap="BaseResultMap">
         SELECT *
-        FROM users LIMIT 1
+        FROM sysuser LIMIT 1
     </select>
 
     <!-- register() -->
     <insert id="register">
-        INSERT INTO users(username, password, role, status)
+        INSERT INTO sysuser(username, password, role, status)
         VALUES (#{username}, #{password}, #{role}, #{status})
     </insert>
 
     <!-- 根据用户名和密码查询用户 -->
     <select id="findUserByUsernameAndPassword" resultMap="BaseResultMap">
         SELECT *
-        FROM users
+        FROM sysuser
         WHERE username = #{username}
           AND password = #{password}
     </select>
@@ -35,7 +35,7 @@
     <!-- login() -->
     <select id="login" resultMap="BaseResultMap">
         SELECT *
-        FROM users
+        FROM sysuser
         WHERE username = #{username}
           AND password = #{password}
           AND role = #{role}

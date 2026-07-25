@@ -43,13 +43,13 @@
         tu.id AS t_id, tu.username AS t_username,
         lu.id AS l_id, lu.username AS l_username
         FROM
-        appointments a
+        appointment a
         LEFT JOIN
-        houses h ON a.house_id = h.id
+        house h ON a.house_id = h.id
         LEFT JOIN
-        users tu ON a.tenant_id = tu.id
+        sysuser tu ON a.tenant_id = tu.id
         LEFT JOIN
-        users lu ON a.landlord_id = lu.id
+        sysuser lu ON a.landlord_id = lu.id
         WHERE
         a.tenant_id = #{userId} OR a.landlord_id = #{userId}
         <if test="status != null and status != ''">
@@ -67,13 +67,13 @@
         tu.id AS t_id, tu.username AS t_username,
         lu.id AS l_id, lu.username AS l_username
         FROM
-        appointments a
+        appointment a
         LEFT JOIN
-        houses h ON a.house_id = h.id
+        house h ON a.house_id = h.id
         LEFT JOIN
-        users tu ON a.tenant_id = tu.id
+        sysuser tu ON a.tenant_id = tu.id
         LEFT JOIN
-        users lu ON a.landlord_id = lu.id
+        sysuser lu ON a.landlord_id = lu.id
         WHERE
         a.landlord_id = #{landlordId}
         <if test="status != null and status != ''">

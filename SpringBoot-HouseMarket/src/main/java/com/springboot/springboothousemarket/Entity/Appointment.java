@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Schema(description = "预约信息")
-@TableName("appointments")
+@TableName("appointment")
 public class Appointment {
     @Schema(description = "主键ID")
     @TableId(type = IdType.AUTO)

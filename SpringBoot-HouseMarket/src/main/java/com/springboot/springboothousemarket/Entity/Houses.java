@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Schema(description = "房源信息")
-@TableName("houses")
+@TableName("house")
 public class Houses {
 
     @Schema(description = "主键ID")
