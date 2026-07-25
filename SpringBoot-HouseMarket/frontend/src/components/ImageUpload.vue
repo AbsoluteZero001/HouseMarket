@@ -4,18 +4,19 @@
     <div class="upload-area" @click="$refs.inputRef.click()" :class="{ 'has-image': previewUrl }">
       <img v-if="previewUrl" :src="previewUrl" class="preview-img" />
       <div v-else class="upload-placeholder">
-        <i class="fas fa-cloud-upload-alt fa-2x"></i>
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         <p>{{ placeholder }}</p>
+        <span class="upload-hint">支持 JPG、PNG、GIF、WebP，最大 2MB</span>
       </div>
     </div>
-    <button v-if="previewUrl" class="btn btn-secondary btn-sm" @click="clearFile">移除图片</button>
+    <button v-if="previewUrl" class="btn btn-outline btn-sm remove-btn" @click="clearFile">移除图片</button>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 
-const props = defineProps({ accept: { type: String, default: 'image/*' }, placeholder: { type: String, default: '点击上传图片' } })
+const props = defineProps({ accept: { type: String, default: 'image/*' }, placeholder: { type: String, default: '点击上传房源图片' } })
 const emit = defineEmits(['select'])
 const previewUrl = ref(null)
 const selectedFile = ref(null)
@@ -30,22 +31,59 @@ function handleFile(e) {
   previewUrl.value = URL.createObjectURL(file)
   emit('select', file)
 }
-
 function clearFile() {
   previewUrl.value = null
   selectedFile.value = null
   emit('select', null)
 }
-
 defineExpose({ selectedFile, clearFile })
 </script>
 
 <style scoped>
 .image-upload { text-align: center; }
-.upload-area { border: 2px dashed #ddd; border-radius: 8px; padding: 20px; cursor: pointer; transition: border-color 0.3s; min-height: 150px; display: flex; align-items: center; justify-content: center; }
-.upload-area:hover { border-color: #667eea; }
-.preview-img { max-width: 100%; max-height: 200px; border-radius: 4px; }
-.upload-placeholder { color: #999; }
-.upload-placeholder i { font-size: 32px; margin-bottom: 8px; }
-.btn-sm { padding: 4px 12px; font-size: 12px; margin-top: 8px; }
+.upload-area {
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 30px 20px;
+  cursor: pointer;
+  transition: all var(--transition);
+  min-height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+}
+.upload-area:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+.upload-area.has-image {
+  padding: 0;
+  border-style: solid;
+  background: transparent;
+}
+.preview-img {
+  max-width: 100%;
+  max-height: 260px;
+  border-radius: var(--radius-sm);
+}
+.upload-placeholder {
+  color: var(--text-muted);
+}
+.upload-placeholder svg {
+  margin: 0 auto 10px;
+  color: var(--text-muted);
+}
+.upload-placeholder p {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.upload-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.remove-btn {
+  margin-top: 10px;
+}
 </style>

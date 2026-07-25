@@ -2,43 +2,72 @@
   <div class="landlord-page">
     <AppHeader :username="user?.username" :role="user?.role" @logout="handleLogout" @profile="showProfile = true">
       <template #nav>
-        <a href="#" :class="{ active: activeTab === 'dashboard' }" @click.prevent="activeTab = 'dashboard'">首页</a>
+        <a href="#" :class="{ active: activeTab === 'dashboard' }" @click.prevent="activeTab = 'dashboard'">工作台</a>
         <a href="#" :class="{ active: activeTab === 'houses' }" @click.prevent="activeTab = 'houses'">房源管理</a>
         <a href="#" :class="{ active: activeTab === 'appointments' }" @click.prevent="activeTab = 'appointments'">
-          预约记录 <span class="badge" v-if="pendingCount">{{ pendingCount }}</span>
+          预约记录
+          <span class="badge" v-if="pendingCount">{{ pendingCount }}</span>
         </a>
       </template>
     </AppHeader>
 
     <div class="container">
       <!-- Dashboard -->
-      <div v-if="activeTab === 'dashboard'" class="dashboard">
-        <div class="stat-cards">
-          <div class="stat-card"><h3>{{ houseStore.houses.length }}</h3><p>我的房源</p></div>
-          <div class="stat-card"><h3>{{ pendingCount }}</h3><p>待处理预约</p></div>
-          <div class="stat-card"><h3>{{ aptStore.appointments.length }}</h3><p>总预约</p></div>
-        </div>
-        <div class="quick-actions">
-          <button class="btn" @click="activeTab = 'houses'; showAddModal = true">发布新房源</button>
-          <button class="btn" @click="activeTab = 'appointments'">查看预约</button>
+      <div v-if="activeTab === 'dashboard'" class="tab-content">
+        <div class="dashboard">
+          <div class="stat-cards">
+            <div class="stat-card">
+              <div class="stat-icon stat-icon-houses">&#127968;</div>
+              <div class="stat-body">
+                <h3>{{ houseStore.houses.length }}</h3>
+                <p>我的房源</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon stat-icon-pending">&#128276;</div>
+              <div class="stat-body">
+                <h3>{{ pendingCount }}</h3>
+                <p>待处理预约</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon stat-icon-total">&#128203;</div>
+              <div class="stat-body">
+                <h3>{{ aptStore.appointments.length }}</h3>
+                <p>总预约数</p>
+              </div>
+            </div>
+          </div>
+          <div class="quick-actions">
+            <button class="btn btn-lg" @click="openAddHouse">+ 发布新房源</button>
+            <button class="btn btn-lg btn-outline" @click="activeTab = 'appointments'">查看预约</button>
+          </div>
         </div>
       </div>
 
       <!-- House Management -->
-      <div v-if="activeTab === 'houses'">
-        <button class="btn" style="margin-bottom:20px" @click="openAddHouse">+ 发布新房源</button>
-        <div class="house-list">
+      <div v-if="activeTab === 'houses'" class="tab-content">
+        <div class="section-header">
+          <h3>房源管理</h3>
+          <button class="btn" @click="openAddHouse">+ 发布新房源</button>
+        </div>
+        <div v-if="houseStore.houses.length === 0" class="empty-state">
+          <span class="empty-icon">&#127968;</span>
+          <p>还没有发布房源</p>
+          <button class="btn" @click="openAddHouse">发布您的第一套房源</button>
+        </div>
+        <div v-else class="house-grid">
           <HouseCard v-for="h in houseStore.houses" :key="h.id" :house="h">
             <template #actions="{ house }">
-              <button class="btn" @click="openEditHouse(house.id)">编辑</button>
-              <button class="btn btn-danger" @click="handleDeleteHouse(house.id)">删除</button>
+              <button class="btn btn-sm btn-outline" @click="openEditHouse(house.id)">编辑</button>
+              <button class="btn btn-sm btn-danger" @click="handleDeleteHouse(house.id)">删除</button>
             </template>
           </HouseCard>
         </div>
       </div>
 
       <!-- Appointment Management -->
-      <div v-if="activeTab === 'appointments'">
+      <div v-if="activeTab === 'appointments'" class="tab-content">
         <AppointmentTable
           :appointments="aptStore.appointments"
           :isLandlord="true"
@@ -110,7 +139,7 @@ function showAlert(msg, type = 'success') { alertMsg.value = msg; alertType.valu
 async function loadHouses() { await houseStore.fetchLandlordHouses(user.id) }
 async function loadAppointments() { await aptStore.fetchAppointments() }
 async function loadPendingCount() {
-  try { const res = await aptStore.fetchAppointments('pending'); pendingCount.value = aptStore.appointments.length } catch (e) { /* ignore */ }
+  try { await aptStore.fetchAppointments('pending'); pendingCount.value = aptStore.appointments.length } catch (e) { /* ignore */ }
 }
 
 function openAddHouse() { editingHouse.value = {}; showAddModal.value = true }
@@ -118,7 +147,6 @@ async function openEditHouse(id) {
   const res = await houseStore.fetchHouseById(id)
   if (res.success) { editingHouse.value = res.data.house; showEditModal.value = true }
 }
-
 function closeHouseModal() { showAddModal.value = false; showEditModal.value = false }
 
 async function handleHouseSubmit(data) {
@@ -129,9 +157,7 @@ async function handleHouseSubmit(data) {
       imageUrl = typeof uploadRes === 'string' ? uploadRes : uploadRes.data
     } catch (e) { showAlert('图片上传失败', 'error'); return }
   }
-
   const payload = { title: data.title, type: data.type, area: data.area, price: data.price, address: data.address, description: data.description, image: imageUrl }
-
   if (showEditModal.value) {
     await houseStore.editHouse(editingHouse.value.id, payload)
     showAlert('房源已更新')
@@ -156,8 +182,7 @@ async function handleDeleteApt(id) {
   if (!confirm('确认删除此记录？')) return
   await aptStore.remove(id)
   showAlert('记录已删除')
-  await loadAppointments()
-  await loadPendingCount()
+  await loadAppointments(); await loadPendingCount()
 }
 
 async function handleChangePassword() {
@@ -176,26 +201,130 @@ watch(notification, (n) => {
 })
 
 onMounted(async () => {
-  await loadHouses()
-  await loadAppointments()
-  await loadPendingCount()
+  await loadHouses(); await loadAppointments(); await loadPendingCount()
   connect()
   pollTimer = setInterval(loadPendingCount, 30000)
 })
-
 onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 </script>
 
 <style scoped>
-.landlord-page { min-height: 100vh; }
-.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-.dashboard { text-align: center; }
-.stat-cards { display: flex; gap: 20px; justify-content: center; margin: 40px 0; flex-wrap: wrap; }
-.stat-card { background: rgba(255,255,255,0.95); border-radius: 12px; padding: 30px 40px; box-shadow: 0 2px 15px rgba(0,0,0,0.1); }
-.stat-card h3 { font-size: 2rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.stat-card p { color: #999; margin-top: 5px; }
-.quick-actions { display: flex; gap: 16px; justify-content: center; }
-.badge { background: #dc3545; color: #fff; border-radius: 10px; padding: 1px 6px; font-size: 10px; }
-.house-list { margin-top: 20px; }
-.btn-block { width: 100%; padding: 12px; margin-top: 15px; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: 700; }
+.landlord-page { min-height: 100vh; background: var(--bg); }
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.tab-content { animation: fadeIn 0.25s ease; }
+
+/* Dashboard */
+.dashboard { padding: 20px 0; }
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.stat-card {
+  background: var(--bg-white);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all var(--transition);
+}
+.stat-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+.stat-icon {
+  width: 52px; height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.stat-icon-houses { background: var(--primary-light); }
+.stat-icon-pending { background: #fff7e6; }
+.stat-icon-total { background: #f6ffed; }
+.stat-body h3 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+.stat-body p {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.quick-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+/* Section header */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.section-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* House grid */
+.house-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 20px;
+}
+
+/* Badge */
+.badge {
+  background: var(--danger);
+  color: #fff;
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 18px;
+  text-align: center;
+  line-height: 18px;
+  display: inline-block;
+}
+
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-muted);
+}
+.empty-icon {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 16px;
+}
+.empty-state p {
+  font-size: 15px;
+  margin-bottom: 20px;
+}
+
+/* Modal button */
+.btn-block {
+  width: 100%;
+  padding: 12px;
+  margin-top: 16px;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+@media (max-width: 768px) {
+  .container { padding: 16px; }
+  .house-grid { grid-template-columns: 1fr; }
+  .stat-cards { grid-template-columns: 1fr; }
+  .quick-actions { flex-direction: column; align-items: stretch; }
+}
 </style>

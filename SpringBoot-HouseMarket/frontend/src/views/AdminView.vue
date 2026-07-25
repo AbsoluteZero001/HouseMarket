@@ -1,8 +1,8 @@
 <template>
   <div class="admin-page">
-    <AppHeader :username="user?.username" :role="user?.role" @logout="handleLogout" @profile="showProfile = true">
+    <AppHeader :username="user?.username" :role="user?.role" @logout="handleLogout">
       <template #nav>
-        <a href="#" :class="{ active: activeTab === 'dashboard' }" @click.prevent="activeTab = 'dashboard'">首页</a>
+        <a href="#" :class="{ active: activeTab === 'dashboard' }" @click.prevent="activeTab = 'dashboard'">工作台</a>
         <a href="#" :class="{ active: activeTab === 'appointments' }" @click.prevent="activeTab = 'appointments'">预约管理</a>
         <a href="#" :class="{ active: activeTab === 'houses' }" @click.prevent="activeTab = 'houses'">房源管理</a>
         <a href="#" :class="{ active: activeTab === 'users' }" @click.prevent="activeTab = 'users'">用户管理</a>
@@ -11,83 +11,143 @@
 
     <div class="container">
       <!-- Dashboard -->
-      <div v-if="activeTab === 'dashboard'" class="dashboard">
+      <div v-if="activeTab === 'dashboard'" class="tab-content">
         <div class="stat-cards">
-          <div class="stat-card"><h3>{{ users.length }}</h3><p>用户总数</p></div>
-          <div class="stat-card"><h3>{{ allHouses.length }}</h3><p>房源总数</p></div>
-          <div class="stat-card"><h3>{{ allAppointments.length }}</h3><p>预约总数</p></div>
+          <div class="stat-card">
+            <div class="stat-icon stat-icon-users">&#128101;</div>
+            <div class="stat-body">
+              <h3>{{ users.length }}</h3>
+              <p>用户总数</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon stat-icon-houses">&#127968;</div>
+            <div class="stat-body">
+              <h3>{{ allHouses.length }}</h3>
+              <p>房源总数</p>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon stat-icon-apts">&#128197;</div>
+            <div class="stat-body">
+              <h3>{{ allAppointments.length }}</h3>
+              <p>预约总数</p>
+            </div>
+          </div>
         </div>
       </div>
 
       <!-- Appointment Management -->
-      <div v-if="activeTab === 'appointments'">
-        <table class="table">
-          <thead><tr><th>订单ID</th><th>房源</th><th>租客</th><th>房东</th><th>预约时间</th><th>状态</th><th>操作</th></tr></thead>
-          <tbody>
-            <tr v-if="allAppointments.length === 0"><td colspan="7" style="text-align:center;padding:30px;color:#999;">暂无预约</td></tr>
-            <tr v-for="apt in allAppointments" :key="apt.id">
-              <td>#{{ apt.id }}</td>
-              <td>{{ apt.house?.title || '-' }}</td>
-              <td>{{ apt.tenant?.realName || apt.tenant?.username || '-' }}</td>
-              <td>{{ apt.landlord?.realName || apt.landlord?.username || '-' }}</td>
-              <td>{{ apt.time }}</td>
-              <td><StatusBadge :status="apt.status" /></td>
-              <td><button class="btn btn-danger btn-sm" @click="handleDeleteApt(apt.id)">删除</button></td>
-            </tr>
-          </tbody>
-        </table>
+      <div v-if="activeTab === 'appointments'" class="tab-content">
+        <div class="section-header">
+          <h3>预约管理</h3>
+          <span class="count-tag">共 {{ allAppointments.length }} 条</span>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr><th>订单ID</th><th>房源</th><th>租客</th><th>房东</th><th>预约时间</th><th>状态</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr v-if="allAppointments.length === 0">
+                <td colspan="7" class="empty-cell">暂无预约记录</td>
+              </tr>
+              <tr v-for="apt in allAppointments" :key="apt.id">
+                <td><span class="id-tag">#{{ apt.id }}</span></td>
+                <td>{{ apt.house?.title || '-' }}</td>
+                <td>{{ apt.tenant?.realName || apt.tenant?.username || '-' }}</td>
+                <td>{{ apt.landlord?.realName || apt.landlord?.username || '-' }}</td>
+                <td>{{ apt.time }}</td>
+                <td><StatusBadge :status="apt.status" /></td>
+                <td>
+                  <button class="btn btn-sm btn-danger" @click="handleDeleteApt(apt.id)">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- House Management -->
-      <div v-if="activeTab === 'houses'">
-        <div class="search-bar">
-          <input v-model="houseSearch" placeholder="搜索房源标题或地址" />
-          <button class="btn" @click="searchHouses">搜索</button>
-          <button class="btn btn-secondary" @click="houseSearch = ''; loadAllHouses()">重置</button>
+      <div v-if="activeTab === 'houses'" class="tab-content">
+        <div class="section-header">
+          <h3>房源管理</h3>
+          <span class="count-tag">共 {{ filteredHouses.length }} 条</span>
         </div>
-        <table class="table" style="margin-top:20px">
-          <thead><tr><th>ID</th><th>标题</th><th>户型</th><th>面积</th><th>价格</th><th>地址</th><th>操作</th></tr></thead>
-          <tbody>
-            <tr v-if="filteredHouses.length === 0"><td colspan="7" style="text-align:center;padding:30px;color:#999;">暂无房源</td></tr>
-            <tr v-for="h in filteredHouses" :key="h.id">
-              <td>{{ h.id }}</td>
-              <td>{{ h.title }}</td>
-              <td>{{ h.type }}</td>
-              <td>{{ h.area }}㎡</td>
-              <td>{{ h.price }}</td>
-              <td>{{ h.address }}</td>
-              <td><button class="btn btn-danger btn-sm" @click="handleDeleteHouse(h.id)">删除</button></td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="search-bar">
+          <div class="input-wrap">
+            <input v-model="houseSearch" placeholder="搜索房源标题或地址..." @keyup.enter="searchHouses" />
+          </div>
+          <button class="btn btn-sm" @click="searchHouses">搜索</button>
+          <button class="btn btn-sm btn-outline" @click="houseSearch = ''; loadAllHouses()">重置</button>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr><th>ID</th><th>标题</th><th>户型</th><th>面积</th><th>价格</th><th>地址</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr v-if="filteredHouses.length === 0">
+                <td colspan="7" class="empty-cell">暂无房源</td>
+              </tr>
+              <tr v-for="h in filteredHouses" :key="h.id">
+                <td><span class="id-tag">#{{ h.id }}</span></td>
+                <td>{{ h.title }}</td>
+                <td>{{ h.type }}</td>
+                <td>{{ h.area }}㎡</td>
+                <td>&yen;{{ h.price }}</td>
+                <td>{{ h.address }}</td>
+                <td>
+                  <button class="btn btn-sm btn-danger" @click="handleDeleteHouse(h.id)">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- User Management -->
-      <div v-if="activeTab === 'users'">
+      <div v-if="activeTab === 'users'" class="tab-content">
+        <div class="section-header">
+          <h3>用户管理</h3>
+          <span class="count-tag">共 {{ filteredUsers.length }} 条</span>
+        </div>
         <div class="search-bar">
-          <input v-model="userSearch" placeholder="搜索用户名" />
-          <select v-model="userRoleFilter">
+          <div class="input-wrap" style="flex:1">
+            <input v-model="userSearch" placeholder="搜索用户名..." @keyup.enter="searchUsers" />
+          </div>
+          <select v-model="userRoleFilter" class="select-filter">
             <option value="">全部角色</option>
             <option value="TENANT">租客</option>
             <option value="LANDLORD">房东</option>
             <option value="ADMIN">管理员</option>
           </select>
-          <button class="btn" @click="searchUsers">搜索</button>
-          <button class="btn btn-secondary" @click="userSearch = ''; userRoleFilter = ''">重置</button>
+          <button class="btn btn-sm" @click="searchUsers">搜索</button>
+          <button class="btn btn-sm btn-outline" @click="userSearch = ''; userRoleFilter = ''">重置</button>
         </div>
-        <table class="table" style="margin-top:20px">
-          <thead><tr><th>ID</th><th>用户名</th><th>角色</th><th>状态</th><th>操作</th></tr></thead>
-          <tbody>
-            <tr v-if="filteredUsers.length === 0"><td colspan="5" style="text-align:center;padding:30px;color:#999;">暂无用户</td></tr>
-            <tr v-for="u in filteredUsers" :key="u.id">
-              <td>{{ u.id }}</td>
-              <td>{{ u.username }}</td>
-              <td><StatusBadge :status="u.role === 'ADMIN' ? 'approved' : u.role === 'LANDLORD' ? 'pending' : 'completed'" /></td>
-              <td><StatusBadge :status="u.status || 'normal'" /></td>
-              <td><button class="btn btn-danger btn-sm" @click="handleDeleteUser(u.id)">删除</button></td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr><th>ID</th><th>用户名</th><th>角色</th><th>状态</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr v-if="filteredUsers.length === 0">
+                <td colspan="5" class="empty-cell">暂无用户</td>
+              </tr>
+              <tr v-for="u in filteredUsers" :key="u.id">
+                <td><span class="id-tag">#{{ u.id }}</span></td>
+                <td>{{ u.username }}</td>
+                <td>
+                  <StatusBadge :status="u.role === 'ADMIN' ? 'approved' : u.role === 'LANDLORD' ? 'pending' : 'completed'" />
+                </td>
+                <td><StatusBadge :status="u.status || 'normal'" /></td>
+                <td>
+                  <button class="btn btn-sm btn-danger" @click="handleDeleteUser(u.id)">删除</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -124,7 +184,6 @@ const filteredHouses = computed(() => {
   const kw = houseSearch.value.toLowerCase()
   return allHouses.value.filter(h => h.title?.toLowerCase().includes(kw) || h.address?.toLowerCase().includes(kw))
 })
-
 const filteredUsers = computed(() => {
   let list = users.value
   if (userSearch.value) {
@@ -152,8 +211,8 @@ async function handleDeleteUser(id) { if (confirm('确认删除此用户？')) {
 async function handleDeleteHouse(id) { if (confirm('确认删除此房源？')) { await deleteHouse(id); showAlert('房源已删除'); await loadAllHouses() } }
 async function handleDeleteApt(id) { if (confirm('确认删除此记录？')) { await deleteAppointment(id); showAlert('记录已删除'); await loadAllAppointments() } }
 
-function searchHouses() { /* filteredHouses computed, no-op */ }
-function searchUsers() { /* filteredUsers computed, no-op */ }
+function searchHouses() { /* computed */ }
+function searchUsers() { /* computed */ }
 
 function handleLogout() { localStorage.clear(); router.push('/login') }
 
@@ -169,16 +228,156 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.admin-page { min-height: 100vh; }
-.container { max-width: 1200px; margin: 0 auto; padding: 20px; }
-.stat-cards { display: flex; gap: 20px; justify-content: center; margin: 40px 0; flex-wrap: wrap; }
-.stat-card { background: rgba(255,255,255,0.95); border-radius: 12px; padding: 30px 40px; box-shadow: 0 2px 15px rgba(0,0,0,0.1); }
-.stat-card h3 { font-size: 2rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.stat-card p { color: #999; margin-top: 5px; }
-.search-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.search-bar input, .search-bar select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; }
-.table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.95); border-radius: 8px; overflow: hidden; box-shadow: 0 2px 15px rgba(0,0,0,0.1); }
-.table th { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 12px 15px; text-align: left; font-size: 12px; text-transform: uppercase; }
-.table td { padding: 10px 15px; border-bottom: 1px solid #e0e0e0; }
-.btn-sm { padding: 5px 10px; font-size: 11px; }
+.admin-page { min-height: 100vh; background: var(--bg); }
+.container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+.tab-content { animation: fadeIn 0.25s ease; }
+
+/* Stat cards */
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 8px;
+}
+.stat-card {
+  background: var(--bg-white);
+  border-radius: var(--radius);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: all var(--transition);
+}
+.stat-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+.stat-icon {
+  width: 52px; height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+.stat-icon-users { background: var(--primary-light); }
+.stat-icon-houses { background: #fff7e6; }
+.stat-icon-apts { background: #f6ffed; }
+.stat-body h3 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.2;
+}
+.stat-body p {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Section header */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.section-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+.count-tag {
+  font-size: 13px;
+  color: var(--text-muted);
+  background: #f0f0f0;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+/* Search bar */
+.search-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.input-wrap {
+  flex: 1;
+  max-width: 320px;
+}
+.input-wrap input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg-white);
+  outline: none;
+  transition: border-color var(--transition);
+}
+.input-wrap input:focus { border-color: var(--primary); }
+.select-filter {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg-white);
+  outline: none;
+  cursor: pointer;
+}
+
+/* Table */
+.table-wrap {
+  background: var(--bg-white);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.table th {
+  background: #fafafa;
+  color: var(--text);
+  font-weight: 600;
+  padding: 13px 16px;
+  text-align: left;
+  font-size: 13px;
+  border-bottom: 2px solid var(--border);
+}
+.table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  color: var(--text);
+}
+.table tr:hover td { background: #fafafa; }
+.table tr:last-child td { border-bottom: none; }
+.empty-cell {
+  text-align: center;
+  padding: 40px 16px !important;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+.id-tag {
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+  background: #f5f5f5;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+@media (max-width: 768px) {
+  .container { padding: 12px; }
+  .stat-cards { grid-template-columns: 1fr; }
+  .search-bar { flex-wrap: wrap; }
+  .input-wrap { max-width: none; }
+  .table-wrap { overflow-x: auto; }
+}
 </style>

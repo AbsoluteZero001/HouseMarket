@@ -36,13 +36,13 @@
     </div>
     <div class="form-group">
       <label>房源描述</label>
-      <textarea v-model="form.description" rows="4" placeholder="请输入房源描述"></textarea>
+      <textarea v-model="form.description" rows="4" placeholder="请输入房源描述（可选）"></textarea>
     </div>
     <div class="form-actions">
-      <button class="btn" @click="$emit('submit', { ...form, imageFile: selectedFile })">
+      <button class="btn btn-lg" @click="$emit('submit', { ...form, imageFile: selectedFile })">
         {{ submitLabel }}
       </button>
-      <button class="btn btn-secondary" @click="$emit('cancel')">取消</button>
+      <button class="btn btn-lg btn-outline" @click="$emit('cancel')">取消</button>
     </div>
   </div>
 </template>
@@ -57,7 +57,6 @@ defineEmits(['submit', 'cancel'])
 const form = reactive({
   title: '', type: '', area: '', price: '', address: '', description: '', image: ''
 })
-
 const selectedFile = ref(null)
 const imageUploadRef = ref(null)
 
@@ -72,14 +71,13 @@ watch(() => props.initial, (val) => {
 }, { immediate: true })
 
 function onImageSelect(file) { selectedFile.value = file }
-
 defineExpose({ form, selectedFile })
 </script>
 
 <style scoped>
-.house-form { }
+.house-form {}
 .form-row { display: flex; gap: 16px; }
 .form-row .form-group { flex: 1; }
-.form-actions { display: flex; gap: 10px; margin-top: 20px; }
-.required { color: #dc3545; }
+.form-actions { display: flex; gap: 10px; margin-top: 24px; }
+.required { color: var(--danger); }
 </style>
