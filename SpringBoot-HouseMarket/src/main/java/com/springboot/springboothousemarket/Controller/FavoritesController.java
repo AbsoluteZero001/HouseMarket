@@ -1,9 +1,13 @@
 package com.springboot.springboothousemarket.Controller;
 
 import com.springboot.springboothousemarket.Entity.Favorites;
+import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Service.FavoritesService;
 import com.springboot.springboothousemarket.Service.HousesService;
+import com.springboot.springboothousemarket.Service.UsersService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -16,10 +20,12 @@ import java.util.Map;
 public class FavoritesController {
     private final FavoritesService favoritesService;
     private final HousesService houseService;
+    private final UsersService usersService;
 
-    public FavoritesController(FavoritesService favoritesService, HousesService houseService) {
+    public FavoritesController(FavoritesService favoritesService, HousesService houseService, UsersService usersService) {
         this.favoritesService = favoritesService;
         this.houseService = houseService;
+        this.usersService = usersService;
     }
 
     /**
@@ -47,8 +53,13 @@ public class FavoritesController {
      */
     @DeleteMapping("/{houseId}")
     public Map<String, Object> removeFavorite(@PathVariable Long houseId) {
-        // 从JWT获取用户ID，这里需要修改为从认证上下文中获取
-        Long userId = 1L; // 临时硬编码，实际应该从SecurityContext获取
+        Long userId = getCurrentUserId();
+        if (userId == null) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "未登录");
+            return response;
+        }
         boolean result = favoritesService.removeFavorite(userId, houseId);
 
         Map<String, Object> response = new HashMap<>();
@@ -70,8 +81,13 @@ public class FavoritesController {
      */
     @GetMapping
     public Map<String, Object> getFavorites() {
-        // 从JWT获取用户ID，这里需要修改为从认证上下文中获取
-        Long userId = 1L; // 临时硬编码，实际应该从SecurityContext获取
+        Long userId = getCurrentUserId();
+        if (userId == null) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "未登录");
+            return response;
+        }
         List<Favorites> favorites = favoritesService.getFavoritesByUserId(userId);
 
         Map<String, Object> data = new HashMap<>();
@@ -103,5 +119,16 @@ public class FavoritesController {
         response.put("data", data);
 
         return response;
+    }
+
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null ||
+                !authentication.isAuthenticated() ||
+                "anonymousUser".equals(authentication.getName())) {
+            return null;
+        }
+        Users user = usersService.getUserByUsername(authentication.getName());
+        return user != null ? user.getId() : null;
     }
 }
