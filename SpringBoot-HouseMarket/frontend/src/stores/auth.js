@@ -1,10 +1,18 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { login as loginApi } from '../api/auth'
+import {defineStore} from 'pinia'
+import {computed, ref} from 'vue'
+import {login as loginApi} from '../api/auth'
+
+function safeParseUser() {
+    try {
+        return JSON.parse(localStorage.getItem('user') || 'null')
+    } catch {
+        return null
+    }
+}
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref(localStorage.getItem('token') || '')
-  const user = ref(JSON.parse(localStorage.getItem('user') || 'null'))
+    const user = ref(safeParseUser())
 
   const isLoggedIn = computed(() => !!token.value)
   const userRole = computed(() => user.value?.role || '')
@@ -13,10 +21,10 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(credentials) {
     const res = await loginApi(credentials)
     if (res.data.code === 200) {
-      token.value = res.data.token
-      user.value = res.data.data
-      localStorage.setItem('token', res.data.token)
-      localStorage.setItem('user', JSON.stringify(res.data.data))
+        token.value = res.data.token || ''
+        user.value = res.data.data || null
+        localStorage.setItem('token', res.data.token || '')
+        localStorage.setItem('user', JSON.stringify(res.data.data || null))
     }
     return res.data
   }

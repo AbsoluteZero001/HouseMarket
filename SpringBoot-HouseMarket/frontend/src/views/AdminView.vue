@@ -156,17 +156,22 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { getUsers, deleteUser } from '../api/users'
-import { getHouses, deleteHouse } from '../api/houses'
-import { getAppointments, deleteAppointment } from '../api/appointments'
+import {computed, onMounted, ref, watch} from 'vue'
+import {useRouter} from 'vue-router'
+import {deleteUser, getUsers} from '../api/users'
+import {deleteHouse, getHouses} from '../api/houses'
+import {deleteAppointment, getAppointments} from '../api/appointments'
 import AppHeader from '../components/AppHeader.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import AppAlert from '../components/AppAlert.vue'
 
 const router = useRouter()
-const user = JSON.parse(localStorage.getItem('user') || 'null')
+let user = null
+try {
+  user = JSON.parse(localStorage.getItem('user') || 'null')
+} catch {
+  user = null
+}
 if (!user || user.role !== 'ADMIN') { router.push('/login') }
 
 const activeTab = ref('dashboard')

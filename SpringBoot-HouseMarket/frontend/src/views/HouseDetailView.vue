@@ -101,11 +101,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useHouseStore } from '../stores/houses'
-import { useFavoriteStore } from '../stores/favorites'
-import { useAppointmentStore } from '../stores/appointments'
+import {computed, onMounted, reactive, ref} from 'vue'
+import {useRoute, useRouter} from 'vue-router'
+import {useHouseStore} from '../stores/houses'
+import {useFavoriteStore} from '../stores/favorites'
+import {useAppointmentStore} from '../stores/appointments'
 import AppHeader from '../components/AppHeader.vue'
 import ImageGallery from '../components/ImageGallery.vue'
 import AppModal from '../components/AppModal.vue'
@@ -117,7 +117,12 @@ const houseStore = useHouseStore()
 const favStore = useFavoriteStore()
 const aptStore = useAppointmentStore()
 
-const user = JSON.parse(localStorage.getItem('user') || 'null')
+let user = null
+try {
+  user = JSON.parse(localStorage.getItem('user') || 'null')
+} catch {
+  user = null
+}
 const house = ref(null)
 const isFav = ref(false)
 const showBookModal = ref(false)

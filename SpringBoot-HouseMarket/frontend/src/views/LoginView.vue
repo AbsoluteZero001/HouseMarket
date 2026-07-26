@@ -67,8 +67,8 @@
             </div>
           </div>
 
-          <button type="submit" class="btn btn-primary btn-block btn-lg">
-            <span>登 录</span>
+          <button type="submit" class="btn btn-primary btn-block btn-lg" :disabled="loading">
+            <span>{{ loading ? '登录中...' : '登 录' }}</span>
           </button>
         </form>
 
@@ -81,15 +81,16 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
+import {reactive, ref} from 'vue'
+import {useRouter} from 'vue-router'
+import {useAuthStore} from '../stores/auth'
 import RoleSlider from '../components/RoleSlider.vue'
 import CaptchaCanvas from '../components/CaptchaCanvas.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const captchaRef = ref(null)
+const loading = ref(false)
 
 const form = reactive({ username: '', password: '', role: 'TENANT', captcha: '' })
 
@@ -100,6 +101,7 @@ const features = [
 ]
 
 async function handleLogin() {
+  if (loading.value) return
   const captcha = sessionStorage.getItem('captcha')
   if (form.captcha.toLowerCase() !== captcha) {
     alert('验证码错误')
@@ -107,18 +109,30 @@ async function handleLogin() {
     form.captcha = ''
     return
   }
+  loading.value = true
   try {
     const res = await authStore.login({ username: form.username, password: form.password, role: form.role })
     if (res.code === 200) {
-      const role = res.data.role?.toLowerCase()
-      if (role === 'tenant') router.push('/tenant')
-      else if (role === 'landlord') router.push('/landlord')
-      else if (role === 'admin') router.push('/admin')
+      const role = (res.data?.role || '').toLowerCase()
+      if (role === 'tenant') await router.push('/tenant')
+      else if (role === 'landlord') await router.push('/landlord')
+      else if (role === 'admin') await router.push('/admin')
+      else {
+        alert('未知角色: ' + (res.data?.role || '无') + ', 请检查账号数据')
+        captchaRef.value?.generate()
+        form.captcha = ''
+      }
     } else {
       alert(res.msg || '登录失败')
+      captchaRef.value?.generate()
+      form.captcha = ''
     }
   } catch (e) {
-    alert('登录失败: ' + (e.response?.data?.message || e.message))
+    alert('登录失败: ' + (e.response?.data?.msg || e.message))
+    captchaRef.value?.generate()
+    form.captcha = ''
+  } finally {
+    loading.value = false
   }
 }
 </script>

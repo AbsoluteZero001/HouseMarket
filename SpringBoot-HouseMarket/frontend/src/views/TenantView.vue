@@ -104,13 +104,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useHouseStore } from '../stores/houses'
-import { useAppointmentStore } from '../stores/appointments'
-import { useFavoriteStore } from '../stores/favorites'
-import { changePassword } from '../api/users'
-import { useWebSocket } from '../composables/useWebSocket'
+import {computed, onMounted, reactive, ref, watch} from 'vue'
+import {useRouter} from 'vue-router'
+import {useHouseStore} from '../stores/houses'
+import {useAppointmentStore} from '../stores/appointments'
+import {useFavoriteStore} from '../stores/favorites'
+import {changePassword} from '../api/users'
+import {useWebSocket} from '../composables/useWebSocket'
 import AppHeader from '../components/AppHeader.vue'
 import HouseFilter from '../components/HouseFilter.vue'
 import HouseCard from '../components/HouseCard.vue'
@@ -124,7 +124,12 @@ const houseStore = useHouseStore()
 const aptStore = useAppointmentStore()
 const favStore = useFavoriteStore()
 
-const user = JSON.parse(localStorage.getItem('user') || 'null')
+let user = null
+try {
+  user = JSON.parse(localStorage.getItem('user') || 'null')
+} catch {
+  user = null
+}
 if (!user) { router.push('/login') }
 
 const activeTab = ref('search')

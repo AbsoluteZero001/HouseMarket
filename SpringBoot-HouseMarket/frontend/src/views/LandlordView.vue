@@ -98,12 +98,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useHouseStore } from '../stores/houses'
-import { useAppointmentStore } from '../stores/appointments'
-import { changePassword } from '../api/users'
-import { useWebSocket } from '../composables/useWebSocket'
+import {computed, onMounted, onUnmounted, reactive, ref, watch} from 'vue'
+import {useRouter} from 'vue-router'
+import {useHouseStore} from '../stores/houses'
+import {useAppointmentStore} from '../stores/appointments'
+import {changePassword} from '../api/users'
+import {useWebSocket} from '../composables/useWebSocket'
 import AppHeader from '../components/AppHeader.vue'
 import HouseCard from '../components/HouseCard.vue'
 import HouseForm from '../components/HouseForm.vue'
@@ -115,7 +115,12 @@ const router = useRouter()
 const houseStore = useHouseStore()
 const aptStore = useAppointmentStore()
 
-const user = JSON.parse(localStorage.getItem('user') || 'null')
+let user = null
+try {
+  user = JSON.parse(localStorage.getItem('user') || 'null')
+} catch {
+  user = null
+}
 if (!user) { router.push('/login') }
 
 const activeTab = ref('dashboard')

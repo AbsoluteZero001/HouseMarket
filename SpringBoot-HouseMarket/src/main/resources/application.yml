@@ -38,5 +38,9 @@ springdoc:
     # Swagger UI访问路径
     path: /swagger-ui.html
 
+logging:
+  level:
+    org.springframework.web.socket.config.WebSocketMessageBrokerStats: WARN
+
 server:
   port: 8082
