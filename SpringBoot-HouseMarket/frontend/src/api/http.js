@@ -20,10 +20,16 @@ http.interceptors.request.use(
 http.interceptors.response.use(
   response => response,
   error => {
-    if (error.response && error.response.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
-      router.push('/login')
+    if (error.response) {
+      console.error('[HTTP] Error', error.response.status, error.config?.method?.toUpperCase(), error.config?.url)
+      console.error('[HTTP] Response data:', error.response.data)
+      if (error.response.status === 401) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        router.push('/login')
+      }
+    } else if (error.request) {
+      console.error('[HTTP] Network error - no response received for', error.config?.method?.toUpperCase(), error.config?.url)
     }
     return Promise.reject(error)
   }
