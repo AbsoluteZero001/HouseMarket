@@ -1,6 +1,7 @@
 package com.springboot.springboothousemarket.Config;
 
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import com.springboot.springboothousemarket.Service.UsersService;
+import com.springboot.springboothousemarket.Util.JwtUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -18,21 +19,12 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final JwtFilter jwtFilter;
+    private final JwtUtil jwtUtil;
+    private final UsersService usersService;
 
-    public SecurityConfig(JwtFilter jwtFilter) {
-        this.jwtFilter = jwtFilter;
-    }
-
-    /**
-     * 禁止 JwtFilter 作为 Servlet Filter 自动注册，
-     * 仅通过 Spring Security 的 addFilterBefore 在安全链中使用
-     */
-    @Bean
-    public FilterRegistrationBean<JwtFilter> jwtFilterRegistration() {
-        FilterRegistrationBean<JwtFilter> registration = new FilterRegistrationBean<>(jwtFilter);
-        registration.setEnabled(false);
-        return registration;
+    public SecurityConfig(JwtUtil jwtUtil, UsersService usersService) {
+        this.jwtUtil = jwtUtil;
+        this.usersService = usersService;
     }
 
     @Bean
@@ -40,12 +32,11 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    /**
-     * SecurityFilterChain — 统一安全配置
-     * permitAll 的路径不会经过 JwtFilter 认证
-     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        // 手动创建 JwtFilter，不作为 Spring Bean，避免被自动注册为全局 Servlet Filter
+        JwtFilter jwtFilter = new JwtFilter(jwtUtil, usersService);
+
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))

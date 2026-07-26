@@ -14,7 +14,6 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -24,8 +23,9 @@ import java.util.stream.Collectors;
 /**
  * JWT过滤器组件
  * 用于验证和处理HTTP请求中的JWT令牌
+ * 注意：此类不标注 @Component，由 SecurityConfig 手动创建，
+ * 避免被 Spring Boot 自动注册为全局 Servlet Filter
  */
-@Component
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
