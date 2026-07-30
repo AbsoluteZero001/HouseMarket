@@ -86,7 +86,7 @@
     <!-- Profile Modal -->
     <AppModal :visible="showProfile" title="个人信息" @close="showProfile = false">
       <div class="form-group"><label>用户名</label><input :value="user?.username" disabled /></div>
-      <div class="form-group"><label>角色</label><input :value="roleLabel" disabled /></div>
+      <div class="form-group"><label>角色</label><input :value="roleLabelComputed" disabled/></div>
       <div class="form-group"><label>旧密码</label><input v-model="passwordForm.oldPassword" type="password" /></div>
       <div class="form-group"><label>新密码</label><input v-model="passwordForm.newPassword" type="password" placeholder="留空则不修改" /></div>
       <div class="form-group"><label>确认新密码</label><input v-model="passwordForm.confirmNewPassword" type="password" /></div>
@@ -104,6 +104,8 @@ import {useHouseStore} from '../stores/houses'
 import {useAppointmentStore} from '../stores/appointments'
 import {changePassword} from '../api/users'
 import {useWebSocket} from '../composables/useWebSocket'
+import {roleLabel, useAuth} from '../composables/useAuth'
+import {useAlert} from '../composables/useAlert'
 import AppHeader from '../components/AppHeader.vue'
 import HouseCard from '../components/HouseCard.vue'
 import HouseForm from '../components/HouseForm.vue'
@@ -115,13 +117,9 @@ const router = useRouter()
 const houseStore = useHouseStore()
 const aptStore = useAppointmentStore()
 
-let user = null
-try {
-  user = JSON.parse(localStorage.getItem('user') || 'null')
-} catch {
-  user = null
-}
-if (!user) { router.push('/login') }
+const {loadUser, handleLogout: doLogout} = useAuth()
+let user = loadUser()
+if (!user) user = {}
 
 const activeTab = ref('dashboard')
 const showAddModal = ref(false)
@@ -129,17 +127,14 @@ const showEditModal = ref(false)
 const showProfile = ref(false)
 const editingHouse = ref({})
 const houseFormRef = ref(null)
-const alertMsg = ref('')
-const alertType = ref('success')
+const {alertMsg, alertType, showAlert} = useAlert()
 const passwordForm = reactive({ oldPassword: '', newPassword: '', confirmNewPassword: '' })
 const pendingCount = ref(0)
 
 let pollTimer = null
 
-const roleLabel = computed(() => ({ ADMIN: '管理员', LANDLORD: '房东', TENANT: '租客' })[user?.role] || user?.role)
+const roleLabelComputed = computed(() => roleLabel(user.role))
 const { notification, connect, disconnect } = useWebSocket()
-
-function showAlert(msg, type = 'success') { alertMsg.value = msg; alertType.value = type; setTimeout(() => alertMsg.value = '', 3000) }
 
 async function loadHouses() { await houseStore.fetchLandlordHouses(user.id) }
 async function loadAppointments() { await aptStore.fetchAppointments() }
@@ -199,7 +194,12 @@ async function handleChangePassword() {
   passwordForm.newPassword = ''; passwordForm.confirmNewPassword = ''; passwordForm.oldPassword = ''
 }
 
-function handleLogout() { disconnect(); if (pollTimer) clearInterval(pollTimer); localStorage.clear(); router.push('/login') }
+function handleLogout() {
+  doLogout(() => {
+    disconnect();
+    if (pollTimer) clearInterval(pollTimer)
+  })
+}
 
 watch(notification, (n) => {
   if (n) { showAlert(`新预约通知: ${n.message || ''}`); loadAppointments(); loadPendingCount() }
@@ -324,7 +324,6 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
   margin-top: 16px;
 }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 @media (max-width: 768px) {
   .container { padding: 16px; }

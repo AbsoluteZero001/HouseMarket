@@ -14,7 +14,7 @@
         <div class="user-chip" @click="$emit('profile')" v-if="username">
           <span class="role-dot" :class="'dot-' + role.toLowerCase()"></span>
           <span class="username-text">{{ username }}</span>
-          <span class="role-tag">{{ roleLabel }}</span>
+          <span class="role-tag">{{ roleLabelComputed }}</span>
         </div>
         <button class="btn-logout" @click="$emit('logout')" v-if="username" title="退出登录">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -25,7 +25,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import {computed, onMounted, onUnmounted, ref} from 'vue'
+import {roleLabel} from '../composables/useAuth'
 
 const props = defineProps({ username: String, role: String })
 defineEmits(['logout', 'profile'])
@@ -36,10 +37,7 @@ function onScroll() { scrolled.value = window.scrollY > 10 }
 onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }))
 onUnmounted(() => window.removeEventListener('scroll', onScroll))
 
-const roleLabel = computed(() => {
-  const map = { ADMIN: '管理员', LANDLORD: '房东', TENANT: '租客' }
-  return map[props.role] || props.role
-})
+const roleLabelComputed = computed(() => roleLabel(props.role))
 </script>
 
 <style scoped>

@@ -35,3 +35,11 @@ export function uploadImage(file) {
     headers: { 'Content-Type': 'multipart/form-data' }
   })
 }
+
+export function getPublicHouses() {
+    return http.get('/api/public/houses')
+}
+
+export function getPublicStats() {
+    return http.get('/api/public/stats')
+}

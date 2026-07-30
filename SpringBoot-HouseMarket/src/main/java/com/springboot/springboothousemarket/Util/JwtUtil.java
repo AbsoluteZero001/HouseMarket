@@ -53,13 +53,6 @@ public class JwtUtil {
         return createToken(claims, username);
     }
 
-    // 生成包含多个角色的token
-    public String generateToken(String username, List<String> roles) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("roles", roles);
-        return createToken(claims, username);
-    }
-
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
                 .setClaims(claims)
@@ -70,12 +63,7 @@ public class JwtUtil {
                 .compact();
     }
 
-    public Boolean validateToken(String token, String username) {
-        final String extractedUsername = extractUsername(token);
-        return (extractedUsername.equals(username) && !isTokenExpired(token));
-    }
-
-    // 提取角色信息，支持单个角色和多个角色
+    // 提取角色信息
     public List<String> extractRoles(String token) {
         Claims claims = extractAllClaims(token);
 

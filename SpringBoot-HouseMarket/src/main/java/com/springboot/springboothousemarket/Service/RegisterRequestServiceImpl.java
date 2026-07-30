@@ -1,5 +1,6 @@
 package com.springboot.springboothousemarket.Service;
 
+import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Mapper.RegisterRequestMapper;
 import com.springboot.springboothousemarket.dto.RegisterRequest;
 import org.springframework.stereotype.Service;
@@ -8,20 +9,17 @@ import org.springframework.stereotype.Service;
 public class RegisterRequestServiceImpl implements RegisterRequestService {
 
     private final RegisterRequestMapper mapper;
+    private final UsersService usersService;
 
-    public RegisterRequestServiceImpl(RegisterRequestMapper mapper) {
+    public RegisterRequestServiceImpl(RegisterRequestMapper mapper, UsersService usersService) {
         this.mapper = mapper;
-    }
-
-    @Override
-    public RegisterRequest show() {
-        return mapper.show();
+        this.usersService = usersService;
     }
 
     @Override
     public void register(RegisterRequest user) {
-        RegisterRequest exist = mapper.show(); // demo 用 show() 简单判断
-        if (exist != null && exist.getUsername().equals(user.getUsername())) {
+        Users exist = usersService.getUserByUsername(user.getUsername());
+        if (exist != null) {
             throw new RuntimeException("用户已存在");
         }
         mapper.register(user);
@@ -29,17 +27,13 @@ public class RegisterRequestServiceImpl implements RegisterRequestService {
 
     @Override
     public RegisterRequest login(String username, String password, String role) {
-        // 首先根据用户名和密码查询用户
         RegisterRequest user = mapper.findUserByUsernameAndPassword(username, password);
 
         if (user == null) {
-            // 如果用户不存在，抛出用户名或密码错误
             throw new RuntimeException("用户名或密码错误");
         }
 
-        // 如果用户存在，检查角色是否匹配
         if (!user.getRole().equals(role)) {
-            // 角色不匹配，抛出登录类型错误
             throw new RuntimeException("登录类型错误");
         }
 

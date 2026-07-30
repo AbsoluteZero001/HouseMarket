@@ -6,11 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 @Mapper
 public interface RegisterRequestMapper {
 
-    RegisterRequest show();
-
     int register(RegisterRequest request);
 
     RegisterRequest findUserByUsernameAndPassword(String username, String password);
-
-    RegisterRequest login(String username, String password, String role);
 }

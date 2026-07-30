@@ -12,33 +12,16 @@
         <result property="status" column="status"/>
     </resultMap>
 
-    <!-- show() -->
-    <select id="show" resultMap="BaseResultMap">
-        SELECT *
-        FROM sysuser LIMIT 1
-    </select>
-
-    <!-- register() -->
     <insert id="register">
         INSERT INTO sysuser(username, password, role, status)
         VALUES (#{username}, #{password}, #{role}, #{status})
     </insert>
 
-    <!-- 根据用户名和密码查询用户 -->
     <select id="findUserByUsernameAndPassword" resultMap="BaseResultMap">
         SELECT *
         FROM sysuser
-        WHERE username = #{username}
-          AND password = #{password}
-    </select>
-
-    <!-- login() -->
-    <select id="login" resultMap="BaseResultMap">
-        SELECT *
-        FROM sysuser
-        WHERE username = #{username}
-          AND password = #{password}
-          AND role = #{role}
+        WHERE username = #{param1}
+          AND password = #{param2}
     </select>
 
 </mapper>

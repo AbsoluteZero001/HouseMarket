@@ -43,9 +43,9 @@ public class RegisterRequestController {
                     request.getRole(),
                     "ACTIVE");
             service.register(user);
-            return ResponseEntity.ok(new ResponseResult(true, "注册成功"));
+            return ResponseEntity.ok(ResponseResult.ok("注册成功"));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ResponseResult(false, "注册失败: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(ResponseResult.fail("注册失败: " + e.getMessage()));
         }
     }
 

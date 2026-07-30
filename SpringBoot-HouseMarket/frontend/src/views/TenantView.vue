@@ -86,7 +86,7 @@
       </div>
       <div class="form-group">
         <label>角色</label>
-        <input :value="roleLabel" disabled />
+        <input :value="roleLabelComputed" disabled/>
       </div>
       <div class="form-group">
         <label>新密码</label>
@@ -111,6 +111,8 @@ import {useAppointmentStore} from '../stores/appointments'
 import {useFavoriteStore} from '../stores/favorites'
 import {changePassword} from '../api/users'
 import {useWebSocket} from '../composables/useWebSocket'
+import {roleLabel, useAuth} from '../composables/useAuth'
+import {useAlert} from '../composables/useAlert'
 import AppHeader from '../components/AppHeader.vue'
 import HouseFilter from '../components/HouseFilter.vue'
 import HouseCard from '../components/HouseCard.vue'
@@ -124,27 +126,20 @@ const houseStore = useHouseStore()
 const aptStore = useAppointmentStore()
 const favStore = useFavoriteStore()
 
-let user = null
-try {
-  user = JSON.parse(localStorage.getItem('user') || 'null')
-} catch {
-  user = null
-}
-if (!user) { router.push('/login') }
+const {loadUser, handleLogout: doLogout} = useAuth()
+let user = loadUser()
+if (!user) user = {}
 
 const activeTab = ref('search')
 const page = ref(1)
 const pageSize = ref(10)
 const searchParams = ref({})
 const showProfile = ref(false)
-const alertMsg = ref('')
-const alertType = ref('success')
+const {alertMsg, alertType, showAlert} = useAlert()
 const passwordForm = reactive({ newPassword: '', confirmNewPassword: '' })
 
-const roleLabel = computed(() => ({ ADMIN: '管理员', LANDLORD: '房东', TENANT: '租客' })[user?.role] || user?.role)
+const roleLabelComputed = computed(() => roleLabel(user.role))
 const { notification, connect, disconnect } = useWebSocket()
-
-function showAlert(msg, type = 'success') { alertMsg.value = msg; alertType.value = type; setTimeout(() => alertMsg.value = '', 3000) }
 
 async function loadHouses() {
   await houseStore.fetchHouses({ ...searchParams.value, page: page.value, pageSize: pageSize.value })
@@ -180,7 +175,9 @@ async function handleChangePassword() {
   passwordForm.newPassword = ''; passwordForm.confirmNewPassword = ''
 }
 
-function handleLogout() { disconnect(); localStorage.clear(); router.push('/login') }
+function handleLogout() {
+  doLogout(() => disconnect())
+}
 
 watch(notification, (n) => {
   if (n) { showAlert(`预约状态更新: ${n.message || ''}`); aptStore.fetchAppointments() }
@@ -262,11 +259,6 @@ onMounted(async () => {
 .w-60 { width: 60%; }
 .w-40 { width: 40%; }
 
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
 /* Empty state */
 .empty-state {
   text-align: center;
@@ -290,7 +282,6 @@ onMounted(async () => {
   margin-top: 16px;
 }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 @media (max-width: 768px) {
   .container { padding: 16px; }

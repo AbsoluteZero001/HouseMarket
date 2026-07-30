@@ -110,24 +110,25 @@ import AppHeader from '../components/AppHeader.vue'
 import ImageGallery from '../components/ImageGallery.vue'
 import AppModal from '../components/AppModal.vue'
 import AppAlert from '../components/AppAlert.vue'
+import {useAuth} from '../composables/useAuth'
+import {useAlert} from '../composables/useAlert'
+import {formatPrice} from '../composables/useFormat'
 
 const route = useRoute()
+
 const router = useRouter()
 const houseStore = useHouseStore()
 const favStore = useFavoriteStore()
 const aptStore = useAppointmentStore()
 
-let user = null
-try {
-  user = JSON.parse(localStorage.getItem('user') || 'null')
-} catch {
-  user = null
-}
+const {loadUser, handleLogout: doLogout} = useAuth()
+let user = loadUser()
+if (!user) user = {}
+
 const house = ref(null)
 const isFav = ref(false)
 const showBookModal = ref(false)
-const alertMsg = ref('')
-const alertType = ref('success')
+const {alertMsg, alertType, showAlert} = useAlert()
 
 const bookForm = reactive({ date: '', time: '', location: '', notes: '' })
 
@@ -135,9 +136,6 @@ const imageList = computed(() => {
   if (!house.value?.image) return []
   try { const arr = JSON.parse(house.value.image); return Array.isArray(arr) ? arr : [house.value.image] } catch (e) { return [house.value.image] }
 })
-
-function showAlert(msg, type = 'success') { alertMsg.value = msg; alertType.value = type; setTimeout(() => alertMsg.value = '', 3000) }
-function formatPrice(p) { return p ? '¥' + Number(p).toLocaleString() + '/月' : '价格面议' }
 
 function goBack() {
   const role = user?.role?.toLowerCase()
@@ -180,7 +178,9 @@ async function submitBooking() {
   }
 }
 
-function handleLogout() { localStorage.clear(); router.push('/login') }
+function handleLogout() {
+  doLogout()
+}
 
 onMounted(async () => {
   const id = route.params.id
@@ -341,11 +341,6 @@ onMounted(async () => {
 .w-60 { width: 60%; }
 .w-80 { width: 80%; }
 .w-100 { width: 100%; }
-
-@keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
 
 @media (max-width: 768px) {
   .detail-layout { flex-direction: column; }

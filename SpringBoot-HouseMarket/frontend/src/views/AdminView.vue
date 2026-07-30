@@ -161,17 +161,15 @@ import {useRouter} from 'vue-router'
 import {deleteUser, getUsers} from '../api/users'
 import {deleteHouse, getHouses} from '../api/houses'
 import {deleteAppointment, getAppointments} from '../api/appointments'
+import {useAuth} from '../composables/useAuth'
+import {useAlert} from '../composables/useAlert'
 import AppHeader from '../components/AppHeader.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import AppAlert from '../components/AppAlert.vue'
 
 const router = useRouter()
-let user = null
-try {
-  user = JSON.parse(localStorage.getItem('user') || 'null')
-} catch {
-  user = null
-}
+const {loadUser, handleLogout: doLogout} = useAuth()
+let user = loadUser()
 if (!user || user.role !== 'ADMIN') { router.push('/login') }
 
 const activeTab = ref('dashboard')
@@ -181,8 +179,7 @@ const allAppointments = ref([])
 const houseSearch = ref('')
 const userSearch = ref('')
 const userRoleFilter = ref('')
-const alertMsg = ref('')
-const alertType = ref('success')
+const {alertMsg, alertType, showAlert} = useAlert()
 
 const filteredHouses = computed(() => {
   if (!houseSearch.value) return allHouses.value
@@ -199,8 +196,6 @@ const filteredUsers = computed(() => {
   return list
 })
 
-function showAlert(msg, type = 'success') { alertMsg.value = msg; alertType.value = type; setTimeout(() => alertMsg.value = '', 3000) }
-
 async function loadAllUsers() { try { const res = await getUsers(); users.value = res.data || [] } catch (e) { /* ignore */ } }
 async function loadAllHouses() {
   try {
@@ -216,10 +211,9 @@ async function handleDeleteUser(id) { if (confirm('确认删除此用户？')) {
 async function handleDeleteHouse(id) { if (confirm('确认删除此房源？')) { await deleteHouse(id); showAlert('房源已删除'); await loadAllHouses() } }
 async function handleDeleteApt(id) { if (confirm('确认删除此记录？')) { await deleteAppointment(id); showAlert('记录已删除'); await loadAllAppointments() } }
 
-function searchHouses() { /* computed */ }
-function searchUsers() { /* computed */ }
-
-function handleLogout() { localStorage.clear(); router.push('/login') }
+function handleLogout() {
+  doLogout()
+}
 
 watch(activeTab, (tab) => {
   if (tab === 'users') loadAllUsers()
@@ -376,7 +370,6 @@ onMounted(async () => {
   border-radius: 4px;
 }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 @media (max-width: 768px) {
   .container { padding: 12px; }

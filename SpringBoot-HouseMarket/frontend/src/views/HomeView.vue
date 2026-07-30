@@ -77,7 +77,7 @@
         <p>优质房东直租，真实房源保障</p>
       </div>
       <div class="listings-grid" v-if="houses.length">
-        <div class="house-card" v-for="h in houses" :key="h.id" @click="$router.push('/login')">
+        <div class="house-card" v-for="h in houses" :key="h.id" @click="goHouse(h.id)">
           <div class="card-img">
             <img :src="getImage(h)" :alt="h.title" />
             <span class="card-tag" :class="typeClass(h.type)">{{ h.type }}</span>
@@ -180,8 +180,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import {onMounted, onUnmounted, reactive, ref} from 'vue'
+import {useRouter} from 'vue-router'
+import {getPublicHouses, getPublicStats} from '../api/houses'
+import {formatPrice} from '../composables/useFormat'
 
 const router = useRouter()
 const keyword = ref('')
@@ -190,34 +192,62 @@ const houses = ref([])
 
 const hotTags = ['朝阳区', '海淀区', '整租一居', '精装修', '近地铁', '2000-4000元']
 
-const stats = reactive({ houses: 328, landlords: 86, tenants: 1520, appointments: 4260 })
-
-// 精选房源示例数据（首页展示用，真实数据需登录后查看）
-const demoHouses = [
-  { id: 1, title: '朝阳区望京SOHO精装两居', type: '平层', area: 89, price: 6500, address: '朝阳区望京街道', image: '' },
-  { id: 2, title: '海淀区中关村软件园公寓', type: '跃层', area: 120, price: 8800, address: '海淀区中关村东路', image: '' },
-  { id: 3, title: '西城区金融街高端一居', type: '平层', area: 55, price: 7200, address: '西城区金融街', image: '' },
-  { id: 4, title: '朝阳区三里屯时尚复式', type: '复式', area: 150, price: 15000, address: '朝阳区三里屯', image: '' },
-  { id: 5, title: '丰台区科技园精装三居', type: '平层', area: 110, price: 5200, address: '丰台区总部基地', image: '' },
-  { id: 6, title: '通州区万达广场舒适两居', type: '错层', area: 95, price: 3800, address: '通州区新华大街', image: '' }
-]
+const stats = reactive({houses: 0, landlords: 0, tenants: 0, appointments: 0})
 
 function onScroll() { scrolled.value = window.scrollY > 60 }
 function scrollTo(id) { document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }) }
 function getImage(h) {
-  try { const arr = JSON.parse(h.image); if (arr?.[0]) return arr[0] } catch { if (h.image) return h.image }
-  const seed = h.id || 1
-  return `https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&h=400&fit=crop&sig=${seed}`
+  try {
+    const arr = JSON.parse(h.image);
+    if (Array.isArray(arr) && arr.length) return arr[0]
+  } catch { /* JSON parse failed, try raw */
+  }
+  if (h.image) {
+    if (h.image.startsWith('[')) {
+      try {
+        const arr = JSON.parse(h.image);
+        if (Array.isArray(arr) && arr.length) return arr[0]
+      } catch {
+      }
+    }
+    return h.image
+  }
+  return `https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&h=400&fit=crop&sig=${h.id || 1}`
 }
 function typeClass(t) {
   return { '平层': 'tag-flat', '跃层': 'tag-duplex', '错层': 'tag-split', '复式': 'tag-compound' }[t] || ''
 }
-function formatPrice(p) { return p ? '¥' + Number(p).toLocaleString() + '/月' : '价格面议' }
 function goSearch() { router.push('/login') }
+
+function goHouse(id) {
+  const token = localStorage.getItem('token')
+  if (token) {
+    router.push(`/house/${id}`)
+  } else {
+    router.push('/login')
+  }
+}
+
+async function fetchData() {
+  try {
+    const [housesRes, statsRes] = await Promise.all([
+      getPublicHouses(),
+      getPublicStats()
+    ])
+    if (housesRes.data?.success) {
+      houses.value = housesRes.data.data.houses || []
+    }
+    if (statsRes.data?.success) {
+      Object.assign(stats, statsRes.data.data)
+    }
+  } catch {
+    // API unavailable, show skeleton
+  }
+}
 
 onMounted(() => {
   window.addEventListener('scroll', onScroll)
-  houses.value = demoHouses
+  fetchData()
 })
 
 onUnmounted(() => window.removeEventListener('scroll', onScroll))

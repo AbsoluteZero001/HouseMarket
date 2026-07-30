@@ -21,7 +21,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import {computed} from 'vue'
+import {formatPrice} from '../composables/useFormat'
 
 const props = defineProps({ house: Object })
 
@@ -35,7 +36,6 @@ const truncatedDesc = computed(() => {
   const d = props.house.description || ''
   return d.length > 100 ? d.slice(0, 100) + '...' : d
 })
-function formatPrice(p) { return p ? '¥' + Number(p).toLocaleString() + '/月' : '价格面议' }
 </script>
 
 <style scoped>
