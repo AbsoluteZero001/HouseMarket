@@ -99,6 +99,13 @@
     </AppModal>
 
     <AppAlert :visible="!!alertMsg" :message="alertMsg" :type="alertType" @close="alertMsg = ''" />
+    <AppConfirm
+        :visible="confirmState.visible"
+        :title="confirmState.title"
+        :message="confirmState.message"
+        @confirm="confirmAction"
+        @cancel="confirmState.visible = false"
+    />
   </div>
 </template>
 
@@ -117,6 +124,7 @@ import HouseForm from '../components/HouseForm.vue'
 import AppointmentTable from '../components/AppointmentTable.vue'
 import AppModal from '../components/AppModal.vue'
 import AppAlert from '../components/AppAlert.vue'
+import AppConfirm from '../components/AppConfirm.vue'
 
 const router = useRouter()
 const houseStore = useHouseStore()
@@ -135,6 +143,20 @@ const houseFormRef = ref(null)
 const {alertMsg, alertType, showAlert} = useAlert()
 const passwordForm = reactive({ oldPassword: '', newPassword: '', confirmNewPassword: '' })
 const pendingCount = ref(0)
+const confirmState = reactive({visible: false, title: '', message: '', handler: null})
+
+function askConfirm(title, message, handler) {
+  confirmState.title = title
+  confirmState.message = message
+  confirmState.handler = handler
+  confirmState.visible = true
+}
+
+function confirmAction() {
+  const handler = confirmState.handler
+  confirmState.visible = false
+  if (handler) handler()
+}
 
 let pollTimer = null
 
@@ -192,10 +214,11 @@ async function handleHouseSubmit(data) {
 }
 
 async function handleDeleteHouse(id) {
-  if (!confirm('确认删除此房源？')) return
-  await houseStore.removeHouse(id)
-  showAlert('房源已删除')
-  await loadHouses()
+  askConfirm('删除房源', '删除后房源将不再展示，确认继续吗？', async () => {
+    await houseStore.removeHouse(id)
+    showAlert('房源已删除')
+    await loadHouses()
+  })
 }
 
 async function handleToggleStatus(house) {
@@ -215,15 +238,23 @@ async function handleComplete(id) {
   await loadPendingCount()
 }
 async function handleDeleteApt(id) {
-  if (!confirm('确认删除此记录？')) return
-  await aptStore.remove(id)
-  showAlert('记录已删除')
-  await loadAppointments(); await loadPendingCount()
+  askConfirm('删除记录', '删除后无法恢复，确认继续吗？', async () => {
+    await aptStore.remove(id)
+    showAlert('记录已删除')
+    await loadAppointments()
+    await loadPendingCount()
+  })
 }
 
 async function handleChangePassword() {
-  if (!passwordForm.newPassword) { alert('请输入新密码'); return }
-  if (passwordForm.newPassword !== passwordForm.confirmNewPassword) { alert('两次密码不一致'); return }
+  if (!passwordForm.newPassword) {
+    showAlert('请输入新密码', 'error');
+    return
+  }
+  if (passwordForm.newPassword !== passwordForm.confirmNewPassword) {
+    showAlert('两次密码不一致', 'error');
+    return
+  }
   await changePassword(user.id, passwordForm.oldPassword, passwordForm.newPassword)
   showAlert('密码修改成功')
   showProfile.value = false

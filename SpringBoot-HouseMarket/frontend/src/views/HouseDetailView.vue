@@ -93,6 +93,7 @@
       <div class="form-group"><label>预约时间</label><input v-model="bookForm.time" type="time" required /></div>
       <div class="form-group"><label>见面地点</label><input v-model="bookForm.location" required placeholder="请输入见面地点" /></div>
       <div class="form-group"><label>留言</label><textarea v-model="bookForm.notes" rows="3" placeholder="给房东留言（可选）"></textarea></div>
+      <p v-if="bookingError" class="booking-error">{{ bookingError }}</p>
       <button class="btn btn-block" @click="submitBooking">提交预约</button>
     </AppModal>
 
@@ -133,6 +134,7 @@ const isLoggedIn = computed(() => !!localStorage.getItem('token'))
 const house = ref(null)
 const isFav = ref(false)
 const showBookModal = ref(false)
+const bookingError = ref('')
 const {alertMsg, alertType, showAlert} = useAlert()
 
 const bookForm = reactive({ date: '', time: '', location: '', notes: '' })
@@ -170,11 +172,16 @@ function bookHouse() {
     router.push('/login');
     return
   }
+  bookingError.value = ''
   showBookModal.value = true
 }
 
 async function submitBooking() {
-  if (!bookForm.date || !bookForm.time || !bookForm.location) { alert('请填写完整信息'); return }
+  if (!bookForm.date || !bookForm.time || !bookForm.location) {
+    bookingError.value = '请填写完整的预约时间和地点'
+    return
+  }
+  bookingError.value = ''
   try {
     await aptStore.addAppointment({
       houseId: house.value.id,
@@ -189,7 +196,7 @@ async function submitBooking() {
     showBookModal.value = false
     Object.assign(bookForm, { date: '', time: '', location: '', notes: '' })
   } catch (e) {
-    showAlert('预约失败: ' + (e.response?.data?.message || e.message), 'error')
+    bookingError.value = e.response?.data?.message || '预约失败，请稍后重试'
   }
 }
 
@@ -337,6 +344,16 @@ onMounted(async () => {
 
 /* Modal */
 .btn-block { width: 100%; padding: 12px; margin-top: 16px; }
+
+.booking-error {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #fff2f0;
+  border: 1px solid #ffa39e;
+  color: #cf1322;
+  font-size: 13px;
+}
 
 /* Loading skeleton */
 .loading-container { padding-top: 40px; }

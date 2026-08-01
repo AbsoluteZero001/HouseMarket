@@ -9,24 +9,33 @@
         <span class="upload-hint">支持 JPG、PNG、GIF、WebP，最大 2MB</span>
       </div>
     </div>
+    <p v-if="uploadError" class="upload-error">{{ uploadError }}</p>
     <button v-if="previewUrl" class="btn btn-outline btn-sm remove-btn" @click="clearFile">移除图片</button>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import {ref} from 'vue'
 
 const props = defineProps({ accept: { type: String, default: 'image/*' }, placeholder: { type: String, default: '点击上传房源图片' } })
 const emit = defineEmits(['select'])
 const previewUrl = ref(null)
 const selectedFile = ref(null)
+const uploadError = ref('')
 
 function handleFile(e) {
   const file = e.target.files[0]
   if (!file) return
   const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-  if (!validTypes.includes(file.type)) { alert('请上传JPG/PNG/GIF/WEBP格式的图片'); return }
-  if (file.size > 2 * 1024 * 1024) { alert('图片大小不能超过2MB'); return }
+  if (!validTypes.includes(file.type)) {
+    uploadError.value = '仅支持 JPG、PNG、GIF、WEBP 格式图片';
+    return
+  }
+  if (file.size > 2 * 1024 * 1024) {
+    uploadError.value = '图片大小不能超过 2MB';
+    return
+  }
+  uploadError.value = ''
   selectedFile.value = file
   previewUrl.value = URL.createObjectURL(file)
   emit('select', file)
@@ -34,6 +43,7 @@ function handleFile(e) {
 function clearFile() {
   previewUrl.value = null
   selectedFile.value = null
+  uploadError.value = ''
   emit('select', null)
 }
 defineExpose({ selectedFile, clearFile })
@@ -85,5 +95,11 @@ defineExpose({ selectedFile, clearFile })
 }
 .remove-btn {
   margin-top: 10px;
+}
+
+.upload-error {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--danger);
 }
 </style>

@@ -9,32 +9,52 @@
       switch-link="立即登录"
       switch-to="/login"
   >
-    <form @submit.prevent="handleRegister" class="auth-form">
-      <div class="form-group">
+    <form @submit.prevent="handleRegister" class="auth-form" novalidate>
+      <div class="form-group" :class="{ 'has-error': fieldErrors.username }">
         <label>用户名</label>
         <div class="input-wrap">
           <span class="input-icon">👤</span>
-          <input v-model="form.username" placeholder="3-20位字符" minlength="3" maxlength="20" autocomplete="username"
-                 required/>
+          <input
+              v-model="form.username"
+              placeholder="3-20位字符"
+              maxlength="20"
+              autocomplete="username"
+              @input="clearField('username')"
+          />
         </div>
+        <p v-if="fieldErrors.username" class="field-error">{{ fieldErrors.username }}</p>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" :class="{ 'has-error': fieldErrors.password }">
         <label>密码</label>
         <div class="input-wrap">
           <span class="input-icon">🔒</span>
-          <input v-model="form.password" type="password" placeholder="6-20位字符" minlength="6" maxlength="20"
-                 autocomplete="new-password" required/>
+          <input
+              v-model="form.password"
+              type="password"
+              placeholder="6-20位字符"
+              maxlength="20"
+              autocomplete="new-password"
+              @input="clearField('password')"
+          />
         </div>
+        <p v-if="fieldErrors.password" class="field-error">{{ fieldErrors.password }}</p>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" :class="{ 'has-error': fieldErrors.confirmPassword }">
         <label>确认密码</label>
         <div class="input-wrap">
           <span class="input-icon">🔒</span>
-          <input v-model="form.confirmPassword" type="password" placeholder="请再次输入密码" minlength="6"
-                 maxlength="20" autocomplete="new-password" required/>
+          <input
+              v-model="form.confirmPassword"
+              type="password"
+              placeholder="请再次输入密码"
+              maxlength="20"
+              autocomplete="new-password"
+              @input="clearField('confirmPassword')"
+          />
         </div>
+        <p v-if="fieldErrors.confirmPassword" class="field-error">{{ fieldErrors.confirmPassword }}</p>
       </div>
 
       <div class="form-group">
@@ -53,23 +73,37 @@
         </div>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" :class="{ 'has-error': fieldErrors.captcha }">
         <label>验证码</label>
         <div class="captcha-row">
-          <div class="input-wrap" style="flex:1">
+          <div class="input-wrap">
             <span class="input-icon">🖊</span>
-            <input v-model="form.captcha" maxlength="4" placeholder="验证码" required/>
+            <input
+                v-model="form.captcha"
+                maxlength="4"
+                placeholder="验证码"
+                @input="clearField('captcha')"
+            />
           </div>
           <div class="captcha-img" @click="fetchCaptcha" title="点击刷新验证码">
             <img v-if="captchaImage" :src="'data:image/png;base64,' + captchaImage" alt="验证码"/>
             <span v-else>加载中</span>
           </div>
         </div>
+        <p v-if="fieldErrors.captcha" class="field-error">{{ fieldErrors.captcha }}</p>
       </div>
 
-      <button type="submit" class="btn btn-primary btn-block btn-lg">
-        <span>注 册</span>
+      <button type="submit" class="btn btn-primary btn-block btn-lg" :disabled="loading">
+        <span class="btn-spinner" v-if="loading"></span>
+        <span>{{ loading ? '注册中...' : '注 册' }}</span>
       </button>
+
+      <transition name="fade">
+        <p v-if="formError" class="form-error">{{ formError }}</p>
+      </transition>
+      <transition name="fade">
+        <p v-if="successMsg" class="form-success">{{ successMsg }}</p>
+      </transition>
     </form>
   </AuthLayout>
 </template>
@@ -84,8 +118,16 @@ const router = useRouter()
 const loading = ref(false)
 const captchaId = ref('')
 const captchaImage = ref('')
+const formError = ref('')
+const successMsg = ref('')
+const fieldErrors = reactive({username: '', password: '', confirmPassword: '', captcha: ''})
 
 const form = reactive({username: '', password: '', confirmPassword: '', role: 'TENANT', captcha: ''})
+
+const roleOptions = [
+  {value: 'TENANT', label: '我是租客', icon: '👥'},
+  {value: 'LANDLORD', label: '我是房东', icon: '🏠'}
+]
 
 async function fetchCaptcha() {
   try {
@@ -93,48 +135,54 @@ async function fetchCaptcha() {
     captchaId.value = res.data?.data?.captchaId || ''
     captchaImage.value = res.data?.data?.imageBase64 || ''
   } catch {
+    captchaId.value = ''
     captchaImage.value = ''
   }
 }
 
-const roleOptions = [
-  {value: 'TENANT', label: '我是租客', icon: '👥'},
-  {value: 'LANDLORD', label: '我是房东', icon: '🏠'}
-]
+function clearField(field) {
+  fieldErrors[field] = ''
+  formError.value = ''
+}
+
+function validate() {
+  formError.value = ''
+  fieldErrors.username = form.username.trim().length >= 3 ? '' : '用户名至少3位字符'
+  fieldErrors.password = form.password.length >= 6 ? '' : '密码至少6位字符'
+  fieldErrors.confirmPassword = form.confirmPassword === form.password ? '' : '两次输入的密码不一致'
+  fieldErrors.captcha = form.captcha ? '' : '请输入验证码'
+  if (!captchaId.value) fieldErrors.captcha = fieldErrors.captcha || '验证码加载失败，请点击刷新'
+  return !fieldErrors.username && !fieldErrors.password && !fieldErrors.confirmPassword && !fieldErrors.captcha
+}
 
 async function handleRegister() {
   if (loading.value) return
-  if (form.password !== form.confirmPassword) {
-    alert('两次密码不一致');
-    return
-  }
-  if (!form.captcha) {
-    alert('请输入验证码')
-    form.captcha = ''
-    return
-  }
+  if (!validate()) return
+
   loading.value = true
+  formError.value = ''
+  successMsg.value = ''
   try {
     const res = await register({
-      username: form.username,
+      username: form.username.trim(),
       password: form.password,
-      role: form.role.toUpperCase(),
+      role: form.role,
       captchaId: captchaId.value,
       captchaCode: form.captcha
     })
     if (res.data?.success) {
-      alert('注册成功，请登录')
-      router.push('/login')
+      successMsg.value = '注册成功，正在跳转到登录页...'
+      setTimeout(() => router.push('/login'), 800)
     } else {
-      alert(res.data?.message || '注册失败')
+      formError.value = res.data?.message || '注册失败，请稍后重试'
     }
   } catch (e) {
-    alert('注册失败: ' + (e.response?.data?.message || e.message))
+    formError.value = e.response?.data?.message || e.message || '网络异常，请稍后重试'
   } finally {
     loading.value = false
+    await fetchCaptcha()
+    form.captcha = ''
   }
-  await fetchCaptcha()
-  form.captcha = ''
 }
 
 onMounted(fetchCaptcha)
@@ -142,7 +190,7 @@ onMounted(fetchCaptcha)
 
 <style scoped>
 .auth-form .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .auth-form .form-group label {
@@ -167,6 +215,11 @@ onMounted(fetchCaptcha)
   box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.1);
 }
 
+.has-error .input-wrap {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(255, 77, 79, 0.08);
+}
+
 .input-icon {
   padding: 0 12px;
   font-size: 14px;
@@ -183,6 +236,12 @@ onMounted(fetchCaptcha)
   background: transparent;
   outline: none;
   width: 100%;
+}
+
+.field-error {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--danger);
 }
 
 .captcha-row {
@@ -262,5 +321,55 @@ onMounted(fetchCaptcha)
 
 .btn-primary:hover {
   background: var(--primary-dark);
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.form-error,
+.form-success {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.form-error {
+  background: #fff2f0;
+  border: 1px solid #ffa39e;
+  color: #cf1322;
+}
+
+.form-success {
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  color: #389e0d;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

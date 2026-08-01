@@ -152,11 +152,18 @@
     </div>
 
     <AppAlert :visible="!!alertMsg" :message="alertMsg" :type="alertType" @close="alertMsg = ''" />
+    <AppConfirm
+        :visible="confirmState.visible"
+        :title="confirmState.title"
+        :message="confirmState.message"
+        @confirm="confirmAction"
+        @cancel="confirmState.visible = false"
+    />
   </div>
 </template>
 
 <script setup>
-import {computed, onMounted, ref, watch} from 'vue'
+import {computed, onMounted, reactive, ref, watch} from 'vue'
 import {useRouter} from 'vue-router'
 import {deleteUser, getUsers} from '../api/users'
 import {deleteHouse, getHouses} from '../api/houses'
@@ -166,6 +173,7 @@ import {useAlert} from '../composables/useAlert'
 import AppHeader from '../components/AppHeader.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import AppAlert from '../components/AppAlert.vue'
+import AppConfirm from '../components/AppConfirm.vue'
 
 const router = useRouter()
 const {loadUser, handleLogout: doLogout} = useAuth()
@@ -180,6 +188,20 @@ const houseSearch = ref('')
 const userSearch = ref('')
 const userRoleFilter = ref('')
 const {alertMsg, alertType, showAlert} = useAlert()
+const confirmState = reactive({visible: false, title: '', message: '', handler: null})
+
+function askConfirm(title, message, handler) {
+  confirmState.title = title
+  confirmState.message = message
+  confirmState.handler = handler
+  confirmState.visible = true
+}
+
+function confirmAction() {
+  const handler = confirmState.handler
+  confirmState.visible = false
+  if (handler) handler()
+}
 
 const filteredHouses = computed(() => {
   if (!houseSearch.value) return allHouses.value
@@ -207,9 +229,29 @@ async function loadAllAppointments() {
   try { const res = await getAppointments(); if (res.data.success) allAppointments.value = res.data.data.appointments || [] } catch (e) { /* ignore */ }
 }
 
-async function handleDeleteUser(id) { if (confirm('确认删除此用户？')) { await deleteUser(id); showAlert('用户已删除'); await loadAllUsers() } }
-async function handleDeleteHouse(id) { if (confirm('确认删除此房源？')) { await deleteHouse(id); showAlert('房源已删除'); await loadAllHouses() } }
-async function handleDeleteApt(id) { if (confirm('确认删除此记录？')) { await deleteAppointment(id); showAlert('记录已删除'); await loadAllAppointments() } }
+function handleDeleteUser(id) {
+  askConfirm('删除用户', '删除后该用户将无法登录，确认继续吗？', async () => {
+    await deleteUser(id)
+    showAlert('用户已删除')
+    await loadAllUsers()
+  })
+}
+
+function handleDeleteHouse(id) {
+  askConfirm('删除房源', '删除后房源不再展示，确认继续吗？', async () => {
+    await deleteHouse(id)
+    showAlert('房源已删除')
+    await loadAllHouses()
+  })
+}
+
+function handleDeleteApt(id) {
+  askConfirm('删除记录', '删除后无法恢复，确认继续吗？', async () => {
+    await deleteAppointment(id)
+    showAlert('记录已删除')
+    await loadAllAppointments()
+  })
+}
 
 function handleLogout() {
   doLogout()

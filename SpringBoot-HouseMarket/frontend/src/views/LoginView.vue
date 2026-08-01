@@ -7,22 +7,34 @@
       switch-link="立即注册"
       switch-to="/register"
   >
-    <form @submit.prevent="handleLogin" class="auth-form">
-      <div class="form-group">
+    <form @submit.prevent="handleLogin" class="auth-form" novalidate>
+      <div class="form-group" :class="{ 'has-error': fieldErrors.username }">
         <label>用户名</label>
         <div class="input-wrap">
           <span class="input-icon">👤</span>
-          <input v-model="form.username" placeholder="请输入用户名" autocomplete="username" required/>
+          <input
+              v-model="form.username"
+              placeholder="请输入用户名"
+              autocomplete="username"
+              @input="clearField('username')"
+          />
         </div>
+        <p v-if="fieldErrors.username" class="field-error">{{ fieldErrors.username }}</p>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" :class="{ 'has-error': fieldErrors.password }">
         <label>密码</label>
         <div class="input-wrap">
           <span class="input-icon">🔒</span>
-          <input v-model="form.password" type="password" placeholder="请输入密码" autocomplete="current-password"
-                 required/>
+          <input
+              v-model="form.password"
+              type="password"
+              placeholder="请输入密码"
+              autocomplete="current-password"
+              @input="clearField('password')"
+          />
         </div>
+        <p v-if="fieldErrors.password" class="field-error">{{ fieldErrors.password }}</p>
       </div>
 
       <div class="form-group">
@@ -30,23 +42,34 @@
         <RoleSlider v-model="form.role"/>
       </div>
 
-      <div class="form-group">
+      <div class="form-group" :class="{ 'has-error': fieldErrors.captcha }">
         <label>验证码</label>
         <div class="captcha-row">
-          <div class="input-wrap" style="flex:1">
+          <div class="input-wrap">
             <span class="input-icon">🖊</span>
-            <input v-model="form.captcha" maxlength="4" placeholder="验证码" required/>
+            <input
+                v-model="form.captcha"
+                maxlength="4"
+                placeholder="验证码"
+                @input="clearField('captcha')"
+            />
           </div>
           <div class="captcha-img" @click="fetchCaptcha" title="点击刷新验证码">
             <img v-if="captchaImage" :src="'data:image/png;base64,' + captchaImage" alt="验证码"/>
             <span v-else>加载中</span>
           </div>
         </div>
+        <p v-if="fieldErrors.captcha" class="field-error">{{ fieldErrors.captcha }}</p>
       </div>
 
       <button type="submit" class="btn btn-primary btn-block btn-lg" :disabled="loading">
-        <span>{{ loading ? '登录中...' : '登 录' }}</span>
+        <span class="btn-spinner" v-if="loading"></span>
+        <span>{{ loading ? '正在登录...' : '登 录' }}</span>
       </button>
+
+      <transition name="fade">
+        <p v-if="formError" class="form-error">{{ formError }}</p>
+      </transition>
     </form>
   </AuthLayout>
 </template>
@@ -64,6 +87,8 @@ const authStore = useAuthStore()
 const loading = ref(false)
 const captchaId = ref('')
 const captchaImage = ref('')
+const formError = ref('')
+const fieldErrors = reactive({username: '', password: '', captcha: ''})
 
 const form = reactive({ username: '', password: '', role: 'TENANT', captcha: '' })
 
@@ -73,42 +98,55 @@ async function fetchCaptcha() {
     captchaId.value = res.data?.data?.captchaId || ''
     captchaImage.value = res.data?.data?.imageBase64 || ''
   } catch {
+    captchaId.value = ''
     captchaImage.value = ''
   }
 }
 
+function clearField(field) {
+  fieldErrors[field] = ''
+  formError.value = ''
+}
+
+function validate() {
+  formError.value = ''
+  fieldErrors.username = form.username.trim() ? '' : '请输入用户名'
+  fieldErrors.password = form.password ? '' : '请输入密码'
+  fieldErrors.captcha = form.captcha ? '' : '请输入验证码'
+  if (!captchaId.value) fieldErrors.captcha = fieldErrors.captcha || '验证码加载失败，请点击刷新'
+  return !fieldErrors.username && !fieldErrors.password && !fieldErrors.captcha
+}
+
 async function handleLogin() {
   if (loading.value) return
-  if (!form.captcha) {
-    alert('请输入验证码')
-    form.captcha = ''
-    return
-  }
+  if (!validate()) return
+
   loading.value = true
+  formError.value = ''
   try {
     const res = await authStore.login({
-      username: form.username,
+      username: form.username.trim(),
       password: form.password,
       role: form.role,
       captchaId: captchaId.value,
       captchaCode: form.captcha
     })
-    if (res.code === 200) {
+    if (res.code !== 200) {
+      formError.value = res.msg || '登录失败，请检查账号信息'
+    } else {
       const role = (res.data?.role || '').toLowerCase()
       if (role === 'tenant') await router.push('/tenant')
       else if (role === 'landlord') await router.push('/landlord')
       else if (role === 'admin') await router.push('/admin')
-      else alert('未知角色: ' + (res.data?.role || '无'))
-    } else {
-      alert(res.msg || '登录失败')
+      else formError.value = '账号角色异常，请联系管理员'
     }
   } catch (e) {
-    alert('登录失败: ' + (e.response?.data?.msg || e.message))
+    formError.value = e.response?.data?.msg || e.message || '网络异常，请稍后重试'
   } finally {
     loading.value = false
+    await fetchCaptcha()
+    form.captcha = ''
   }
-  await fetchCaptcha()
-  form.captcha = ''
 }
 
 onMounted(fetchCaptcha)
@@ -116,7 +154,7 @@ onMounted(fetchCaptcha)
 
 <style scoped>
 .auth-form .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .auth-form .form-group label {
@@ -141,6 +179,11 @@ onMounted(fetchCaptcha)
   box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.1);
 }
 
+.has-error .input-wrap {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(255, 77, 79, 0.08);
+}
+
 .input-icon {
   padding: 0 12px;
   font-size: 14px;
@@ -157,6 +200,12 @@ onMounted(fetchCaptcha)
   background: transparent;
   outline: none;
   width: 100%;
+}
+
+.field-error {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--danger);
 }
 
 .captcha-row {
@@ -198,5 +247,45 @@ onMounted(fetchCaptcha)
 
 .btn-primary:hover {
   background: var(--primary-dark);
+}
+
+.btn-primary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+.form-error {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #fff2f0;
+  border: 1px solid #ffa39e;
+  color: #cf1322;
+  font-size: 13px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
