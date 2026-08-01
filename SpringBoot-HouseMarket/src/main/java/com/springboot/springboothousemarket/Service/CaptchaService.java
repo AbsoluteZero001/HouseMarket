@@ -1,7 +1,10 @@
 package com.springboot.springboothousemarket.Service;
 
-import java.awt.image.BufferedImage;
+import com.springboot.springboothousemarket.dto.CaptchaResult;
 
 public interface CaptchaService {
-    BufferedImage createCaptcha();
+
+    CaptchaResult generate();
+
+    boolean verify(String captchaId, String captchaCode);
 }

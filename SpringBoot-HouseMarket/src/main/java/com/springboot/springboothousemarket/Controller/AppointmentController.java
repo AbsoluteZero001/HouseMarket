@@ -9,6 +9,7 @@ import com.springboot.springboothousemarket.dto.AppointmentMessage;
 import com.springboot.springboothousemarket.dto.ResponseResult;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +33,7 @@ public class AppointmentController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('TENANT')")
     public ResponseResult createAppointment(@RequestBody Appointment appointment,
                                             @AuthenticationPrincipal Users currentUser) {
         if (!"TENANT".equals(currentUser.getRole())) {
@@ -77,6 +79,7 @@ public class AppointmentController {
     }
 
     @PutMapping("/{id}/approve")
+    @PreAuthorize("hasAuthority('LANDLORD')")
     public ResponseResult approveAppointment(@PathVariable Long id,
                                              @AuthenticationPrincipal Users currentUser) {
         if (!"LANDLORD".equals(currentUser.getRole())) {
@@ -103,6 +106,7 @@ public class AppointmentController {
     }
 
     @PutMapping("/{id}/reject")
+    @PreAuthorize("hasAuthority('LANDLORD')")
     public ResponseResult rejectAppointment(@PathVariable Long id,
                                             @AuthenticationPrincipal Users currentUser) {
         if (!"LANDLORD".equals(currentUser.getRole())) {
@@ -160,14 +164,38 @@ public class AppointmentController {
         return ResponseResult.fail("预约取消失败");
     }
 
+    @PutMapping("/{id}/complete")
+    @PreAuthorize("hasAuthority('LANDLORD')")
+    public ResponseResult completeAppointment(@PathVariable Long id,
+                                              @AuthenticationPrincipal Users currentUser) {
+        Appointment appointment = appointmentService.getById(id);
+        if (appointment == null) {
+            return ResponseResult.fail("预约不存在");
+        }
+        if (!appointment.getLandlordId().equals(currentUser.getId())) {
+            return ResponseResult.fail("只能完成自己房源的预约");
+        }
+        if (!"approved".equals(appointment.getStatus())) {
+            return ResponseResult.fail("只有已批准的预约才能标记完成");
+        }
+
+        boolean result = appointmentService.updateAppointmentStatus(id, "completed");
+        if (result) {
+            notifyTenant(appointment, "completed", "看房预约已完成");
+            return ResponseResult.ok("预约已完成");
+        }
+        return ResponseResult.fail("预约完成失败");
+    }
+
     @DeleteMapping("/{id}")
     public ResponseResult deleteAppointment(@PathVariable Long id, @AuthenticationPrincipal Users currentUser) {
         Appointment appointment = appointmentService.getById(id);
         if (appointment == null) {
             return ResponseResult.fail("预约不存在");
         }
-        if (!appointment.getLandlordId().equals(currentUser.getId())
-                && !appointment.getTenantId().equals(currentUser.getId())) {
+        boolean isParticipant = appointment.getLandlordId().equals(currentUser.getId())
+                || appointment.getTenantId().equals(currentUser.getId());
+        if (!isParticipant && !"ADMIN".equals(currentUser.getRole())) {
             return ResponseResult.fail("没有权限删除该预约");
         }
 

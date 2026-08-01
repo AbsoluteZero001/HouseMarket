@@ -85,6 +85,11 @@ public class JwtFilter extends OncePerRequestFilter {
                 response.getWriter().write("User not found");
                 return;
             }
+            if (!"normal".equals(user.getStatus())) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("User disabled");
+                return;
+            }
 
             // 从 JWT 中提取角色信息，并转换为 GrantedAuthority 对象
             List<GrantedAuthority> authorities = jwtUtil.extractRoles(jwtToken).stream()

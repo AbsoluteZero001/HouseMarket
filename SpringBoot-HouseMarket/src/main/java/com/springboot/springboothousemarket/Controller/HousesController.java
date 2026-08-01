@@ -4,12 +4,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.springboot.springboothousemarket.Entity.Houses;
 import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Service.HousesService;
-import com.springboot.springboothousemarket.Service.UsersService;
 import com.springboot.springboothousemarket.dto.ResponseResult;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -24,14 +23,12 @@ import java.util.Map;
 public class HousesController {
 
     private final HousesService houseService;
-    private final UsersService usersService;
 
     @Value("${upload.dir:./uploads}")
     private String uploadDir;
 
-    public HousesController(HousesService houseService, UsersService usersService) {
+    public HousesController(HousesService houseService) {
         this.houseService = houseService;
-        this.usersService = usersService;
     }
 
     @GetMapping("/landlord/{landlordId}")
@@ -40,7 +37,8 @@ public class HousesController {
     }
 
     @PostMapping("/upload-image")
-    public String uploadImage(@RequestParam("image") MultipartFile imageFile) throws IOException {
+    @PreAuthorize("hasAnyAuthority('LANDLORD','ADMIN')")
+    public ResponseResult uploadImage(@RequestParam("image") MultipartFile imageFile) throws IOException {
         String fileName = imageFile.getOriginalFilename();
         if (fileName == null || fileName.isEmpty()) {
             throw new IOException("文件名不能为空");
@@ -64,21 +62,19 @@ public class HousesController {
         File targetFile = new File(uploadDirFile, uniqueFileName);
         imageFile.transferTo(targetFile);
 
-        return ServletUriComponentsBuilder.fromCurrentContextPath()
+        String url = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/uploads/")
                 .path(uniqueFileName)
                 .toUriString();
+        return ResponseResult.ok(null, Map.of("url", url));
     }
 
     @PostMapping("/add")
-    public ResponseResult createHouse(@RequestBody Houses house) {
-        Long userId = getCurrentUserId();
-        if (userId == null) {
-            throw new SecurityException("未登录或登录状态失效");
-        }
-
+    @PreAuthorize("hasAnyAuthority('LANDLORD','ADMIN')")
+    public ResponseResult createHouse(@RequestBody Houses house,
+                                      @AuthenticationPrincipal Users currentUser) {
         house.setId(null);
-        return ResponseResult.ok(null, Map.of("house", houseService.createHouse(house, userId)));
+        return ResponseResult.ok(null, Map.of("house", houseService.createHouse(house, currentUser.getId())));
     }
 
     @GetMapping("/{id}")
@@ -91,33 +87,26 @@ public class HousesController {
     }
 
     @PutMapping("/{id}")
-    public ResponseResult updateHouse(@PathVariable Long id, @RequestBody Houses house) {
-        Long currentUserId = getCurrentUserId();
-        if (currentUserId == null) {
-            throw new SecurityException("未登录或登录状态失效");
-        }
-
+    @PreAuthorize("hasAnyAuthority('LANDLORD','ADMIN')")
+    public ResponseResult updateHouse(@PathVariable Long id, @RequestBody Houses house,
+                                      @AuthenticationPrincipal Users currentUser) {
         Houses dbHouse = houseService.getHouseById(id);
         if (dbHouse == null) {
             throw new RuntimeException("房源不存在");
         }
 
-        return ResponseResult.ok(null, Map.of("house", houseService.updateHouse(id, house, currentUserId)));
+        return ResponseResult.ok(null, Map.of("house", houseService.updateHouse(id, house, currentUser)));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseResult deleteHouse(@PathVariable Long id) {
-        Long currentUserId = getCurrentUserId();
-        if (currentUserId == null) {
-            throw new SecurityException("未登录或登录状态失效");
-        }
-
+    public ResponseResult deleteHouse(@PathVariable Long id,
+                                      @AuthenticationPrincipal Users currentUser) {
         Houses dbHouse = houseService.getHouseById(id);
         if (dbHouse == null) {
             throw new RuntimeException("房源不存在");
         }
 
-        return ResponseResult.ok(null, Map.of("deleted", houseService.deleteHouse(id, currentUserId)));
+        return ResponseResult.ok(null, Map.of("deleted", houseService.deleteHouse(id, currentUser)));
     }
 
     @GetMapping
@@ -128,13 +117,15 @@ public class HousesController {
             @RequestParam(required = false) Double maxArea,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
+            @RequestParam(required = false) String district,
+            @RequestParam(required = false) String status,
             @RequestParam(required = false) String address,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "10") int pageSize) {
 
         Page<Houses> pageInfo = houseService.getHouses(
-                keyword, type, minArea, maxArea,
-                minPrice, maxPrice, address, page, pageSize);
+                keyword, type, district, minArea, maxArea,
+                minPrice, maxPrice, address, status, page, pageSize);
 
         return ResponseResult.ok(null, Map.of(
                 "houses", pageInfo.getRecords(),
@@ -144,20 +135,7 @@ public class HousesController {
     }
 
     @GetMapping("/my")
-    public ResponseResult getMyHouses() {
-        Long currentUserId = getCurrentUserId();
-        if (currentUserId == null) {
-            throw new SecurityException("未登录或登录状态失效");
-        }
-        return ResponseResult.ok(null, Map.of("houses", houseService.getHousesByLandlordId(currentUserId)));
-    }
-
-    private Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || "anonymousUser".equals(authentication.getName())) {
-            return null;
-        }
-        Users user = usersService.getUserByUsername(authentication.getName());
-        return user != null ? user.getId() : null;
+    public ResponseResult getMyHouses(@AuthenticationPrincipal Users currentUser) {
+        return ResponseResult.ok(null, Map.of("houses", houseService.getHousesByLandlordId(currentUser.getId())));
     }
 }

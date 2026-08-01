@@ -3,8 +3,10 @@ package com.springboot.springboothousemarket.Controller;
 import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Service.UsersService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,9 +17,11 @@ import java.util.List;
 public class UsersController {
 
     private final UsersService sysUserService;
+    private final PasswordEncoder passwordEncoder;
 
-    public UsersController(UsersService sysUserService) {
+    public UsersController(UsersService sysUserService, PasswordEncoder passwordEncoder) {
         this.sysUserService = sysUserService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -27,7 +31,9 @@ public class UsersController {
      * @return 创建结果
      */
     @PostMapping
+    @PreAuthorize("hasAuthority('ADMIN')")
     public Users createUser(@RequestBody Users users) {
+        encodePasswordIfNeeded(users);
         return sysUserService.createUser(users);
     }
 
@@ -38,6 +44,7 @@ public class UsersController {
      * @return 用户信息
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public Users getUserById(@PathVariable Long id) {
         return sysUserService.getUserById(id);
     }
@@ -50,7 +57,9 @@ public class UsersController {
      * @return 更新结果
      */
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public Users updateUser(@PathVariable Long id, @RequestBody Users users) {
+        encodePasswordIfNeeded(users);
         return sysUserService.updateUser(id, users);
     }
 
@@ -61,6 +70,7 @@ public class UsersController {
      * @return 删除结果
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public boolean deleteUser(@PathVariable Long id) {
         return sysUserService.deleteUser(id);
     }
@@ -71,6 +81,7 @@ public class UsersController {
      * @return 用户列表
      */
     @GetMapping
+    @PreAuthorize("hasAuthority('ADMIN')")
     public List<Users> getAllUsers() {
         return sysUserService.getAllUsers();
     }
@@ -82,6 +93,7 @@ public class UsersController {
      * @return 用户信息
      */
     @GetMapping("/username/{username}")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public Users getUserByUsername(@PathVariable String username) {
         return sysUserService.getUserByUsername(username);
     }
@@ -121,15 +133,27 @@ public class UsersController {
             throw new SecurityException("没有权限修改此用户密码");
         }
 
-        // 验证旧密码（这里简化处理，实际应进行密码加密验证）
-        // 在实际应用中，需要对输入的旧密码进行加密并与数据库中的密码进行比较
-        // 由于当前系统结构限制，这里仅作示意
+        if (passwordInfo.getOldPassword() == null || passwordInfo.getOldPassword().isEmpty()) {
+            throw new RuntimeException("请输入旧密码");
+        }
+        if (!passwordEncoder.matches(passwordInfo.getOldPassword(), currentUser.getPassword())) {
+            throw new RuntimeException("旧密码错误");
+        }
+        if (passwordInfo.getNewPassword() == null || passwordInfo.getNewPassword().length() < 6) {
+            throw new RuntimeException("新密码长度不能少于6位");
+        }
 
-        // 更新密码（实际应用中需要加密）
-        currentUser.setPassword(passwordInfo.getNewPassword());
-        sysUserService.updateUser(id, currentUser);
+        currentUser.setPassword(passwordEncoder.encode(passwordInfo.getNewPassword()));
+        sysUserService.updatePassword(id, currentUser.getPassword());
 
         return true;
+    }
+
+    private void encodePasswordIfNeeded(Users users) {
+        String password = users.getPassword();
+        if (password != null && !password.isEmpty() && !password.startsWith("$2")) {
+            users.setPassword(passwordEncoder.encode(password));
+        }
     }
 
     /**

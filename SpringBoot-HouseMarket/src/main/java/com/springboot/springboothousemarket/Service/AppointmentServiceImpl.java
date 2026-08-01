@@ -15,6 +15,15 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     public Appointment createAppointment(Appointment appointment) {
         appointment.setStatus("pending"); // 默认状态为待处理
         appointment.setCreateTime(LocalDateTime.now());
+        appointment.setUpdateTime(LocalDateTime.now());
+        long conflictCount = this.lambdaQuery()
+                .eq(Appointment::getHouseId, appointment.getHouseId())
+                .eq(Appointment::getTime, appointment.getTime())
+                .in(Appointment::getStatus, "pending", "approved")
+                .count();
+        if (conflictCount > 0) {
+            throw new RuntimeException("该房源在预约时间段已有预约");
+        }
         this.save(appointment);
         return appointment;
     }
@@ -36,7 +45,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         Appointment appointment = this.getById(id);
         if (appointment != null) {
             appointment.setStatus(status);
-            // updateTime字段已从实体类中移除，因为数据库中没有这个字段
+            appointment.setUpdateTime(LocalDateTime.now());
             return this.updateById(appointment);
         }
         return false;

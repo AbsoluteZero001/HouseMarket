@@ -43,9 +43,8 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             return message;
         }
 
-        // 处理CONNECT和SUBSCRIBE命令的认证
-        if (StompCommand.CONNECT.equals(accessor.getCommand()) ||
-                StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+        // 只在CONNECT时认证，订阅沿用连接会话中的用户信息
+        if (StompCommand.CONNECT.equals(accessor.getCommand())) {
 
             // 从STOMP头中获取Authorization令牌
             List<String> authHeaders = accessor.getNativeHeader("Authorization");

@@ -9,13 +9,8 @@ import com.springboot.springboothousemarket.dto.LoginRequest;
 import com.springboot.springboothousemarket.dto.LoginResponse;
 import com.springboot.springboothousemarket.dto.RegisterRequest;
 import com.springboot.springboothousemarket.dto.ResponseResult;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -24,24 +19,29 @@ public class RegisterRequestController {
     private final RegisterRequestService service;
     private final CaptchaService captchaService;
     private final JwtUtil jwtUtil;
-    private final UsersService UsersService;
+    private final UsersService usersService;
 
-    public RegisterRequestController(RegisterRequestService service, CaptchaService captchaService, JwtUtil jwtUtil,
-                                     UsersService UsersService) {
+    public RegisterRequestController(RegisterRequestService service,
+                                     CaptchaService captchaService,
+                                     JwtUtil jwtUtil,
+                                     UsersService usersService) {
         this.service = service;
         this.captchaService = captchaService;
         this.jwtUtil = jwtUtil;
-        this.UsersService = UsersService;
+        this.usersService = usersService;
     }
 
     @PostMapping("/register")
     public ResponseEntity<ResponseResult> register(@RequestBody RegisterRequest request) {
         try {
-            RegisterRequest user = new RegisterRequest(
-                    request.getUsername(),
-                    request.getPassword(),
-                    request.getRole(),
-                    "ACTIVE");
+            if (!captchaService.verify(request.getCaptchaId(), request.getCaptchaCode())) {
+                return ResponseEntity.badRequest().body(ResponseResult.fail("验证码错误或已过期"));
+            }
+            RegisterRequest user = new RegisterRequest();
+            user.setUsername(request.getUsername());
+            user.setPassword(request.getPassword());
+            user.setRole(request.getRole());
+            user.setStatus("normal");
             service.register(user);
             return ResponseEntity.ok(ResponseResult.ok("注册成功"));
         } catch (Exception e) {
@@ -52,14 +52,15 @@ public class RegisterRequestController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         try {
-            // 验证用户登录
+            if (!captchaService.verify(request.getCaptchaId(), request.getCaptchaCode())) {
+                return ResponseEntity.badRequest().body(new LoginResponse(400, "验证码错误或已过期", null, null));
+            }
             RegisterRequest tempUser = service.login(request.getUsername(), request.getPassword(), request.getRole());
             if (tempUser == null) {
                 return ResponseEntity.badRequest().body(new LoginResponse(400, "登录失败", null, null));
             }
 
-            // 获取完整的用户信息（包含ID）
-            Users fullUser = UsersService.getUserByUsername(request.getUsername());
+            Users fullUser = usersService.getUserByUsername(request.getUsername());
             if (fullUser == null) {
                 return ResponseEntity.badRequest().body(new LoginResponse(400, "用户信息不存在", null, null));
             }
@@ -72,10 +73,7 @@ public class RegisterRequestController {
     }
 
     @GetMapping("/captcha")
-    public void captcha(HttpServletResponse response) throws IOException {
-        BufferedImage image = captchaService.createCaptcha(); // 生成验证码
-        response.setContentType("image/png");
-        ImageIO.write(image, "png", response.getOutputStream());
+    public ResponseResult captcha() {
+        return ResponseResult.ok(null, captchaService.generate());
     }
-
 }

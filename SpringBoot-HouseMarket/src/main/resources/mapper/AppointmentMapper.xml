@@ -13,6 +13,7 @@
         <result property="notes" column="notes"/>
         <result property="status" column="status"/>
         <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
     </resultMap>
 
     <!-- 关联查询结果映射 -->
@@ -22,16 +23,20 @@
         <association property="house" javaType="com.springboot.springboothousemarket.Entity.Houses">
             <id property="id" column="h_id"/>
             <result property="title" column="h_title"/>
+            <result property="image" column="h_image"/>
+            <result property="address" column="h_address"/>
         </association>
         <!-- 关联租客信息 -->
         <association property="tenant" javaType="com.springboot.springboothousemarket.Entity.Users">
             <id property="id" column="t_id"/>
             <result property="username" column="t_username"/>
+            <result property="realName" column="t_real_name"/>
         </association>
         <!-- 关联房东信息 -->
         <association property="landlord" javaType="com.springboot.springboothousemarket.Entity.Users">
             <id property="id" column="l_id"/>
             <result property="username" column="l_username"/>
+            <result property="realName" column="l_real_name"/>
         </association>
     </resultMap>
 
@@ -39,9 +44,9 @@
     <select id="selectAppointmentsWithDetails" resultMap="appointmentWithDetailsResultMap">
         SELECT
         a.*,
-        h.id AS h_id, h.title AS h_title,
-        tu.id AS t_id, tu.username AS t_username,
-        lu.id AS l_id, lu.username AS l_username
+        h.id AS h_id, h.title AS h_title, h.image AS h_image, h.address AS h_address,
+        tu.id AS t_id, tu.username AS t_username, tu.real_name AS t_real_name,
+        lu.id AS l_id, lu.username AS l_username, lu.real_name AS l_real_name
         FROM
         appointment a
         LEFT JOIN
@@ -63,9 +68,9 @@
     <select id="selectAppointmentsByLandlordIdWithDetails" resultMap="appointmentWithDetailsResultMap">
         SELECT
         a.*,
-        h.id AS h_id, h.title AS h_title,
-        tu.id AS t_id, tu.username AS t_username,
-        lu.id AS l_id, lu.username AS l_username
+        h.id AS h_id, h.title AS h_title, h.image AS h_image, h.address AS h_address,
+        tu.id AS t_id, tu.username AS t_username, tu.real_name AS t_real_name,
+        lu.id AS l_id, lu.username AS l_username, lu.real_name AS l_real_name
         FROM
         appointment a
         LEFT JOIN

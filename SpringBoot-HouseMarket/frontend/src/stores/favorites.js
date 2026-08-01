@@ -1,6 +1,6 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { getFavorites, addFavorite, removeFavorite, checkFavorite } from '../api/favorites'
+import {defineStore} from 'pinia'
+import {ref} from 'vue'
+import {addFavorite, checkFavorite, getFavorites, removeFavorite} from '../api/favorites'
 
 export const useFavoriteStore = defineStore('favorites', () => {
   const favorites = ref([])
@@ -29,8 +29,8 @@ export const useFavoriteStore = defineStore('favorites', () => {
     return res.data
   }
 
-  async function check(userId, houseId) {
-    const res = await checkFavorite(userId, houseId)
+    async function check(houseId) {
+        const res = await checkFavorite(houseId)
     return res.data
   }
 

@@ -1,6 +1,14 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { getAppointments, createAppointment, approveAppointment, rejectAppointment, cancelAppointment, deleteAppointment } from '../api/appointments'
+import {defineStore} from 'pinia'
+import {ref} from 'vue'
+import {
+  approveAppointment,
+  cancelAppointment,
+  completeAppointment,
+  createAppointment,
+  deleteAppointment,
+  getAppointments,
+  rejectAppointment
+} from '../api/appointments'
 
 export const useAppointmentStore = defineStore('appointments', () => {
   const appointments = ref([])
@@ -39,10 +47,15 @@ export const useAppointmentStore = defineStore('appointments', () => {
     return res.data
   }
 
+    async function complete(id) {
+        const res = await completeAppointment(id)
+        return res.data
+    }
+
   async function remove(id) {
     const res = await deleteAppointment(id)
     return res.data
   }
 
-  return { appointments, loading, fetchAppointments, addAppointment, approve, reject, cancel, remove }
+    return {appointments, loading, fetchAppointments, addAppointment, approve, reject, cancel, complete, remove}
 })

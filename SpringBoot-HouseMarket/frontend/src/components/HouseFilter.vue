@@ -42,6 +42,19 @@
           <label>地址</label>
           <input v-model="local.address" placeholder="搜索地址..." @keyup.enter="search" />
         </div>
+        <div class="form-group">
+          <label>区域</label>
+          <select v-model="local.district">
+            <option value="">全部区域</option>
+            <option value="朝阳区">朝阳区</option>
+            <option value="海淀区">海淀区</option>
+            <option value="西城区">西城区</option>
+            <option value="东城区">东城区</option>
+            <option value="丰台区">丰台区</option>
+            <option value="通州区">通州区</option>
+            <option value="大兴区">大兴区</option>
+          </select>
+        </div>
         <div class="form-group filter-actions-group">
           <label>&nbsp;</label>
           <div class="filter-actions">
@@ -55,12 +68,12 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
+import {reactive} from 'vue'
 
 const emit = defineEmits(['search', 'reset'])
 
 function defaults() {
-  return { keyword: '', type: '', minArea: '', maxArea: '', minPrice: '', maxPrice: '', address: '' }
+  return {keyword: '', type: '', minArea: '', maxArea: '', minPrice: '', maxPrice: '', address: '', district: ''}
 }
 const local = reactive(defaults())
 

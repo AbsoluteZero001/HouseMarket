@@ -12,6 +12,6 @@ export function removeFavorite(houseId) {
   return http.delete(`/api/favorites/${houseId}`)
 }
 
-export function checkFavorite(userId, houseId) {
-  return http.get('/api/favorites/check', { params: { userId, houseId } })
+export function checkFavorite(houseId) {
+    return http.get('/api/favorites/check', {params: {houseId}})
 }

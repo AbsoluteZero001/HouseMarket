@@ -50,6 +50,10 @@ public class Appointment {
     @TableField("create_time")
     private LocalDateTime createTime;
 
+    @Schema(description = "更新时间")
+    @TableField("update_time")
+    private LocalDateTime updateTime;
+
     // 关联属性，用于关联查询
     @Schema(description = "房屋信息")
     @TableField(exist = false)

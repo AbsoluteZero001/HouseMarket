@@ -1,5 +1,6 @@
 package com.springboot.springboothousemarket.Config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
@@ -13,6 +14,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  */
 @Configuration // 标记此类为配置类，相当于XML配置文件中的<beans>
 public class WebMvcConfig implements WebMvcConfigurer {
+
+    @Value("${upload.dir:./uploads}")
+    private String uploadDir;
 
     // CORS 配置已移至 SecurityConfig 和 CorsConfig 类中
     // 保留此文件用于其他 MVC 配置
@@ -28,8 +32,9 @@ public class WebMvcConfig implements WebMvcConfigurer {
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // 配置上传文件的静态资源映射
+        String location = new java.io.File(uploadDir).getAbsolutePath() + java.io.File.separator;
         registry.addResourceHandler("/uploads/**")
-                .addResourceLocations("file:D:/house-market image/");
+                .addResourceLocations("file:" + location);
     }
 
     /**

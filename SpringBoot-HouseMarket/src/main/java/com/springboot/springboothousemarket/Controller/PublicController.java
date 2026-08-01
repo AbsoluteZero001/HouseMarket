@@ -10,6 +10,7 @@ import com.springboot.springboothousemarket.dto.ResponseResult;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
@@ -32,22 +33,38 @@ public class PublicController {
     }
 
     @GetMapping("/houses")
-    public ResponseResult getPublicHouses() {
-        QueryWrapper<Houses> query = new QueryWrapper<>();
-        query.eq("is_deleted", 0);
-        query.orderByDesc("create_time");
-        query.last("LIMIT 6");
-        return ResponseResult.ok(null, Map.of("houses", housesService.list(query)));
+    public ResponseResult getPublicHouses(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String district,
+            @RequestParam(required = false) Double minArea,
+            @RequestParam(required = false) Double maxArea,
+            @RequestParam(required = false) Double minPrice,
+            @RequestParam(required = false) Double maxPrice,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "8") int pageSize) {
+        var pageInfo = housesService.getHouses(
+                keyword, type, district, minArea, maxArea,
+                minPrice, maxPrice, null, "NORMAL", page, pageSize);
+        return ResponseResult.ok(null, Map.of(
+                "houses", pageInfo.getRecords(),
+                "total", pageInfo.getTotal(),
+                "page", pageInfo.getCurrent(),
+                "pageSize", pageInfo.getSize()));
     }
 
     @GetMapping("/stats")
     public ResponseResult getStats() {
         long housesCount = housesService.count(
-                new QueryWrapper<Houses>().eq("is_deleted", 0));
-        long landlordsCount = usersService.count(
-                new QueryWrapper<Users>().eq("role", "LANDLORD").eq("isDeleted", 0));
-        long tenantsCount = usersService.count(
-                new QueryWrapper<Users>().eq("role", "TENANT").eq("isDeleted", 0));
+                new QueryWrapper<Houses>().eq("is_deleted", 0).eq("status", "NORMAL"));
+        long landlordsCount = usersService.lambdaQuery()
+                .eq(Users::getRole, "LANDLORD")
+                .eq(Users::getIsDeleted, 0)
+                .count();
+        long tenantsCount = usersService.lambdaQuery()
+                .eq(Users::getRole, "TENANT")
+                .eq(Users::getIsDeleted, 0)
+                .count();
         long appointmentsCount = appointmentService.count();
 
         return ResponseResult.ok(null, Map.of(

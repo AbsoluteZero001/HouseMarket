@@ -1,6 +1,7 @@
 package com.springboot.springboothousemarket.Entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -37,6 +38,7 @@ public class Users {
      */
     @Schema(description = "密码(加密存储)")
     @TableField("password")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
 
     /**
@@ -109,6 +111,6 @@ public class Users {
      */
     @Schema(description = "逻辑删除: 0未删, 1已删")
     @TableLogic
-    @TableField("isDeleted")
+    @TableField("is_deleted")
     private Integer isDeleted;
 }

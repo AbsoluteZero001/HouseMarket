@@ -16,6 +16,20 @@
         </select>
       </div>
       <div class="form-group">
+        <label>区域 <span class="required">*</span></label>
+        <input v-model="form.district" required placeholder="如：朝阳区"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>卧室 <span class="required">*</span></label>
+        <input v-model.number="form.bedrooms" type="number" min="1" required placeholder="卧室数"/>
+      </div>
+      <div class="form-group">
+        <label>卫生间</label>
+        <input v-model.number="form.bathrooms" type="number" min="1" placeholder="卫生间数"/>
+      </div>
+      <div class="form-group">
         <label>面积 (㎡) <span class="required">*</span></label>
         <input v-model.number="form.area" type="number" min="1" required placeholder="请输入面积" />
       </div>
@@ -26,9 +40,43 @@
         <input v-model.number="form.price" type="number" min="1" required placeholder="请输入价格" />
       </div>
       <div class="form-group">
-        <label>地址 <span class="required">*</span></label>
-        <input v-model="form.address" required placeholder="请输入地址" />
+        <label>朝向</label>
+        <select v-model="form.orientation">
+          <option value="南北">南北</option>
+          <option value="南">南</option>
+          <option value="北">北</option>
+          <option value="东南">东南</option>
+          <option value="西南">西南</option>
+          <option value="东西">东西</option>
+        </select>
       </div>
+      <div class="form-group">
+        <label>楼层</label>
+        <input v-model="form.floor" placeholder="如：16/28层"/>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>装修</label>
+        <select v-model="form.decoration">
+          <option value="精装">精装</option>
+          <option value="简装">简装</option>
+          <option value="豪华装修">豪华装修</option>
+          <option value="毛坯">毛坯</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>租期/付款</label>
+        <input v-model="form.leaseTerm" placeholder="如：押一付三"/>
+      </div>
+      <div class="form-group">
+        <label>标签</label>
+        <input v-model="form.tags" placeholder="如：近地铁,电梯,朝南"/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>地址 <span class="required">*</span></label>
+      <input v-model="form.address" required placeholder="请输入地址"/>
     </div>
     <div class="form-group">
       <label>房源图片</label>
@@ -48,14 +96,28 @@
 </template>
 
 <script setup>
-import { reactive, ref, watch } from 'vue'
+import {reactive, ref, watch} from 'vue'
 import ImageUpload from './ImageUpload.vue'
 
 const props = defineProps({ initial: { type: Object, default: () => ({}) }, submitLabel: { type: String, default: '提交' } })
 defineEmits(['submit', 'cancel'])
 
 const form = reactive({
-  title: '', type: '', area: '', price: '', address: '', description: '', image: ''
+  title: '',
+  type: '',
+  district: '',
+  bedrooms: 1,
+  bathrooms: 1,
+  area: '',
+  price: '',
+  orientation: '南北',
+  floor: '',
+  decoration: '精装',
+  leaseTerm: '押一付三',
+  tags: '',
+  address: '',
+  description: '',
+  image: ''
 })
 const selectedFile = ref(null)
 const imageUploadRef = ref(null)
@@ -63,9 +125,21 @@ const imageUploadRef = ref(null)
 watch(() => props.initial, (val) => {
   if (val && val.id) {
     Object.assign(form, {
-      title: val.title || '', type: val.type || '', area: val.area || '',
-      price: val.price || '', address: val.address || '',
-      description: val.description || '', image: val.image || ''
+      title: val.title || '',
+      type: val.type || '',
+      district: val.district || '',
+      bedrooms: val.bedrooms || 1,
+      bathrooms: val.bathrooms || 1,
+      area: val.area || '',
+      price: val.price || '',
+      orientation: val.orientation || '南北',
+      floor: val.floor || '',
+      decoration: val.decoration || '精装',
+      leaseTerm: val.leaseTerm || '押一付三',
+      tags: Array.isArray(val.tags) ? val.tags.join(',') : (val.tags || ''),
+      address: val.address || '',
+      description: val.description || '',
+      image: val.image || ''
     })
   }
 }, { immediate: true })

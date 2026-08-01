@@ -121,9 +121,14 @@ const houseStore = useHouseStore()
 const favStore = useFavoriteStore()
 const aptStore = useAppointmentStore()
 
-const {loadUser, handleLogout: doLogout} = useAuth()
-let user = loadUser()
-if (!user) user = {}
+const {handleLogout: doLogout} = useAuth()
+let user = {}
+try {
+  user = JSON.parse(localStorage.getItem('user') || 'null') || {}
+} catch {
+  user = {}
+}
+const isLoggedIn = computed(() => !!localStorage.getItem('token'))
 
 const house = ref(null)
 const isFav = ref(false)
@@ -145,6 +150,10 @@ function goBack() {
 }
 
 async function toggleFavorite() {
+  if (!isLoggedIn.value) {
+    router.push('/login');
+    return
+  }
   if (isFav.value) {
     await favStore.remove(house.value.id)
     isFav.value = false
@@ -156,7 +165,13 @@ async function toggleFavorite() {
   }
 }
 
-function bookHouse() { showBookModal.value = true }
+function bookHouse() {
+  if (!isLoggedIn.value) {
+    router.push('/login');
+    return
+  }
+  showBookModal.value = true
+}
 
 async function submitBooking() {
   if (!bookForm.date || !bookForm.time || !bookForm.location) { alert('请填写完整信息'); return }
@@ -188,12 +203,18 @@ onMounted(async () => {
   const res = await houseStore.fetchHouseById(id)
   if (res.success) house.value = res.data.house
 
-  try {
-    const checkRes = await favStore.check(user.id, id)
+  if (isLoggedIn.value && user.id) {
+    try {
+      const checkRes = await favStore.check(id)
     isFav.value = checkRes.data?.favorited || false
-  } catch (e) { /* ignore */ }
+    } catch (e) { /* ignore */
+    }
+  }
 
-  if (route.query.action === 'book') showBookModal.value = true
+  if (route.query.action === 'book') {
+    if (isLoggedIn.value) showBookModal.value = true
+    else router.push('/login')
+  }
 })
 </script>
 

@@ -1,6 +1,7 @@
 package com.springboot.springboothousemarket.Config;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -49,6 +50,17 @@ public class GlobalExceptionHandler {
         response.put("success", false);
         response.put("message", e.getMessage());
         response.put("code", 401);
+        return response;
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @ResponseBody
+    public Map<String, Object> handleAccessDenied(AccessDeniedException e) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", false);
+        response.put("message", "没有权限执行该操作");
+        response.put("code", 403);
         return response;
     }
 

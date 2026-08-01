@@ -6,13 +6,28 @@
     </div>
     <div class="house-body">
       <h3 class="house-title">{{ house.title }}</h3>
-      <div class="house-price">{{ formatPrice(house.price) }}</div>
-      <div class="house-meta">
-        <span>{{ house.area }} ㎡</span>
-        <span class="meta-sep">|</span>
-        <span>{{ house.address || '未填写' }}</span>
+      <div class="house-price-line">
+        <span class="house-price">{{ formatPrice(house.price) }}</span>
+        <span class="house-status" :class="{ offline: house.status === 'OFFLINE' }">{{
+            house.status === 'OFFLINE' ? '已下架' : '在租'
+          }}</span>
       </div>
-      <p class="house-desc">{{ truncatedDesc }}</p>
+      <div class="house-meta">
+        <span>{{ house.district || '未知区域' }}</span>
+        <span class="meta-sep">|</span>
+        <span>{{ house.bedrooms || 1 }}室{{ house.bathrooms || 1 }}卫</span>
+        <span class="meta-sep">|</span>
+        <span>{{ house.area }}㎡</span>
+      </div>
+      <div class="house-submeta">
+        <span>{{ house.orientation || '南北' }}</span>
+        <span>{{ house.floor || '楼层待定' }}</span>
+        <span>{{ house.decoration || '精装' }}</span>
+      </div>
+      <div class="house-tags" v-if="tags.length">
+        <span v-for="t in tags" :key="t">{{ t }}</span>
+      </div>
+      <div class="house-address">{{ house.address || '未填写' }}</div>
       <div class="house-actions">
         <slot name="actions" :house="house" />
       </div>
@@ -27,14 +42,18 @@ import {formatPrice} from '../composables/useFormat'
 const props = defineProps({ house: Object })
 
 const imageUrl = computed(() => {
-  if (props.house.image) {
+  if (props.house?.image) {
     try { const arr = JSON.parse(props.house.image); if (Array.isArray(arr) && arr.length) return arr[0] } catch (e) { return props.house.image }
   }
-  return `https://picsum.photos/seed/house${props.house.id}/800/600`
+  return `/uploads/img.png`
 })
-const truncatedDesc = computed(() => {
-  const d = props.house.description || ''
-  return d.length > 100 ? d.slice(0, 100) + '...' : d
+const tags = computed(() => {
+  try {
+    const parsed = JSON.parse(props.house?.tags || '[]')
+    return Array.isArray(parsed) ? parsed.slice(0, 3) : []
+  } catch {
+    return []
+  }
 })
 </script>
 
@@ -86,11 +105,31 @@ const truncatedDesc = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.house-price-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
 .house-price {
   font-size: 20px;
   font-weight: 700;
   color: var(--accent);
-  margin-bottom: 8px;
+}
+
+.house-status {
+  font-size: 11px;
+  color: var(--success);
+  background: #f6ffed;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.house-status.offline {
+  color: var(--text-muted);
+  background: #f5f5f5;
 }
 .house-meta {
   display: flex;
@@ -98,21 +137,51 @@ const truncatedDesc = computed(() => {
   gap: 6px;
   font-size: 13px;
   color: var(--text-secondary);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .meta-sep { color: var(--border); }
-.house-desc {
+
+.house-submeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.house-submeta span {
+  background: #fafafa;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.house-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.house-tags span {
+  font-size: 12px;
+  color: var(--primary);
+  background: var(--primary-light);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.house-address {
+  font-size: 12px;
   color: var(--text-muted);
-  line-height: 1.5;
   margin-bottom: 12px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .house-actions {
   display: flex;

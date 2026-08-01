@@ -9,5 +9,5 @@ export function register(data) {
 }
 
 export function getCaptcha() {
-  return http.get('/api/v1/auth/captcha', { responseType: 'blob' })
+    return http.get('/api/v1/auth/captcha')
 }

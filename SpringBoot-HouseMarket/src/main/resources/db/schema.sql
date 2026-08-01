@@ -1,6 +1,6 @@
 -- ============================================
 -- 房源市场 数据库建表脚本
--- 数据库名: housemarket
+-- 数据库: housemarket, 字符集: utf8mb4
 -- ============================================
 
 CREATE
@@ -11,19 +11,20 @@ DATABASE IF NOT EXISTS housemarket
 USE
 housemarket;
 
--- --------------------------------------------
--- 1. 用户表 (sysuser)
--- --------------------------------------------
 DROP TABLE IF EXISTS `favorites`;
 DROP TABLE IF EXISTS `appointment`;
+DROP TABLE IF EXISTS `house_order`;
 DROP TABLE IF EXISTS `house`;
 DROP TABLE IF EXISTS `sysuser`;
 
+-- --------------------------------------------
+-- 1. 用户表
+-- --------------------------------------------
 CREATE TABLE `sysuser`
 (
-    `id`            BIGINT       NOT NULL AUTO_INCREMENT  COMMENT '主键ID',
+    `id`         BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `username`      VARCHAR(100) NOT NULL COMMENT '用户名',
-    `password`      VARCHAR(255) NOT NULL COMMENT '密码',
+    `password`   VARCHAR(255) NOT NULL COMMENT 'BCrypt密码',
     `real_name`     VARCHAR(100)          DEFAULT NULL COMMENT '真实姓名',
     `role`          VARCHAR(50)  NOT NULL DEFAULT 'TENANT' COMMENT '角色: ADMIN/LANDLORD/TENANT',
     `phone`         VARCHAR(50)           DEFAULT NULL COMMENT '联系电话',
@@ -31,26 +32,38 @@ CREATE TABLE `sysuser`
     `status`        VARCHAR(50)  NOT NULL DEFAULT 'normal' COMMENT '状态: normal/disabled',
     `register_time` DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
     `update_time`   DATETIME              DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-    `isDeleted`     INT          NOT NULL DEFAULT 0 COMMENT '逻辑删除: 0未删, 1已删',
+    `is_deleted` INT          NOT NULL DEFAULT 0 COMMENT '逻辑删除: 0未删, 1已删',
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uk_username` (`username`)
+    UNIQUE KEY `uk_username` (`username`),
+    KEY          `idx_role` (`role`),
+    CONSTRAINT `chk_user_role` CHECK (`role` IN ('ADMIN', 'LANDLORD', 'TENANT')),
+    CONSTRAINT `chk_user_status` CHECK (`status` IN ('normal', 'disabled'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
 
 -- --------------------------------------------
--- 2. 房源表 (house)
+-- 2. 房源表
 -- --------------------------------------------
 CREATE TABLE `house`
 (
-    `id`          BIGINT         NOT NULL AUTO_INCREMENT  COMMENT '主键ID',
+    `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `title`       VARCHAR(255)   NOT NULL COMMENT '房源标题',
     `type`        VARCHAR(50)    NOT NULL DEFAULT '平层' COMMENT '房屋类型: 平层/跃层/错层/复式',
+    `district`    VARCHAR(100) NOT NULL DEFAULT '朝阳区' COMMENT '区域',
+    `bedrooms`    INT          NOT NULL DEFAULT 1 COMMENT '卧室数',
+    `bathrooms`   INT          NOT NULL DEFAULT 1 COMMENT '卫生间数',
     `area`        DECIMAL(10, 2) NOT NULL DEFAULT 0 COMMENT '面积(㎡)',
     `price`       DECIMAL(10, 2) NOT NULL DEFAULT 0 COMMENT '月租金(元)',
+    `orientation` VARCHAR(20)  NOT NULL DEFAULT '南北' COMMENT '朝向',
+    `floor`       VARCHAR(50)           DEFAULT NULL COMMENT '楼层信息',
+    `decoration`  VARCHAR(50)  NOT NULL DEFAULT '精装' COMMENT '装修情况',
+    `lease_term`  VARCHAR(50)  NOT NULL DEFAULT '押一付三' COMMENT '租期/付款方式',
+    `tags`        VARCHAR(255) NOT NULL DEFAULT '[]' COMMENT '标签(JSON数组)',
     `address`     VARCHAR(500)   NOT NULL DEFAULT '未知' COMMENT '详细地址',
     `description` TEXT COMMENT '房源描述',
     `image`       VARCHAR(2000)  NOT NULL DEFAULT '[]' COMMENT '图片地址(JSON数组)',
     `landlord_id` BIGINT         NOT NULL COMMENT '房东ID',
-    `status`      VARCHAR(50)    NOT NULL DEFAULT 'NORMAL' COMMENT '房源状态',
+    `status`      VARCHAR(50)  NOT NULL DEFAULT 'NORMAL' COMMENT '状态: NORMAL/OFFLINE',
+    `views`       INT          NOT NULL DEFAULT 0 COMMENT '浏览量',
     `create_time` DATETIME                DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME                DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `is_deleted`  INT            NOT NULL DEFAULT 0 COMMENT '逻辑删除: 0未删, 1已删',
@@ -58,15 +71,18 @@ CREATE TABLE `house`
     KEY           `idx_landlord` (`landlord_id`),
     KEY           `idx_type` (`type`),
     KEY           `idx_price` (`price`),
-    KEY           `idx_area` (`area`)
+    KEY           `idx_area` (`area`),
+    KEY           `idx_district` (`district`),
+    CONSTRAINT `fk_house_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `sysuser` (`id`),
+    CONSTRAINT `chk_house_status` CHECK (`status` IN ('NORMAL', 'OFFLINE'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='房源表';
 
 -- --------------------------------------------
--- 3. 预约表 (appointment)
+-- 3. 预约表
 -- --------------------------------------------
 CREATE TABLE `appointment`
 (
-    `id`          BIGINT      NOT NULL AUTO_INCREMENT  COMMENT '主键ID',
+    `id`          BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
     `house_id`    BIGINT      NOT NULL COMMENT '房源ID',
     `tenant_id`   BIGINT      NOT NULL COMMENT '租客ID',
     `landlord_id` BIGINT      NOT NULL COMMENT '房东ID',
@@ -75,23 +91,30 @@ CREATE TABLE `appointment`
     `notes`       VARCHAR(500)         DEFAULT NULL COMMENT '备注',
     `status`      VARCHAR(50) NOT NULL DEFAULT 'pending' COMMENT '状态: pending/approved/rejected/completed/canceled',
     `create_time` DATETIME             DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
     KEY           `idx_house` (`house_id`),
     KEY           `idx_tenant` (`tenant_id`),
     KEY           `idx_landlord` (`landlord_id`),
-    KEY           `idx_status` (`status`)
+    KEY           `idx_status` (`status`),
+    CONSTRAINT `fk_appointment_house` FOREIGN KEY (`house_id`) REFERENCES `house` (`id`),
+    CONSTRAINT `fk_appointment_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `sysuser` (`id`),
+    CONSTRAINT `fk_appointment_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `sysuser` (`id`),
+    CONSTRAINT `chk_appointment_status` CHECK (`status` IN ('pending', 'approved', 'rejected', 'completed', 'canceled'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='预约表';
 
 -- --------------------------------------------
--- 4. 收藏表 (favorites)
+-- 4. 收藏表
 -- --------------------------------------------
 CREATE TABLE `favorites`
 (
-    `id`          BIGINT NOT NULL AUTO_INCREMENT  COMMENT '主键ID',
-    `user_id`     BIGINT NOT NULL COMMENT '用户ID',
-    `house_id`    BIGINT NOT NULL COMMENT '房源ID',
+    `id`       BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `user_id`  BIGINT NOT NULL COMMENT '用户ID',
+    `house_id` BIGINT NOT NULL COMMENT '房源ID',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '收藏时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_user_house` (`user_id`, `house_id`),
-    KEY           `idx_house` (`house_id`)
+    KEY        `idx_house` (`house_id`),
+    CONSTRAINT `fk_favorites_user` FOREIGN KEY (`user_id`) REFERENCES `sysuser` (`id`),
+    CONSTRAINT `fk_favorites_house` FOREIGN KEY (`house_id`) REFERENCES `house` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='收藏表';

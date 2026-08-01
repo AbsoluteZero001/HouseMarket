@@ -33,6 +33,15 @@ public interface UsersService extends IService<Users> {
     Users updateUser(Long id, Users users);
 
     /**
+     * 直接更新已加密的密码
+     *
+     * @param id              用户ID
+     * @param encodedPassword BCrypt密码
+     * @return 是否更新成功
+     */
+    boolean updatePassword(Long id, String encodedPassword);
+
+    /**
      * 删除用户
      *
      * @param id 用户ID

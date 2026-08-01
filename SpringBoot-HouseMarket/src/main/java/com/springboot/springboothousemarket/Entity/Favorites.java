@@ -18,14 +18,18 @@ public class Favorites {
     private Long id;
 
     @Schema(description = "用户ID")
-    @TableField("userId")
+    @TableField("user_id")
     private Long userId;
 
     @Schema(description = "房源ID")
-    @TableField("houseId")
+    @TableField("house_id")
     private Long houseId;
 
     @Schema(description = "收藏时间")
-    @TableField("createTime")
+    @TableField("create_time")
     private LocalDateTime createTime;
+
+    @Schema(description = "关联房源信息")
+    @TableField(exist = false)
+    private Houses house;
 }

@@ -37,6 +37,14 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
     }
 
     @Override
+    public boolean updatePassword(Long id, String encodedPassword) {
+        Users user = new Users();
+        user.setId(id);
+        user.setPassword(encodedPassword);
+        return usersMapper.updateById(user) > 0;
+    }
+
+    @Override
     public boolean deleteUser(Long id) {
         Users user = getUserById(id);
         if (user == null)

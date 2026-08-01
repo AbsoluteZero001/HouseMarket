@@ -29,6 +29,9 @@
                 <button class="btn btn-sm btn-success" @click="$emit('approve', apt.id)">批准</button>
                 <button class="btn btn-sm btn-danger" @click="$emit('reject', apt.id)">拒绝</button>
               </template>
+              <template v-if="isLandlord && apt.status === 'approved'">
+                <button class="btn btn-sm btn-success" @click="$emit('complete', apt.id)">完成</button>
+              </template>
               <template v-if="!isLandlord && (apt.status === 'pending' || apt.status === 'approved')">
                 <button class="btn btn-sm" style="background:#faad14;color:#fff" @click="$emit('cancel', apt.id)">取消</button>
               </template>
@@ -45,8 +48,9 @@
 
 <script setup>
 import StatusBadge from './StatusBadge.vue'
+
 defineProps({ appointments: Array, isLandlord: Boolean })
-defineEmits(['approve', 'reject', 'cancel', 'delete'])
+defineEmits(['approve', 'reject', 'complete', 'cancel', 'delete'])
 </script>
 
 <style scoped>

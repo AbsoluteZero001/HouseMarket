@@ -20,6 +20,10 @@ export function cancelAppointment(id) {
   return http.put(`/api/appointments/${id}/cancel`)
 }
 
+export function completeAppointment(id) {
+    return http.put(`/api/appointments/${id}/complete`)
+}
+
 export function deleteAppointment(id) {
   return http.delete(`/api/appointments/${id}`)
 }

@@ -36,8 +36,8 @@ export function uploadImage(file) {
   })
 }
 
-export function getPublicHouses() {
-    return http.get('/api/public/houses')
+export function getPublicHouses(params = {}) {
+    return http.get('/api/public/houses', {params})
 }
 
 export function getPublicStats() {

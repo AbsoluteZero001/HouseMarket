@@ -37,7 +37,10 @@
             <span class="input-icon">🖊</span>
             <input v-model="form.captcha" maxlength="4" placeholder="验证码" required/>
           </div>
-          <CaptchaCanvas ref="captchaRef"/>
+          <div class="captcha-img" @click="fetchCaptcha" title="点击刷新验证码">
+            <img v-if="captchaImage" :src="'data:image/png;base64,' + captchaImage" alt="验证码"/>
+            <span v-else>加载中</span>
+          </div>
         </div>
       </div>
 
@@ -49,32 +52,47 @@
 </template>
 
 <script setup>
-import {reactive, ref} from 'vue'
+import {onMounted, reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {useAuthStore} from '../stores/auth'
+import {getCaptcha} from '../api/auth'
 import RoleSlider from '../components/RoleSlider.vue'
-import CaptchaCanvas from '../components/CaptchaCanvas.vue'
 import AuthLayout from '../components/AuthLayout.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const captchaRef = ref(null)
 const loading = ref(false)
+const captchaId = ref('')
+const captchaImage = ref('')
 
 const form = reactive({ username: '', password: '', role: 'TENANT', captcha: '' })
 
+async function fetchCaptcha() {
+  try {
+    const res = await getCaptcha()
+    captchaId.value = res.data?.data?.captchaId || ''
+    captchaImage.value = res.data?.data?.imageBase64 || ''
+  } catch {
+    captchaImage.value = ''
+  }
+}
+
 async function handleLogin() {
   if (loading.value) return
-  const captcha = sessionStorage.getItem('captcha')
-  if (form.captcha.toLowerCase() !== captcha) {
-    alert('验证码错误')
-    captchaRef.value?.generate()
+  if (!form.captcha) {
+    alert('请输入验证码')
     form.captcha = ''
     return
   }
   loading.value = true
   try {
-    const res = await authStore.login({ username: form.username, password: form.password, role: form.role })
+    const res = await authStore.login({
+      username: form.username,
+      password: form.password,
+      role: form.role,
+      captchaId: captchaId.value,
+      captchaCode: form.captcha
+    })
     if (res.code === 200) {
       const role = (res.data?.role || '').toLowerCase()
       if (role === 'tenant') await router.push('/tenant')
@@ -89,9 +107,11 @@ async function handleLogin() {
   } finally {
     loading.value = false
   }
-  captchaRef.value?.generate()
+  await fetchCaptcha()
   form.captcha = ''
 }
+
+onMounted(fetchCaptcha)
 </script>
 
 <style scoped>
@@ -143,6 +163,27 @@ async function handleLogin() {
   display: flex;
   gap: 10px;
   align-items: center;
+}
+
+.captcha-img {
+  width: 120px;
+  height: 42px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+}
+
+.captcha-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .btn-primary {

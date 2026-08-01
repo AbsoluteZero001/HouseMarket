@@ -7,13 +7,28 @@
         <result property="userId" column="user_id"/>
         <result property="houseId" column="house_id"/>
         <result property="createTime" column="create_time"/>
+        <association property="house" javaType="com.springboot.springboothousemarket.Entity.Houses">
+            <id property="id" column="h_id"/>
+            <result property="title" column="h_title"/>
+            <result property="type" column="h_type"/>
+            <result property="district" column="h_district"/>
+            <result property="bedrooms" column="h_bedrooms"/>
+            <result property="bathrooms" column="h_bathrooms"/>
+            <result property="area" column="h_area"/>
+            <result property="price" column="h_price"/>
+            <result property="orientation" column="h_orientation"/>
+            <result property="floor" column="h_floor"/>
+            <result property="decoration" column="h_decoration"/>
+            <result property="leaseTerm" column="h_lease_term"/>
+            <result property="tags" column="h_tags"/>
+            <result property="address" column="h_address"/>
+            <result property="description" column="h_description"/>
+            <result property="image" column="h_image"/>
+            <result property="landlordId" column="h_landlord_id"/>
+            <result property="status" column="h_status"/>
+            <result property="views" column="h_views"/>
+        </association>
     </resultMap>
-
-    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO favorites(user_id, house_id)
-        VALUES (#{userId}, #{houseId})
-        ON DUPLICATE KEY UPDATE id = id
-    </insert>
 
     <delete id="deleteByUserIdAndHouseId">
         DELETE
@@ -23,16 +38,65 @@
     </delete>
 
     <select id="selectByUserId" resultMap="favoritesResultMap">
-        SELECT *
-        FROM favorites
-        WHERE user_id = #{userId}
+        SELECT f.id,
+               f.user_id,
+               f.house_id,
+               f.create_time,
+               h.id          AS h_id,
+               h.title       AS h_title,
+               h.type        AS h_type,
+               h.district    AS h_district,
+               h.bedrooms    AS h_bedrooms,
+               h.bathrooms   AS h_bathrooms,
+               h.area        AS h_area,
+               h.price       AS h_price,
+               h.orientation AS h_orientation,
+               h.floor       AS h_floor,
+               h.decoration  AS h_decoration,
+               h.lease_term  AS h_lease_term,
+               h.tags        AS h_tags,
+               h.address     AS h_address,
+               h.description AS h_description,
+               h.image       AS h_image,
+               h.landlord_id AS h_landlord_id,
+               h.status      AS h_status,
+               h.views       AS h_views
+        FROM favorites f
+                 INNER JOIN house h ON f.house_id = h.id
+        WHERE f.user_id = #{userId}
+          AND h.is_deleted = 0
+        ORDER BY f.create_time DESC
     </select>
 
     <select id="selectByUserIdAndHouseId" resultMap="favoritesResultMap">
-        SELECT *
-        FROM favorites
-        WHERE user_id = #{userId}
-          AND house_id = #{houseId}
+        SELECT f.id,
+               f.user_id,
+               f.house_id,
+               f.create_time,
+               h.id          AS h_id,
+               h.title       AS h_title,
+               h.type        AS h_type,
+               h.district    AS h_district,
+               h.bedrooms    AS h_bedrooms,
+               h.bathrooms   AS h_bathrooms,
+               h.area        AS h_area,
+               h.price       AS h_price,
+               h.orientation AS h_orientation,
+               h.floor       AS h_floor,
+               h.decoration  AS h_decoration,
+               h.lease_term  AS h_lease_term,
+               h.tags        AS h_tags,
+               h.address     AS h_address,
+               h.description AS h_description,
+               h.image       AS h_image,
+               h.landlord_id AS h_landlord_id,
+               h.status      AS h_status,
+               h.views       AS h_views
+        FROM favorites f
+                 INNER JOIN house h ON f.house_id = h.id
+        WHERE f.user_id = #{userId}
+          AND f.house_id = #{houseId}
+          AND h.is_deleted = 0
     </select>
 
 </mapper>

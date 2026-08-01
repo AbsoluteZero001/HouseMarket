@@ -61,6 +61,10 @@
             <template #actions="{ house }">
               <button class="btn btn-sm btn-outline" @click="openEditHouse(house.id)">编辑</button>
               <button class="btn btn-sm btn-danger" @click="handleDeleteHouse(house.id)">删除</button>
+              <button class="btn btn-sm" :class="house.status === 'NORMAL' ? 'btn-offline' : 'btn-online'"
+                      @click="handleToggleStatus(house)">
+                {{ house.status === 'NORMAL' ? '下架' : '上架' }}
+              </button>
             </template>
           </HouseCard>
         </div>
@@ -73,6 +77,7 @@
           :isLandlord="true"
           @approve="handleApprove"
           @reject="handleReject"
+          @complete="handleComplete"
           @delete="handleDeleteApt"
         />
       </div>
@@ -154,10 +159,27 @@ async function handleHouseSubmit(data) {
   if (data.imageFile) {
     try {
       const uploadRes = await houseStore.uploadHouseImage(data.imageFile)
-      imageUrl = typeof uploadRes === 'string' ? uploadRes : uploadRes.data
+      imageUrl = typeof uploadRes === 'string' ? uploadRes : (uploadRes?.url || uploadRes?.data?.url || '')
     } catch (e) { showAlert('图片上传失败', 'error'); return }
   }
-  const payload = { title: data.title, type: data.type, area: data.area, price: data.price, address: data.address, description: data.description, image: imageUrl }
+  const tags = (data.tags || '').split(',').map(s => s.trim()).filter(Boolean)
+  const payload = {
+    title: data.title,
+    type: data.type,
+    district: data.district,
+    bedrooms: Number(data.bedrooms) || 1,
+    bathrooms: Number(data.bathrooms) || 1,
+    area: data.area,
+    price: data.price,
+    orientation: data.orientation,
+    floor: data.floor,
+    decoration: data.decoration,
+    leaseTerm: data.leaseTerm,
+    tags: JSON.stringify(tags),
+    address: data.address,
+    description: data.description,
+    image: imageUrl
+  }
   if (showEditModal.value) {
     await houseStore.editHouse(editingHouse.value.id, payload)
     showAlert('房源已更新')
@@ -176,8 +198,22 @@ async function handleDeleteHouse(id) {
   await loadHouses()
 }
 
+async function handleToggleStatus(house) {
+  const status = house.status === 'NORMAL' ? 'OFFLINE' : 'NORMAL'
+  await houseStore.editHouse(house.id, {status})
+  showAlert(status === 'NORMAL' ? '房源已上架' : '房源已下架')
+  await loadHouses()
+}
+
 async function handleApprove(id) { await aptStore.approve(id); showAlert('预约已批准'); await loadAppointments(); await loadPendingCount() }
 async function handleReject(id) { await aptStore.reject(id); showAlert('预约已拒绝'); await loadAppointments(); await loadPendingCount() }
+
+async function handleComplete(id) {
+  await aptStore.complete(id);
+  showAlert('预约已完成');
+  await loadAppointments();
+  await loadPendingCount()
+}
 async function handleDeleteApt(id) {
   if (!confirm('确认删除此记录？')) return
   await aptStore.remove(id)
@@ -299,6 +335,16 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
   text-align: center;
   line-height: 18px;
   display: inline-block;
+}
+
+.btn-offline {
+  background: var(--warning);
+  color: #fff;
+}
+
+.btn-online {
+  background: var(--success);
+  color: #fff;
 }
 
 /* Empty state */

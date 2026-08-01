@@ -26,11 +26,43 @@ public class Houses {
     @TableField("type")
     private String type;
 
+    @Schema(description = "区域")
+    @TableField("district")
+    private String district;
+
+    @Schema(description = "卧室数")
+    @TableField("bedrooms")
+    private Integer bedrooms;
+
+    @Schema(description = "卫生间数")
+    @TableField("bathrooms")
+    private Integer bathrooms;
+
     @Schema(description = "房屋面积")
     private BigDecimal area;
 
     @Schema(description = "价格")
     private BigDecimal price;
+
+    @Schema(description = "朝向")
+    @TableField("orientation")
+    private String orientation;
+
+    @Schema(description = "楼层信息")
+    @TableField("floor")
+    private String floor;
+
+    @Schema(description = "装修情况")
+    @TableField("decoration")
+    private String decoration;
+
+    @Schema(description = "租期/付款方式")
+    @TableField("lease_term")
+    private String leaseTerm;
+
+    @Schema(description = "标签(JSON数组)")
+    @TableField("tags")
+    private String tags;
 
     @Schema(description = "详细地址")
     private String address;
@@ -60,4 +92,8 @@ public class Houses {
     @Schema(description = "是否删除")
     @TableField("is_deleted")
     private Integer isDeleted;
+
+    @Schema(description = "浏览量")
+    @TableField("views")
+    private Integer views;
 }
