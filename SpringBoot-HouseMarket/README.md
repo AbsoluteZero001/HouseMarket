@@ -1,7 +1,20 @@
 # SpringBoot-HouseMarket
 
-北京房源市场：Spring Boot 3 + Vue 3 的租房信息与预约审批平台。房东发布房源，租客在线预约看房，房东在审批工作台完成审批，审批结果通过
-WebSocket 实时通知，全流程状态一致且可追溯。
+北京房源市场：Spring Boot 3 + Vue 3 的租房信息与预约审批平台。房东发布房源，租客在线预约看房，房东在审批工作台完成审批，审批结果通过事务 Outbox 异步投递，全流程状态一致且可追溯。
+
+已按真实企业项目演进方式落地：
+
+- 登录/注册已移除验证码，改为接口限流保护。
+- 预约表带乐观锁 `version`，并发审批不会互相覆盖。
+- 预约提交支持幂等键 `requestId`，重复点击不会生成重复订单。
+- 通知使用事务 Outbox + 定时异步投递，状态变更和通知入队在同一事务中。
+- 租客端和房东端新增“通知中心”，可查看通知历史。
+- 房东注册改为“入驻申请 → 管理员审核”，审核通过后才能发布房源。
+- 管理端新增“房东审核”页，审核结果进入通知中心闭环。
+- 房源详情浏览自动累计 `views`，并与缓存联动刷新。
+- 房源列表、详情、首页统计接入 Spring Cache；默认内存缓存，Redis profile 可切到 Redis。
+- 提供 `docker-compose.yml`，一条命令启动 MySQL + Redis 的演示环境。
+- GitHub Actions CI：后端测试 + 前端构建自动执行。
 
 ## 克隆后一键复现
 
@@ -37,7 +50,21 @@ npm run dev
 
 默认端口 `5173`：http://localhost:5173
 
-### 4. 演示账号
+### 4. 可选：启用 Redis 缓存与分布式限流
+
+```bash
+docker compose up -d redis
+```
+
+然后以后端 Redis profile 启动：
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=redis
+```
+
+不启用 Redis 也能运行，默认使用内存缓存和单机限流。
+
+### 5. 演示账号
 
 | 角色  | 用户名         | 密码         |
 |-----|-------------|------------|
@@ -60,6 +87,7 @@ npm run dev
 2. 租客在房源详情页提交预约。
 3. 房东在审批工作台批准、拒绝，完成看房后标记完成。
 4. 每一步写入 `appointment_flow` 轨迹表，双方可查看完整时间线。
-5. 状态流转使用事务 + 条件更新保证原子性和状态一致性。
+5. 状态流转使用乐观锁版本号 + 事务保证原子性和状态一致性。
+6. 通知写入 `notification_outbox`，由 `NotificationOutboxProcessor` 异步投递 WebSocket。
 
 面试技术选型与演进建议见 [docs/INTERVIEW_TECH.md](docs/INTERVIEW_TECH.md)。

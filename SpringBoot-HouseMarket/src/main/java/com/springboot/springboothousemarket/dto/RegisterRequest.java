@@ -10,8 +10,6 @@ public class RegisterRequest {
     private String password;
     private String role; // 前端传：租客 / 房东
     private String status;
-    private String captchaId;
-    private String captchaCode;
     private Long id;
     private Integer isDeleted;
 }

@@ -9,7 +9,6 @@ import com.springboot.springboothousemarket.Service.HousesService;
 import com.springboot.springboothousemarket.dto.AppointmentMessage;
 import com.springboot.springboothousemarket.dto.ResponseResult;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -24,13 +23,9 @@ public class AppointmentController {
 
     private final AppointmentService appointmentService;
     private final HousesService housesService;
-    private final SimpMessagingTemplate messagingTemplate;
-
-    public AppointmentController(AppointmentService appointmentService, HousesService housesService,
-                                 SimpMessagingTemplate messagingTemplate) {
+    public AppointmentController(AppointmentService appointmentService, HousesService housesService) {
         this.appointmentService = appointmentService;
         this.housesService = housesService;
-        this.messagingTemplate = messagingTemplate;
     }
 
     @PostMapping
@@ -60,8 +55,6 @@ public class AppointmentController {
         }
 
         Appointment createdAppointment = appointmentService.createAppointment(appointment);
-
-        notifyLandlord(createdAppointment, house.getLandlordId(), currentUser.getId(), "有新的预约请求");
 
         return ResponseResult.ok("预约提交成功，请等待房东确认", Map.of("id", createdAppointment.getId()));
     }
@@ -103,7 +96,8 @@ public class AppointmentController {
         if (result) {
             appointmentService.recordNotification(id, "approved",
                     currentUser.getId(), "LANDLORD", "已通知租客审批结果");
-            notifyTenant(appointment, "approved", "预约已批准");
+            appointmentService.enqueueNotification(id, "APPOINTMENT_APPROVED",
+                    "预约已批准", appointment.getTenantId());
             return ResponseResult.ok("预约已批准");
         }
         return ResponseResult.fail("预约批准失败");
@@ -133,7 +127,8 @@ public class AppointmentController {
         if (result) {
             appointmentService.recordNotification(id, "rejected",
                     currentUser.getId(), "LANDLORD", "已通知租客审批结果");
-            notifyTenant(appointment, "rejected", "预约已拒绝");
+            appointmentService.enqueueNotification(id, "APPOINTMENT_REJECTED",
+                    "预约已拒绝", appointment.getTenantId());
             return ResponseResult.ok("预约已拒绝");
         }
         return ResponseResult.fail("预约拒绝失败");
@@ -164,12 +159,11 @@ public class AppointmentController {
         if (result) {
             appointmentService.recordNotification(id, "canceled",
                     currentUser.getId(), currentUser.getRole(), "已通知对方取消结果");
-            AppointmentMessage msg = buildMessage(appointment, "canceled", "预约已取消");
-            if ("TENANT".equals(currentUser.getRole())) {
-                messagingTemplate.convertAndSendToUser(appointment.getLandlordId().toString(), "/queue/appointment", msg);
-            } else if ("LANDLORD".equals(currentUser.getRole())) {
-                messagingTemplate.convertAndSendToUser(appointment.getTenantId().toString(), "/queue/appointment", msg);
-            }
+            Long targetUserId = "TENANT".equals(currentUser.getRole())
+                    ? appointment.getLandlordId()
+                    : appointment.getTenantId();
+            appointmentService.enqueueNotification(id, "APPOINTMENT_CANCELED",
+                    "预约已取消", targetUserId);
             return ResponseResult.ok("预约已取消");
         }
         return ResponseResult.fail("预约取消失败");
@@ -195,7 +189,8 @@ public class AppointmentController {
         if (result) {
             appointmentService.recordNotification(id, "completed",
                     currentUser.getId(), "LANDLORD", "已通知租客看房完成");
-            notifyTenant(appointment, "completed", "看房预约已完成");
+            appointmentService.enqueueNotification(id, "APPOINTMENT_COMPLETED",
+                    "看房预约已完成", appointment.getTenantId());
             return ResponseResult.ok("预约已完成");
         }
         return ResponseResult.fail("预约完成失败");
@@ -233,31 +228,4 @@ public class AppointmentController {
         return ResponseResult.ok(null, Map.of("flows", flows));
     }
 
-    private void notifyLandlord(Appointment appointment, Long landlordId, Long tenantId, String message) {
-        sendNotification(appointment.getId(), appointment.getStatus(), tenantId, landlordId, message, landlordId.toString());
-    }
-
-    private void notifyTenant(Appointment appointment, String status, String message) {
-        sendNotification(appointment.getId(), status, appointment.getTenantId(), appointment.getLandlordId(), message, appointment.getTenantId().toString());
-    }
-
-    private AppointmentMessage buildMessage(Appointment appointment, String status, String message) {
-        AppointmentMessage msg = new AppointmentMessage();
-        msg.setAppointmentId(appointment.getId());
-        msg.setStatus(status);
-        msg.setTenantId(appointment.getTenantId());
-        msg.setLandlordId(appointment.getLandlordId());
-        msg.setMessage(message);
-        return msg;
-    }
-
-    private void sendNotification(Long appointmentId, String status, Long tenantId, Long landlordId, String message, String target) {
-        AppointmentMessage msg = new AppointmentMessage();
-        msg.setAppointmentId(appointmentId);
-        msg.setStatus(status);
-        msg.setTenantId(tenantId);
-        msg.setLandlordId(landlordId);
-        msg.setMessage(message);
-        messagingTemplate.convertAndSendToUser(target, "/queue/appointment", msg);
-    }
 }

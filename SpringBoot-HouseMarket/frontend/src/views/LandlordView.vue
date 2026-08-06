@@ -8,6 +8,7 @@
           预约审批
           <span class="badge" v-if="pendingCount">{{ pendingCount }}</span>
         </a>
+        <a href="#" :class="{ active: activeTab === 'notifications' }" @click.prevent="activeTab = 'notifications'">通知中心</a>
       </template>
     </AppHeader>
 
@@ -21,8 +22,12 @@
             <h1>房东审批工作台</h1>
             <p>发布 → 预约 → 审批 → 通知，全程状态一致、可追踪</p>
           </div>
+          <div class="review-banner" v-if="applicationStatus && applicationStatus !== 'approved'">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <span>房东入驻审核{{ applicationStatus === 'pending' ? '中，审核通过后才能发布房源' : '未通过，请联系管理员' }}</span>
+          </div>
           <div class="hero-actions">
-            <button class="btn btn-lg" @click="openAddHouse">
+            <button class="btn btn-lg" :disabled="!canPublish" @click="openAddHouse">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                    stroke-linecap="round" stroke-linejoin="round">
                 <line x1="12" y1="5" x2="12" y2="19"/>
@@ -154,7 +159,7 @@
             <p class="kicker">MY PROPERTIES</p>
             <h3>房源管理</h3>
           </div>
-          <button class="btn" @click="openAddHouse">
+          <button class="btn" :disabled="!canPublish" @click="openAddHouse">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                  stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"/>
@@ -171,7 +176,7 @@
                 d="M3 9a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0"/><path d="M4 9v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9"/></svg>
           </span>
           <p>还没有发布房源</p>
-          <button class="btn" @click="openAddHouse">发布您的第一套房源</button>
+          <button class="btn" :disabled="!canPublish" @click="openAddHouse">发布您的第一套房源</button>
         </div>
         <div v-else class="house-grid">
           <HouseCard v-for="(h, i) in houseStore.houses" :key="h.id" :house="h" v-reveal="{ delay: (i % 3) * 70 }">
@@ -211,6 +216,11 @@
               @flow="openFlow"
           />
         </div>
+      </div>
+
+      <!-- Notification Center -->
+      <div v-if="activeTab === 'notifications'" class="tab-content">
+        <NotificationCenter />
       </div>
     </div>
 
@@ -257,11 +267,13 @@ import {changePassword} from '../api/users'
 import {useWebSocket} from '../composables/useWebSocket'
 import {roleLabel, useAuth} from '../composables/useAuth'
 import {useAlert} from '../composables/useAlert'
+import {getMyLandlordApplication} from '../api/landlordApplications'
 import AppHeader from '../components/AppHeader.vue'
 import HouseCard from '../components/HouseCard.vue'
 import HouseForm from '../components/HouseForm.vue'
 import AppointmentTable from '../components/AppointmentTable.vue'
 import AppointmentFlow from '../components/AppointmentFlow.vue'
+import NotificationCenter from '../components/NotificationCenter.vue'
 import AppModal from '../components/AppModal.vue'
 import AppAlert from '../components/AppAlert.vue'
 import AppConfirm from '../components/AppConfirm.vue'
@@ -288,6 +300,7 @@ const notifications = ref([])
 const showFlow = ref(false)
 const flowAppointment = ref(null)
 const flowRecords = ref([])
+const applicationStatus = ref(null)
 
 function askConfirm(title, message, handler) {
   confirmState.title = title
@@ -316,6 +329,7 @@ let pollTimer = null
 
 const roleLabelComputed = computed(() => roleLabel(user.role))
 const approvedCount = computed(() => aptStore.appointments.filter(a => a.status === 'approved').length)
+const canPublish = computed(() => applicationStatus.value === 'approved')
 const pipelineStages = computed(() => [
   {key: 'PUBLISH', label: '发布', count: houseStore.houses.length, sub: '在线房源'},
   {key: 'BOOK', label: '预约', count: aptStore.appointments.length, sub: '累计预约'},
@@ -329,6 +343,15 @@ async function loadHouses() { await houseStore.fetchLandlordHouses(user.id) }
 async function loadAppointments() { await aptStore.fetchAppointments() }
 async function loadPendingCount() {
   try { await aptStore.fetchAppointments('pending'); pendingCount.value = aptStore.appointments.length } catch (e) { /* ignore */ }
+}
+
+async function loadApplicationStatus() {
+  try {
+    const res = await getMyLandlordApplication()
+    applicationStatus.value = res.data?.data?.application?.status || null
+  } catch (e) {
+    applicationStatus.value = null
+  }
 }
 
 function openAddHouse() { editingHouse.value = {}; showAddModal.value = true }
@@ -467,6 +490,7 @@ watch(notification, (n) => {
 
 onMounted(async () => {
   await loadHouses(); await loadAppointments(); await loadPendingCount()
+  await loadApplicationStatus()
   if (pendingCount.value > 0) pushNotification(`有 ${pendingCount.value} 条预约待审批`, 'warning')
   else pushNotification('审批工作台已就绪', 'success')
   connect()
@@ -541,6 +565,23 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 .hero-copy p:last-child {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.72);
+}
+
+.review-banner {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.32);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
 }
 
 .hero-actions {

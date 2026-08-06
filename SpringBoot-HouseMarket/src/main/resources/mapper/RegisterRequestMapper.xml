@@ -14,7 +14,7 @@
         <result property="isDeleted" column="is_deleted"/>
     </resultMap>
 
-    <insert id="register">
+    <insert id="register" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO sysuser(username, password, role, status)
         VALUES (#{username}, #{password}, #{role}, #{status})
     </insert>

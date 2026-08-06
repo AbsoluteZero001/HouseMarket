@@ -22,6 +22,11 @@ VALUES (1, 'admin', '$2a$10$4KGLBUeN89vGB/7vW10YiuP6YwKjHyKqw.nbAbhEsLHS.9X447tf
        (7, 'tenant3', '$2a$10$4yrbcM6dxO2zuB.2Ri13C.xY9NiF1hG43UrttMNU8zUcTXgYjujkm', '周强', 'TENANT', '13900000003',
         NULL, 'normal', NOW());
 
+INSERT INTO `landlord_application` (`user_id`, `username`, `real_name`, `phone`, `status`, `review_note`, `reviewer_id`, `review_time`)
+VALUES (2, 'landlord1', '张明', '13800000002', 'approved', '审核通过', 1, NOW()),
+       (3, 'landlord2', '李华', '13800000003', 'approved', '审核通过', 1, NOW()),
+       (4, 'landlord3', '王芳', '13800000004', 'approved', '审核通过', 1, NOW());
+
 INSERT INTO `house` (`id`, `title`, `type`, `district`, `bedrooms`, `bathrooms`, `area`, `price`, `orientation`,
                      `floor`, `decoration`, `lease_term`, `tags`, `address`, `description`, `image`, `landlord_id`,
                      `status`, `views`, `create_time`)
@@ -120,3 +125,16 @@ VALUES (1, NULL, 'published', 'PUBLISH', 2, 'LANDLORD', '房源已发布上线',
        (6, 'pending', 'pending', 'NOTIFY', 4, 'LANDLORD', '已通知房东处理预约', '2026-07-26 08:31:00'),
        (6, 'pending', 'rejected', 'REJECT', 4, 'LANDLORD', '时间冲突，房东拒绝本次预约', '2026-07-26 17:00:00'),
        (6, 'rejected', 'rejected', 'NOTIFY', 4, 'LANDLORD', '已通知租客审批结果', '2026-07-26 17:01:00');
+
+-- 通知中心历史（事务 Outbox 已送达记录）
+INSERT INTO `notification_outbox` (`business_key`, `appointment_id`, `event_type`, `payload`, `target_user_id`, `status`, `retry_count`, `create_time`, `send_time`)
+VALUES
+       ('1:APPOINTMENT_APPROVED', 1, 'APPOINTMENT_APPROVED', '{"appointmentId":1,"status":"APPOINTMENT_APPROVED","tenantId":5,"landlordId":2,"targetUserId":5,"message":"预约已批准"}', 5, 'sent', 1, '2026-07-21 09:01:00', '2026-07-21 09:01:01'),
+       ('2:APPOINTMENT_CREATED', 2, 'APPOINTMENT_CREATED', '{"appointmentId":2,"status":"APPOINTMENT_CREATED","tenantId":6,"landlordId":2,"targetUserId":2,"message":"有新预约申请待处理"}', 2, 'sent', 1, '2026-07-22 10:16:00', '2026-07-22 10:16:01'),
+       ('3:APPOINTMENT_APPROVED', 3, 'APPOINTMENT_APPROVED', '{"appointmentId":3,"status":"APPOINTMENT_APPROVED","tenantId":5,"landlordId":3,"targetUserId":5,"message":"预约已批准"}', 5, 'sent', 1, '2026-07-23 15:21:00', '2026-07-23 15:21:01'),
+       ('4:APPOINTMENT_CREATED', 4, 'APPOINTMENT_CREATED', '{"appointmentId":4,"status":"APPOINTMENT_CREATED","tenantId":7,"landlordId":4,"targetUserId":4,"message":"有新预约申请待处理"}', 4, 'sent', 1, '2026-07-25 16:46:00', '2026-07-25 16:46:01'),
+       ('5:APPOINTMENT_COMPLETED', 5, 'APPOINTMENT_COMPLETED', '{"appointmentId":5,"status":"APPOINTMENT_COMPLETED","tenantId":6,"landlordId":3,"targetUserId":6,"message":"看房预约已完成"}', 6, 'sent', 1, '2026-07-28 10:00:30', '2026-07-28 10:00:31'),
+       ('6:APPOINTMENT_REJECTED', 6, 'APPOINTMENT_REJECTED', '{"appointmentId":6,"status":"APPOINTMENT_REJECTED","tenantId":7,"landlordId":4,"targetUserId":7,"message":"预约已拒绝"}', 7, 'sent', 1, '2026-07-26 17:01:00', '2026-07-26 17:01:01');
+
+INSERT INTO `notification_outbox` (`business_key`, `business_type`, `appointment_id`, `event_type`, `payload`, `target_user_id`, `status`, `retry_count`, `create_time`, `send_time`)
+VALUES ('LANDLORD_APPLICATION:1:LANDLORD_APPROVED', 'LANDLORD', NULL, 'LANDLORD_APPROVED', '{"status":"LANDLORD_APPROVED","targetUserId":2,"message":"房东入驻审核通过，现在可以发布房源了"}', 2, 'sent', 1, '2026-06-15 10:00:00', '2026-06-15 10:00:01');

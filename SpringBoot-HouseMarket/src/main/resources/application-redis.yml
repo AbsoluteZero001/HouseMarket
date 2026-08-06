@@ -1,0 +1,13 @@
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 3s
+  cache:
+    type: redis
+
+app:
+  outbox:
+    poll-interval: 1000
+    reset-interval: 60000

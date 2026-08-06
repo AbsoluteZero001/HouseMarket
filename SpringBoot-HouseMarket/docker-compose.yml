@@ -1,0 +1,27 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: housemarket-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: housemarket
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - housemarket-mysql-data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+
+  redis:
+    image: redis:7-alpine
+    container_name: housemarket-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - housemarket-redis-data:/data
+
+volumes:
+  housemarket-mysql-data:
+  housemarket-redis-data:

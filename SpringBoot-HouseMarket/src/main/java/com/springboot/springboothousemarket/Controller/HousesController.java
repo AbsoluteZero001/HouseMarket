@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.springboot.springboothousemarket.Entity.Houses;
 import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Service.HousesService;
+import com.springboot.springboothousemarket.Service.LandlordApplicationService;
 import com.springboot.springboothousemarket.dto.ResponseResult;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,12 +24,14 @@ import java.util.Map;
 public class HousesController {
 
     private final HousesService houseService;
+    private final LandlordApplicationService landlordApplicationService;
 
     @Value("${upload.dir:./uploads}")
     private String uploadDir;
 
-    public HousesController(HousesService houseService) {
+    public HousesController(HousesService houseService, LandlordApplicationService landlordApplicationService) {
         this.houseService = houseService;
+        this.landlordApplicationService = landlordApplicationService;
     }
 
     @GetMapping("/landlord/{landlordId}")
@@ -73,12 +76,14 @@ public class HousesController {
     @PreAuthorize("hasAnyAuthority('LANDLORD','ADMIN')")
     public ResponseResult createHouse(@RequestBody Houses house,
                                       @AuthenticationPrincipal Users currentUser) {
+        requireLandlordApproved(currentUser);
         house.setId(null);
         return ResponseResult.ok(null, Map.of("house", houseService.createHouse(house, currentUser.getId())));
     }
 
     @GetMapping("/{id}")
     public ResponseResult getHouseById(@PathVariable Long id) {
+        houseService.incrementViews(id);
         Houses house = houseService.getHouseById(id);
         if (house == null) {
             throw new RuntimeException("房源不存在");
@@ -90,12 +95,20 @@ public class HousesController {
     @PreAuthorize("hasAnyAuthority('LANDLORD','ADMIN')")
     public ResponseResult updateHouse(@PathVariable Long id, @RequestBody Houses house,
                                       @AuthenticationPrincipal Users currentUser) {
+        requireLandlordApproved(currentUser);
         Houses dbHouse = houseService.getHouseById(id);
         if (dbHouse == null) {
             throw new RuntimeException("房源不存在");
         }
 
         return ResponseResult.ok(null, Map.of("house", houseService.updateHouse(id, house, currentUser)));
+    }
+
+    private void requireLandlordApproved(Users currentUser) {
+        if ("LANDLORD".equals(currentUser.getRole())
+                && !landlordApplicationService.hasApproved(currentUser.getId())) {
+            throw new RuntimeException("房东入驻审核通过后才能发布房源");
+        }
     }
 
     @DeleteMapping("/{id}")

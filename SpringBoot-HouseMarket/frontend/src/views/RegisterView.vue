@@ -73,26 +73,6 @@
         </div>
       </div>
 
-      <div class="form-group" :class="{ 'has-error': fieldErrors.captcha }">
-        <label>验证码</label>
-        <div class="captcha-row">
-          <div class="input-wrap">
-            <span class="input-icon">🖊</span>
-            <input
-                v-model="form.captcha"
-                maxlength="4"
-                placeholder="验证码"
-                @input="clearField('captcha')"
-            />
-          </div>
-          <div class="captcha-img" @click="fetchCaptcha" title="点击刷新验证码">
-            <img v-if="captchaImage" :src="'data:image/png;base64,' + captchaImage" alt="验证码"/>
-            <span v-else>加载中</span>
-          </div>
-        </div>
-        <p v-if="fieldErrors.captcha" class="field-error">{{ fieldErrors.captcha }}</p>
-      </div>
-
       <button type="submit" class="btn btn-primary btn-block btn-lg" :disabled="loading">
         <span class="btn-spinner" v-if="loading"></span>
         <span>{{ loading ? '注册中...' : '注 册' }}</span>
@@ -109,36 +89,23 @@
 </template>
 
 <script setup>
-import {onMounted, reactive, ref} from 'vue'
+import {reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
-import {getCaptcha, register} from '../api/auth'
+import {register} from '../api/auth'
 import AuthLayout from '../components/AuthLayout.vue'
 
 const router = useRouter()
 const loading = ref(false)
-const captchaId = ref('')
-const captchaImage = ref('')
 const formError = ref('')
 const successMsg = ref('')
-const fieldErrors = reactive({username: '', password: '', confirmPassword: '', captcha: ''})
+const fieldErrors = reactive({username: '', password: '', confirmPassword: ''})
 
-const form = reactive({username: '', password: '', confirmPassword: '', role: 'TENANT', captcha: ''})
+const form = reactive({username: '', password: '', confirmPassword: '', role: 'TENANT'})
 
 const roleOptions = [
   {value: 'TENANT', label: '我是租客', icon: '👥'},
   {value: 'LANDLORD', label: '我是房东', icon: '🏠'}
 ]
-
-async function fetchCaptcha() {
-  try {
-    const res = await getCaptcha()
-    captchaId.value = res.data?.data?.captchaId || ''
-    captchaImage.value = res.data?.data?.imageBase64 || ''
-  } catch {
-    captchaId.value = ''
-    captchaImage.value = ''
-  }
-}
 
 function clearField(field) {
   fieldErrors[field] = ''
@@ -150,9 +117,7 @@ function validate() {
   fieldErrors.username = form.username.trim().length >= 3 ? '' : '用户名至少3位字符'
   fieldErrors.password = form.password.length >= 6 ? '' : '密码至少6位字符'
   fieldErrors.confirmPassword = form.confirmPassword === form.password ? '' : '两次输入的密码不一致'
-  fieldErrors.captcha = form.captcha ? '' : '请输入验证码'
-  if (!captchaId.value) fieldErrors.captcha = fieldErrors.captcha || '验证码加载失败，请点击刷新'
-  return !fieldErrors.username && !fieldErrors.password && !fieldErrors.confirmPassword && !fieldErrors.captcha
+  return !fieldErrors.username && !fieldErrors.password && !fieldErrors.confirmPassword
 }
 
 async function handleRegister() {
@@ -166,12 +131,12 @@ async function handleRegister() {
     const res = await register({
       username: form.username.trim(),
       password: form.password,
-      role: form.role,
-      captchaId: captchaId.value,
-      captchaCode: form.captcha
+      role: form.role
     })
     if (res.data?.success) {
-      successMsg.value = '注册成功，正在跳转到登录页...'
+      successMsg.value = form.role === 'LANDLORD'
+          ? '房东入驻申请已提交，等待管理员审核，正在跳转到登录页...'
+          : '注册成功，正在跳转到登录页...'
       setTimeout(() => router.push('/login'), 800)
     } else {
       formError.value = res.data?.message || '注册失败，请稍后重试'
@@ -180,12 +145,8 @@ async function handleRegister() {
     formError.value = e.response?.data?.message || e.message || '网络异常，请稍后重试'
   } finally {
     loading.value = false
-    await fetchCaptcha()
-    form.captcha = ''
   }
 }
-
-onMounted(fetchCaptcha)
 </script>
 
 <style scoped>
@@ -246,39 +207,6 @@ onMounted(fetchCaptcha)
   margin-top: 6px;
   font-size: 12px;
   color: var(--danger);
-}
-
-.captcha-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.captcha-img {
-  width: 120px;
-  height: 42px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  cursor: pointer;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fafafa;
-  transition: all var(--transition);
-}
-
-.captcha-img:hover {
-  border-color: var(--primary);
-  box-shadow: 0 6px 16px rgba(22, 119, 255, 0.12);
-}
-
-.captcha-img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
 }
 
 .role-options {

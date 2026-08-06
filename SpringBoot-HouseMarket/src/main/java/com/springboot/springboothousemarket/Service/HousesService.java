@@ -15,6 +15,8 @@ public interface HousesService extends IService<Houses> {
     // 根据ID获取房源详情
     Houses getHouseById(Long id);
 
+    void incrementViews(Long id);
+
     // 更新房源（带当前用户ID权限校验）
     Houses updateHouse(Long id, Houses house, Users currentUser);
 

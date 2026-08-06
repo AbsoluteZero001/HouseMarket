@@ -12,5 +12,6 @@ public class AppointmentMessage {
     private String status; // APPROVED / REJECTED / PENDING
     private Long tenantId;
     private Long landlordId;
+    private Long targetUserId;
     private String message; // 可选的消息内容
 }

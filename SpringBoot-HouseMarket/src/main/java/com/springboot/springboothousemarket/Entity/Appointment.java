@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.Version;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -41,6 +42,15 @@ public class Appointment {
     @Schema(description = "备注")
     @TableField("notes")
     private String notes;
+
+    @Schema(description = "幂等键，防止重复预约")
+    @TableField("request_id")
+    private String requestId;
+
+    @Schema(description = "乐观锁版本号")
+    @Version
+    @TableField("version")
+    private Integer version;
 
     @Schema(description = "预约状态: pending(待处理)、approved(已批准)、rejected(已拒绝)、completed(已完成)、canceled(已取消)")
     @TableField("status")

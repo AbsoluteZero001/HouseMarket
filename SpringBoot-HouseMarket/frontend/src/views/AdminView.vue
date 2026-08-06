@@ -3,6 +3,7 @@
     <AppHeader :username="user?.username" :role="user?.role" @logout="handleLogout">
       <template #nav>
         <a href="#" :class="{ active: activeTab === 'dashboard' }" @click.prevent="activeTab = 'dashboard'">工作台</a>
+        <a href="#" :class="{ active: activeTab === 'applications' }" @click.prevent="activeTab = 'applications'">房东审核</a>
         <a href="#" :class="{ active: activeTab === 'appointments' }" @click.prevent="activeTab = 'appointments'">预约管理</a>
         <a href="#" :class="{ active: activeTab === 'houses' }" @click.prevent="activeTab = 'houses'">房源管理</a>
         <a href="#" :class="{ active: activeTab === 'users' }" @click.prevent="activeTab = 'users'">用户管理</a>
@@ -34,6 +35,46 @@
               <p>预约总数</p>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Landlord Application Review -->
+      <div v-if="activeTab === 'applications'" class="tab-content">
+        <div class="section-header" v-reveal>
+          <div>
+            <p class="kicker">LANDLORD REVIEW</p>
+            <h3>房东入驻审核</h3>
+            <p class="section-sub">审核通过后房东才能发布房源，结果会实时进入通知中心</p>
+          </div>
+          <span class="count-tag">共 {{ applications.length }} 条</span>
+        </div>
+        <div class="table-wrap" v-reveal="{ delay: 100 }">
+          <table class="table">
+            <thead>
+              <tr><th>ID</th><th>用户名</th><th>实名</th><th>电话</th><th>状态</th><th>申请时间</th><th>审核意见</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr v-if="applications.length === 0">
+                <td colspan="8" class="empty-cell">暂无房东入驻申请</td>
+              </tr>
+              <tr v-for="app in applications" :key="app.id">
+                <td><span class="id-tag">#{{ app.id }}</span></td>
+                <td>{{ app.username }}</td>
+                <td>{{ app.realName || '-' }}</td>
+                <td>{{ app.phone || '-' }}</td>
+                <td><StatusBadge :status="app.status" /></td>
+                <td>{{ app.createTime }}</td>
+                <td>{{ app.reviewNote || '-' }}</td>
+                <td>
+                  <div class="action-btns" v-if="app.status === 'pending'">
+                    <button class="btn btn-sm btn-success" @click="openReview(app.id, 'approve')">通过</button>
+                    <button class="btn btn-sm btn-danger" @click="openReview(app.id, 'reject')">拒绝</button>
+                  </div>
+                  <span v-else class="reviewed-tag">已处理</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -159,6 +200,16 @@
         @confirm="confirmAction"
         @cancel="confirmState.visible = false"
     />
+    <AppModal :visible="showReviewModal" title="填写审核意见" @close="showReviewModal = false">
+      <div class="form-group">
+        <label>审核意见</label>
+        <textarea v-model="reviewNote" rows="4" class="review-textarea" placeholder="请填写审核意见"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" @click="showReviewModal = false">取消</button>
+        <button class="btn" @click="submitReview">确认{{ reviewAction === 'approve' ? '通过' : '拒绝' }}</button>
+      </div>
+    </AppModal>
   </div>
 </template>
 
@@ -168,12 +219,14 @@ import {useRouter} from 'vue-router'
 import {deleteUser, getUsers} from '../api/users'
 import {deleteHouse, getHouses} from '../api/houses'
 import {deleteAppointment, getAppointments} from '../api/appointments'
+import {approveLandlordApplication, getLandlordApplications, rejectLandlordApplication} from '../api/landlordApplications'
 import {useAuth} from '../composables/useAuth'
 import {useAlert} from '../composables/useAlert'
 import AppHeader from '../components/AppHeader.vue'
 import StatusBadge from '../components/StatusBadge.vue'
 import AppAlert from '../components/AppAlert.vue'
 import AppConfirm from '../components/AppConfirm.vue'
+import AppModal from '../components/AppModal.vue'
 
 const router = useRouter()
 const {loadUser, handleLogout: doLogout} = useAuth()
@@ -184,11 +237,16 @@ const activeTab = ref('dashboard')
 const users = ref([])
 const allHouses = ref([])
 const allAppointments = ref([])
+const applications = ref([])
 const houseSearch = ref('')
 const userSearch = ref('')
 const userRoleFilter = ref('')
 const {alertMsg, alertType, showAlert} = useAlert()
 const confirmState = reactive({visible: false, title: '', message: '', handler: null})
+const showReviewModal = ref(false)
+const reviewId = ref(null)
+const reviewAction = ref('approve')
+const reviewNote = ref('')
 
 function askConfirm(title, message, handler) {
   confirmState.title = title
@@ -229,6 +287,36 @@ async function loadAllAppointments() {
   try { const res = await getAppointments(); if (res.data.success) allAppointments.value = res.data.data.appointments || [] } catch (e) { /* ignore */ }
 }
 
+async function loadApplications() {
+  try {
+    const res = await getLandlordApplications()
+    if (res.data.success) applications.value = res.data.data.applications || []
+  } catch (e) { /* ignore */ }
+}
+
+function openReview(id, action) {
+  reviewId.value = id
+  reviewAction.value = action
+  reviewNote.value = ''
+  showReviewModal.value = true
+}
+
+async function submitReview() {
+  try {
+    if (reviewAction.value === 'approve') {
+      await approveLandlordApplication(reviewId.value, reviewNote.value || '审核通过')
+      showAlert('房东入驻申请已通过')
+    } else {
+      await rejectLandlordApplication(reviewId.value, reviewNote.value || '资料不完整')
+      showAlert('房东入驻申请已拒绝')
+    }
+    showReviewModal.value = false
+    await loadApplications()
+  } catch (e) {
+    showAlert(e.response?.data?.message || '审核操作失败', 'error')
+  }
+}
+
 function handleDeleteUser(id) {
   askConfirm('删除用户', '删除后该用户将无法登录，确认继续吗？', async () => {
     await deleteUser(id)
@@ -258,13 +346,14 @@ function handleLogout() {
 }
 
 watch(activeTab, (tab) => {
+  if (tab === 'applications') loadApplications()
   if (tab === 'users') loadAllUsers()
   if (tab === 'houses') loadAllHouses()
   if (tab === 'appointments') loadAllAppointments()
 })
 
 onMounted(async () => {
-  await Promise.all([loadAllUsers(), loadAllHouses(), loadAllAppointments()])
+  await Promise.all([loadAllUsers(), loadAllHouses(), loadAllAppointments(), loadApplications()])
 })
 </script>
 
@@ -338,6 +427,39 @@ onMounted(async () => {
   background: #f0f0f0;
   padding: 3px 10px;
   border-radius: 12px;
+}
+
+.section-sub {
+  color: #6b7280;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.action-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.reviewed-tag {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.review-textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
 }
 
 /* Search bar */

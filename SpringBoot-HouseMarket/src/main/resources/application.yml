@@ -17,6 +17,13 @@ spring:
   jackson:
     time-zone: Asia/Shanghai
     default-property-inclusion: non_null
+  cache:
+    type: simple
+
+app:
+  outbox:
+    poll-interval: 2000
+    reset-interval: 60000
 upload:
   dir: ./uploads
 
@@ -35,4 +42,4 @@ server:
   port: 8082
 
 jwt:
-  secret: DnYFooRaZqdDXLi6GZQ4210ksbgDV3PTZQGa35OZNXJQIt6hGankli3gt6/cT6fP
+  secret: ${JWT_SECRET:DnYFooRaZqdDXLi6GZQ4210ksbgDV3PTZQGa35OZNXJQIt6hGankli3gt6/cT6fP}

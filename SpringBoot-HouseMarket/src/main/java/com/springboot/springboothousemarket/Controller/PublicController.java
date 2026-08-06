@@ -8,6 +8,7 @@ import com.springboot.springboothousemarket.Service.HousesService;
 import com.springboot.springboothousemarket.Service.UsersService;
 import com.springboot.springboothousemarket.dto.ResponseResult;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -54,6 +55,7 @@ public class PublicController {
     }
 
     @GetMapping("/stats")
+    @Cacheable(cacheNames = "home:stats")
     public ResponseResult getStats() {
         long housesCount = housesService.count(
                 new QueryWrapper<Houses>().eq("is_deleted", 0).eq("status", "NORMAL"));

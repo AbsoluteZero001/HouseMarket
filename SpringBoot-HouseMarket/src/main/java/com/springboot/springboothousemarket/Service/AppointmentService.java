@@ -64,6 +64,11 @@ public interface AppointmentService extends IService<Appointment> {
     void recordNotification(Long appointmentId, String status, Long operatorId, String operatorRole, String message);
 
     /**
+     * 写入通知事务 Outbox，由异步处理器投递 WebSocket 消息。
+     */
+    void enqueueNotification(Long appointmentId, String eventType, String message, Long targetUserId);
+
+    /**
      * 获取预约完整流程时间线。
      */
     List<AppointmentFlow> getFlows(Long appointmentId);

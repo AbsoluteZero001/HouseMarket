@@ -1,10 +1,15 @@
 package com.springboot.springboothousemarket.Service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.springboot.springboothousemarket.Entity.Appointment;
 import com.springboot.springboothousemarket.Entity.AppointmentFlow;
 import com.springboot.springboothousemarket.Entity.Houses;
+import com.springboot.springboothousemarket.dto.AppointmentMessage;
 import com.springboot.springboothousemarket.Mapper.AppointmentMapper;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,16 +21,32 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
 
     private final AppointmentFlowService flowService;
     private final HousesService housesService;
+    private final NotificationOutboxService outboxService;
+    private final ObjectMapper objectMapper;
 
-    public AppointmentServiceImpl(AppointmentFlowService flowService, HousesService housesService) {
+    public AppointmentServiceImpl(AppointmentFlowService flowService, HousesService housesService,
+                                  NotificationOutboxService outboxService, ObjectMapper objectMapper) {
         this.flowService = flowService;
         this.housesService = housesService;
+        this.outboxService = outboxService;
+        this.objectMapper = objectMapper;
     }
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "home:stats", allEntries = true)
     public Appointment createAppointment(Appointment appointment) {
+        if (appointment.getRequestId() != null && !appointment.getRequestId().isBlank()) {
+            Appointment existing = this.lambdaQuery()
+                    .eq(Appointment::getRequestId, appointment.getRequestId())
+                    .one();
+            if (existing != null) {
+                return existing;
+            }
+        }
+
         appointment.setStatus("pending"); // 默认状态为待处理
+        appointment.setVersion(0);
         appointment.setCreateTime(LocalDateTime.now());
         appointment.setUpdateTime(LocalDateTime.now());
         long conflictCount = this.lambdaQuery()
@@ -36,7 +57,19 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         if (conflictCount > 0) {
             throw new RuntimeException("该房源在预约时间段已有预约");
         }
-        this.save(appointment);
+        try {
+            this.save(appointment);
+        } catch (DuplicateKeyException duplicate) {
+            if (appointment.getRequestId() != null) {
+                Appointment existing = this.lambdaQuery()
+                        .eq(Appointment::getRequestId, appointment.getRequestId())
+                        .one();
+                if (existing != null) {
+                    return existing;
+                }
+            }
+            throw duplicate;
+        }
 
         Houses house = housesService.getHouseById(appointment.getHouseId());
         if (house != null && house.getCreateTime() != null) {
@@ -55,6 +88,8 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
                 appointment.getTenantId(), "TENANT", "租客提交看房预约");
         recordNotification(appointment.getId(), "pending",
                 appointment.getLandlordId(), "LANDLORD", "已通知房东处理预约");
+        enqueueNotification(appointment.getId(), "APPOINTMENT_CREATED",
+                "有新预约申请待处理", appointment.getLandlordId());
         return appointment;
     }
 
@@ -83,14 +118,20 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "home:stats", allEntries = true)
     public boolean transitionStatus(Long id, String expectedStatus, String toStatus, String action,
                                     Long operatorId, String operatorRole, String remark) {
-        boolean updated = this.lambdaUpdate()
-                .eq(Appointment::getId, id)
-                .eq(Appointment::getStatus, expectedStatus)
-                .set(Appointment::getStatus, toStatus)
-                .set(Appointment::getUpdateTime, LocalDateTime.now())
-                .update();
+        Appointment current = this.getById(id);
+        if (current == null || !expectedStatus.equals(current.getStatus())) {
+            return false;
+        }
+
+        Appointment update = new Appointment();
+        update.setId(id);
+        update.setStatus(toStatus);
+        update.setUpdateTime(LocalDateTime.now());
+        update.setVersion(current.getVersion() == null ? 0 : current.getVersion());
+        boolean updated = this.updateById(update);
         if (!updated) {
             return false;
         }
@@ -106,6 +147,28 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     @Override
     public List<AppointmentFlow> getFlows(Long appointmentId) {
         return flowService.getFlowsByAppointmentId(appointmentId);
+    }
+
+    @Override
+    public void enqueueNotification(Long appointmentId, String eventType, String message, Long targetUserId) {
+        Appointment appointment = this.getById(appointmentId);
+        if (appointment == null) {
+            return;
+        }
+        AppointmentMessage msg = new AppointmentMessage();
+        msg.setAppointmentId(appointmentId);
+        msg.setStatus(eventType);
+        msg.setTenantId(appointment.getTenantId());
+        msg.setLandlordId(appointment.getLandlordId());
+        msg.setTargetUserId(targetUserId);
+        msg.setMessage(message);
+        try {
+            String payload = objectMapper.writeValueAsString(msg);
+            outboxService.enqueue(appointmentId + ":" + eventType, "APPOINTMENT",
+                    appointmentId, eventType, payload, targetUserId);
+        } catch (JsonProcessingException ignored) {
+            // 通知为尽力投递，不能因序列化失败影响主流程
+        }
     }
 
     private void recordFlow(Long appointmentId, String fromStatus, String toStatus, String action,
@@ -128,7 +191,9 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "home:stats", allEntries = true)
     public boolean deleteAppointment(Long id) {
+        outboxService.deleteByAppointmentId(id);
         flowService.deleteByAppointmentId(id);
         return this.removeById(id);
     }

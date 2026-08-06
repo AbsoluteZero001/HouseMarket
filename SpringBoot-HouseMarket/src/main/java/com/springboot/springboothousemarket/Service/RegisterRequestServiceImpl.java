@@ -4,6 +4,7 @@ import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Mapper.RegisterRequestMapper;
 import com.springboot.springboothousemarket.dto.RegisterRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
@@ -16,14 +17,19 @@ public class RegisterRequestServiceImpl implements RegisterRequestService {
     private final RegisterRequestMapper mapper;
     private final UsersService usersService;
     private final PasswordEncoder passwordEncoder;
+    private final LandlordApplicationService landlordApplicationService;
 
-    public RegisterRequestServiceImpl(RegisterRequestMapper mapper, UsersService usersService, PasswordEncoder passwordEncoder) {
+    public RegisterRequestServiceImpl(RegisterRequestMapper mapper, UsersService usersService,
+                                      PasswordEncoder passwordEncoder,
+                                      LandlordApplicationService landlordApplicationService) {
         this.mapper = mapper;
         this.usersService = usersService;
         this.passwordEncoder = passwordEncoder;
+        this.landlordApplicationService = landlordApplicationService;
     }
 
     @Override
+    @CacheEvict(cacheNames = "home:stats", allEntries = true)
     public void register(RegisterRequest user) {
         String role = user.getRole() == null ? "" : user.getRole().toUpperCase();
         if (!REGISTER_ROLES.contains(role)) {
@@ -37,6 +43,17 @@ public class RegisterRequestServiceImpl implements RegisterRequestService {
         user.setStatus("normal");
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         mapper.register(user);
+
+        if ("LANDLORD".equals(role)) {
+            Long userId = user.getId();
+            if (userId == null) {
+                Users created = usersService.getUserByUsername(user.getUsername());
+                userId = created != null ? created.getId() : null;
+            }
+            if (userId != null) {
+                landlordApplicationService.submit(userId, user.getUsername(), null, null);
+            }
+        }
     }
 
     @Override

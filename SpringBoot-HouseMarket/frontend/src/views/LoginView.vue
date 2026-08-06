@@ -42,26 +42,6 @@
         <RoleSlider v-model="form.role"/>
       </div>
 
-      <div class="form-group" :class="{ 'has-error': fieldErrors.captcha }">
-        <label>验证码</label>
-        <div class="captcha-row">
-          <div class="input-wrap">
-            <span class="input-icon">🖊</span>
-            <input
-                v-model="form.captcha"
-                maxlength="4"
-                placeholder="验证码"
-                @input="clearField('captcha')"
-            />
-          </div>
-          <div class="captcha-img" @click="fetchCaptcha" title="点击刷新验证码">
-            <img v-if="captchaImage" :src="'data:image/png;base64,' + captchaImage" alt="验证码"/>
-            <span v-else>加载中</span>
-          </div>
-        </div>
-        <p v-if="fieldErrors.captcha" class="field-error">{{ fieldErrors.captcha }}</p>
-      </div>
-
       <button type="submit" class="btn btn-primary btn-block btn-lg" :disabled="loading">
         <span class="btn-spinner" v-if="loading"></span>
         <span>{{ loading ? '正在登录...' : '登 录' }}</span>
@@ -75,33 +55,19 @@
 </template>
 
 <script setup>
-import {onMounted, reactive, ref} from 'vue'
+import {reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {useAuthStore} from '../stores/auth'
-import {getCaptcha} from '../api/auth'
 import RoleSlider from '../components/RoleSlider.vue'
 import AuthLayout from '../components/AuthLayout.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const loading = ref(false)
-const captchaId = ref('')
-const captchaImage = ref('')
 const formError = ref('')
-const fieldErrors = reactive({username: '', password: '', captcha: ''})
+const fieldErrors = reactive({username: '', password: ''})
 
-const form = reactive({ username: '', password: '', role: 'TENANT', captcha: '' })
-
-async function fetchCaptcha() {
-  try {
-    const res = await getCaptcha()
-    captchaId.value = res.data?.data?.captchaId || ''
-    captchaImage.value = res.data?.data?.imageBase64 || ''
-  } catch {
-    captchaId.value = ''
-    captchaImage.value = ''
-  }
-}
+const form = reactive({ username: '', password: '', role: 'TENANT' })
 
 function clearField(field) {
   fieldErrors[field] = ''
@@ -112,9 +78,7 @@ function validate() {
   formError.value = ''
   fieldErrors.username = form.username.trim() ? '' : '请输入用户名'
   fieldErrors.password = form.password ? '' : '请输入密码'
-  fieldErrors.captcha = form.captcha ? '' : '请输入验证码'
-  if (!captchaId.value) fieldErrors.captcha = fieldErrors.captcha || '验证码加载失败，请点击刷新'
-  return !fieldErrors.username && !fieldErrors.password && !fieldErrors.captcha
+  return !fieldErrors.username && !fieldErrors.password
 }
 
 async function handleLogin() {
@@ -127,9 +91,7 @@ async function handleLogin() {
     const res = await authStore.login({
       username: form.username.trim(),
       password: form.password,
-      role: form.role,
-      captchaId: captchaId.value,
-      captchaCode: form.captcha
+      role: form.role
     })
     if (res.code !== 200) {
       formError.value = res.msg || '登录失败，请检查账号信息'
@@ -144,12 +106,8 @@ async function handleLogin() {
     formError.value = e.response?.data?.msg || e.message || '网络异常，请稍后重试'
   } finally {
     loading.value = false
-    await fetchCaptcha()
-    form.captcha = ''
   }
 }
-
-onMounted(fetchCaptcha)
 </script>
 
 <style scoped>
@@ -210,39 +168,6 @@ onMounted(fetchCaptcha)
   margin-top: 6px;
   font-size: 12px;
   color: var(--danger);
-}
-
-.captcha-row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.captcha-img {
-  width: 120px;
-  height: 42px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  overflow: hidden;
-  cursor: pointer;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #fafafa;
-  transition: all var(--transition);
-}
-
-.captcha-img:hover {
-  border-color: var(--primary);
-  box-shadow: 0 6px 16px rgba(22, 119, 255, 0.12);
-}
-
-.captcha-img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
 }
 
 .btn-primary {

@@ -6,6 +6,9 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.springboot.springboothousemarket.Entity.Houses;
 import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Mapper.HousesMapper;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -16,6 +19,7 @@ import java.util.List;
 public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> implements HousesService {
 
     @Override
+    @CacheEvict(cacheNames = {"houses:list", "home:stats"}, allEntries = true)
     public Houses createHouse(Houses house, Long landlordId) {
         house.setLandlordId(landlordId); // 绑定房东ID
         // 设置默认状态，根据数据库约束修改为正常状态
@@ -76,12 +80,27 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
     }
 
     @Override
+    @Cacheable(cacheNames = "houses:detail", key = "#id")
     public Houses getHouseById(Long id) {
         Houses house = getById(id);
         return house != null && Integer.valueOf(1).equals(house.getIsDeleted()) ? null : house;
     }
 
     @Override
+    @CacheEvict(cacheNames = "houses:detail", key = "#id")
+    public void incrementViews(Long id) {
+        this.lambdaUpdate()
+                .eq(Houses::getId, id)
+                .setSql("views = views + 1")
+                .update();
+    }
+
+    @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "houses:list", allEntries = true),
+            @CacheEvict(cacheNames = "home:stats", allEntries = true),
+            @CacheEvict(cacheNames = "houses:detail", key = "#id")
+    })
     public Houses updateHouse(Long id, Houses house, Users currentUser) {
         Houses dbHouse = getById(id);
         if (dbHouse == null) {
@@ -99,6 +118,11 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(cacheNames = "houses:list", allEntries = true),
+            @CacheEvict(cacheNames = "home:stats", allEntries = true),
+            @CacheEvict(cacheNames = "houses:detail", key = "#id")
+    })
     public boolean deleteHouse(Long id, Users currentUser) {
         Houses dbHouse = getById(id);
         if (dbHouse == null) {
@@ -121,6 +145,7 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
     }
 
     @Override
+    @Cacheable(cacheNames = "houses:list", key = "{#keyword,#type,#district,#minArea,#maxArea,#minPrice,#maxPrice,#address,#status,#page,#pageSize}")
     public Page<Houses> getHouses(String keyword, String type, String district, Double minArea, Double maxArea,
                                   Double minPrice, Double maxPrice, String address, String status, int page, int pageSize) {
 

@@ -60,7 +60,6 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/v1/auth/**",
                                 "/api/public/**",
-                                "/captcha",
                                 "/uploads/**",
                                 "/webjars/**",
                                 "/swagger-ui.html",

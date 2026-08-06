@@ -94,7 +94,9 @@
       <div class="form-group"><label>见面地点</label><input v-model="bookForm.location" required placeholder="请输入见面地点" /></div>
       <div class="form-group"><label>留言</label><textarea v-model="bookForm.notes" rows="3" placeholder="给房东留言（可选）"></textarea></div>
       <p v-if="bookingError" class="booking-error">{{ bookingError }}</p>
-      <button class="btn btn-block" @click="submitBooking">提交预约</button>
+      <button class="btn btn-block" :disabled="bookingLoading" @click="submitBooking">
+        {{ bookingLoading ? '正在提交...' : '提交预约' }}
+      </button>
     </AppModal>
 
     <AppAlert :visible="!!alertMsg" :message="alertMsg" :type="alertType" @close="alertMsg = ''" />
@@ -135,9 +137,10 @@ const house = ref(null)
 const isFav = ref(false)
 const showBookModal = ref(false)
 const bookingError = ref('')
+const bookingLoading = ref(false)
 const {alertMsg, alertType, showAlert} = useAlert()
 
-const bookForm = reactive({ date: '', time: '', location: '', notes: '' })
+const bookForm = reactive({ date: '', time: '', location: '', notes: '', requestId: '' })
 
 const imageList = computed(() => {
   if (!house.value?.image) return []
@@ -173,6 +176,7 @@ function bookHouse() {
     return
   }
   bookingError.value = ''
+  bookForm.requestId = crypto.randomUUID()
   showBookModal.value = true
 }
 
@@ -182,6 +186,7 @@ async function submitBooking() {
     return
   }
   bookingError.value = ''
+  bookingLoading.value = true
   try {
     await aptStore.addAppointment({
       houseId: house.value.id,
@@ -190,13 +195,16 @@ async function submitBooking() {
       time: `${bookForm.date} ${bookForm.time}`,
       location: bookForm.location,
       notes: bookForm.notes,
-      status: 'pending'
+      status: 'pending',
+      requestId: bookForm.requestId
     })
     showAlert('预约申请已提交')
     showBookModal.value = false
-    Object.assign(bookForm, { date: '', time: '', location: '', notes: '' })
+    Object.assign(bookForm, { date: '', time: '', location: '', notes: '', requestId: '' })
   } catch (e) {
     bookingError.value = e.response?.data?.message || '预约失败，请稍后重试'
+  } finally {
+    bookingLoading.value = false
   }
 }
 

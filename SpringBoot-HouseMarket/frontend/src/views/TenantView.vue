@@ -4,6 +4,7 @@
       <template #nav>
         <a href="#" :class="{ active: activeTab === 'search' }" @click.prevent="activeTab = 'search'">找房源</a>
         <a href="#" :class="{ active: activeTab === 'appointments' }" @click.prevent="activeTab = 'appointments'">预约记录</a>
+        <a href="#" :class="{ active: activeTab === 'notifications' }" @click.prevent="activeTab = 'notifications'">通知中心</a>
         <a href="#" :class="{ active: activeTab === 'favorites' }" @click.prevent="activeTab = 'favorites'">我的收藏</a>
       </template>
     </AppHeader>
@@ -90,6 +91,11 @@
           </HouseCard>
         </div>
       </div>
+
+      <!-- Notification Center -->
+      <div v-if="activeTab === 'notifications'" class="tab-content">
+        <NotificationCenter />
+      </div>
     </div>
 
     <!-- Profile Modal -->
@@ -145,6 +151,7 @@ import HouseFilter from '../components/HouseFilter.vue'
 import HouseCard from '../components/HouseCard.vue'
 import AppointmentTable from '../components/AppointmentTable.vue'
 import AppointmentFlow from '../components/AppointmentFlow.vue'
+import NotificationCenter from '../components/NotificationCenter.vue'
 import AppPagination from '../components/AppPagination.vue'
 import AppModal from '../components/AppModal.vue'
 import AppAlert from '../components/AppAlert.vue'
@@ -188,7 +195,7 @@ const roleLabelComputed = computed(() => roleLabel(user.role))
 const { notification, connect, disconnect } = useWebSocket()
 
 async function loadHouses() {
-  await houseStore.fetchHouses({ ...searchParams.value, page: page.value, pageSize: pageSize.value })
+  await houseStore.fetchHouses({ ...searchParams.value, status: 'NORMAL', page: page.value, pageSize: pageSize.value })
   await favStore.fetchFavorites()
 }
 

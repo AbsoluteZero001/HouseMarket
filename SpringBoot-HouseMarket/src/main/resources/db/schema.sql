@@ -82,26 +82,75 @@ CREATE TABLE `house`
 -- --------------------------------------------
 CREATE TABLE `appointment`
 (
-    `id`          BIGINT NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `house_id`    BIGINT      NOT NULL COMMENT '房源ID',
-    `tenant_id`   BIGINT      NOT NULL COMMENT '租客ID',
-    `landlord_id` BIGINT      NOT NULL COMMENT '房东ID',
-    `time`        DATETIME    NOT NULL COMMENT '预约看房时间',
-    `location`    VARCHAR(500)         DEFAULT NULL COMMENT '预约地点',
-    `notes`       VARCHAR(500)         DEFAULT NULL COMMENT '备注',
-    `status`      VARCHAR(50) NOT NULL DEFAULT 'pending' COMMENT '状态: pending/approved/rejected/completed/canceled',
-    `create_time` DATETIME             DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `house_id`    BIGINT       NOT NULL COMMENT '房源ID',
+    `tenant_id`   BIGINT       NOT NULL COMMENT '租客ID',
+    `landlord_id` BIGINT       NOT NULL COMMENT '房东ID',
+    `time`        DATETIME     NOT NULL COMMENT '预约看房时间',
+    `location`    VARCHAR(500)          DEFAULT NULL COMMENT '预约地点',
+    `notes`       VARCHAR(500)          DEFAULT NULL COMMENT '备注',
+    `request_id`  VARCHAR(64)           DEFAULT NULL COMMENT '幂等键，防止重复预约',
+    `status`      VARCHAR(50)  NOT NULL DEFAULT 'pending' COMMENT '状态: pending/approved/rejected/completed/canceled',
+    `version`     INT          NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
+    `create_time` DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME              DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
     KEY           `idx_house` (`house_id`),
     KEY           `idx_tenant` (`tenant_id`),
     KEY           `idx_landlord` (`landlord_id`),
     KEY           `idx_status` (`status`),
+    UNIQUE KEY    `uk_appointment_request` (`request_id`),
     CONSTRAINT `fk_appointment_house` FOREIGN KEY (`house_id`) REFERENCES `house` (`id`),
     CONSTRAINT `fk_appointment_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `sysuser` (`id`),
     CONSTRAINT `fk_appointment_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `sysuser` (`id`),
     CONSTRAINT `chk_appointment_status` CHECK (`status` IN ('pending', 'approved', 'rejected', 'completed', 'canceled'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='预约表';
+
+-- --------------------------------------------
+-- 3.2 通知事务 Outbox（异步通知可靠性）
+-- --------------------------------------------
+CREATE TABLE `notification_outbox`
+(
+    `id`             BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `business_key`   VARCHAR(128) NOT NULL COMMENT '业务幂等键',
+    `business_type`  VARCHAR(50)  NOT NULL DEFAULT 'APPOINTMENT' COMMENT '业务类型: APPOINTMENT/LANDLORD',
+    `appointment_id` BIGINT                DEFAULT NULL COMMENT '预约ID（非预约业务为空）',
+    `event_type`     VARCHAR(50)  NOT NULL COMMENT '事件类型',
+    `payload`        TEXT         NOT NULL COMMENT '通知负载 JSON',
+    `target_user_id` BIGINT                DEFAULT NULL COMMENT '通知目标用户ID',
+    `status`         VARCHAR(20)  NOT NULL DEFAULT 'pending' COMMENT '状态: pending/processing/sent/failed',
+    `retry_count`    INT          NOT NULL DEFAULT 0 COMMENT '重试次数',
+    `create_time`    DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `send_time`      DATETIME              DEFAULT NULL COMMENT '发送时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_outbox_business_key` (`business_key`),
+    KEY            `idx_outbox_status` (`status`),
+    KEY            `idx_outbox_appointment` (`appointment_id`),
+    KEY            `idx_outbox_target` (`target_user_id`),
+    CONSTRAINT `fk_outbox_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointment` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知事务 Outbox 表';
+
+-- --------------------------------------------
+-- 3.3 房东入驻申请审核表
+-- --------------------------------------------
+CREATE TABLE `landlord_application`
+(
+    `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `user_id`     BIGINT       NOT NULL COMMENT '申请人用户ID',
+    `username`    VARCHAR(100) NOT NULL COMMENT '申请人用户名',
+    `real_name`   VARCHAR(100)          DEFAULT NULL COMMENT '实名信息',
+    `phone`       VARCHAR(50)           DEFAULT NULL COMMENT '联系电话',
+    `status`      VARCHAR(20)  NOT NULL DEFAULT 'pending' COMMENT '状态: pending/approved/rejected',
+    `review_note` VARCHAR(500)          DEFAULT NULL COMMENT '审核意见',
+    `reviewer_id` BIGINT                DEFAULT NULL COMMENT '审核人ID',
+    `review_time` DATETIME              DEFAULT NULL COMMENT '审核时间',
+    `create_time` DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
+    `update_time` DATETIME              DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_application_user` (`user_id`),
+    KEY           `idx_application_status` (`status`),
+    CONSTRAINT `fk_application_user` FOREIGN KEY (`user_id`) REFERENCES `sysuser` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='房东入驻申请审核表';
 
 -- --------------------------------------------
 -- 3.1 预约流程轨迹表（审批引擎时间线）
