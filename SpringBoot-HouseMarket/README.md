@@ -1,4 +1,28 @@
-# SpringBoot-HouseMarket
+<h1 align="center">房屋租赁市场系统 | House Rental Market System</h1>
+
+> 基于 Spring Boot 3 + Spring Security + WebSocket + Vue 3 构建的北京房源租赁市场系统，支持租客预约看房、房东审批预约、房东入驻审核、实时通知与后台管理。
+
+<br/>
+
+<!-- 技术栈与 CI 状态 -->
+<p align="center">
+  <img src="https://img.shields.io/badge/Java-21-orange?style=flat-square&logo=openjdk" />
+  <img src="https://img.shields.io/badge/SpringBoot-3.2.4-green?style=flat-square&logo=springboot" />
+  <img src="https://img.shields.io/badge/Spring_Security-6-6DB33F?style=flat-square&logo=springsecurity" />
+  <img src="https://img.shields.io/badge/Vue-3-42b883?style=flat-square&logo=vuedotjs" />
+  <img src="https://img.shields.io/badge/MySQL-8.0-blue?style=flat-square&logo=mysql" />
+  <img src="https://img.shields.io/badge/WebSocket-STOMP-purple?style=flat-square&logo=websocket" />
+  <img src="https://img.shields.io/badge/JWT-Ready-black?style=flat-square&logo=jsonwebtokens" />
+  <img src="https://img.shields.io/badge/CI-Passing-brightgreen?style=flat-square&logo=githubactions" />
+</p>
+
+<p align="center">
+  <img src="https://github.com/AbsoluteZero001/HouseMarket/actions/workflows/ci.yml/badge.svg" alt="CI" />
+</p>
+
+<br/>
+
+## 项目概览
 
 北京房源市场：Spring Boot 3 + Vue 3 的租房信息与预约审批平台。房东发布房源，租客在线预约看房，房东在审批工作台完成审批，审批结果通过事务 Outbox 异步投递，全流程状态一致且可追溯。
 
@@ -29,8 +53,7 @@ mysql -uroot -p123456 < src/main/resources/db/schema.sql
 mysql -uroot -p123456 < src/main/resources/db/data.sql
 ```
 
-`schema.sql` 会重建 `housemarket` 库，包含用户、房源、预约、流程轨迹、收藏表；`data.sql` 写入北京各城区房源、用户和预约演示数据。数据库连接配置在
-`src/main/resources/application.yml`，如需改密码请同步修改。
+`schema.sql` 会重建 `housemarket` 库，包含用户、房源、预约、流程轨迹、收藏表；`data.sql` 写入北京各城区房源、用户和预约演示数据。数据库连接配置在 `src/main/resources/application.yml`，如需改密码请同步修改。
 
 ### 2. 启动后端
 
