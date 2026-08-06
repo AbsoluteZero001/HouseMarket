@@ -1,37 +1,58 @@
-# Maven
+# === Maven / Java 构建产物 ===
 target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+*.tmp
+*.bak
+*.orig
+*.rej
+hs_err_pid*
 .mvn/wrapper/maven-wrapper.jar
+.flattened-pom.xml
 
-# 忽略本地 application 配置
+# === 本地 / 私有配置 ===
 /src/main/resources/application-private.yml
+.env
+.env.*
+!.env.example
+*.local
+*.local.*
 
-# STS
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-
-# IntelliJ IDEA
+# === IDE ===
 .idea/
-*.iws
 *.iml
 *.ipr
-# 保留共享配置
-!.idea/codeStyles/
-!.idea/runConfigurations/
-
-# NetBeans
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
-build/
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-# VS Code
+*.iws
 .vscode/
+.classpath
+.project
+.settings/
+.factorypath
+.springBeans
+.sts4-cache
+.apt_generated
+
+# === AI / Agent 本地状态 ===
+.claude/
+.codex/
+.agents/
+CLAUDE.local.md
+AGENTS.local.md
+
+# === 操作系统 ===
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# === 前端（仓库内已另有 frontend/.gitignore，这里是双重保护） ===
+frontend/node_modules/
+frontend/dist/
+frontend/*.log
+frontend/.env.local
+
+# === 后端运行产物 ===
+captcha.png
+captcha-id.txt
