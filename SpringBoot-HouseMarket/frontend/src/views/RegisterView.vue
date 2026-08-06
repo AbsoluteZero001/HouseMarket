@@ -204,38 +204,42 @@ onMounted(fetchCaptcha)
 .input-wrap {
   display: flex;
   align-items: center;
-  background: var(--bg-white);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.05);
   transition: all var(--transition);
 }
 
 .input-wrap:focus-within {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(22, 119, 255, 0.1);
+  box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.12), 0 8px 20px rgba(22, 119, 255, 0.1);
+  transform: translateY(-1px);
 }
 
 .has-error .input-wrap {
   border-color: var(--danger);
-  box-shadow: 0 0 0 3px rgba(255, 77, 79, 0.08);
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.1);
 }
 
 .input-icon {
   padding: 0 12px;
   font-size: 14px;
-  opacity: 0.4;
+  color: var(--primary);
+  opacity: 0.6;
   flex-shrink: 0;
 }
 
 .input-wrap input {
   flex: 1;
   border: none;
-  padding: 11px 12px 11px 0;
+  padding: 12px 12px 12px 0;
   font-size: 14px;
   color: var(--text);
   background: transparent;
   outline: none;
   width: 100%;
+  font-family: inherit;
 }
 
 .field-error {
@@ -254,7 +258,7 @@ onMounted(fetchCaptcha)
   width: 120px;
   height: 42px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
   flex-shrink: 0;
@@ -262,6 +266,12 @@ onMounted(fetchCaptcha)
   align-items: center;
   justify-content: center;
   background: #fafafa;
+  transition: all var(--transition);
+}
+
+.captcha-img:hover {
+  border-color: var(--primary);
+  box-shadow: 0 6px 16px rgba(22, 119, 255, 0.12);
 }
 
 .captcha-img img {
@@ -283,20 +293,24 @@ onMounted(fetchCaptcha)
   align-items: center;
   gap: 6px;
   padding: 14px;
-  border: 2px solid var(--border);
-  border-radius: var(--radius-sm);
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
   background: var(--bg-white);
   cursor: pointer;
   transition: all var(--transition);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
 }
 
 .role-options button:hover {
-  border-color: var(--primary);
+  border-color: #06b6d4;
+  transform: translateY(-2px);
 }
 
 .role-options button.active {
-  border-color: var(--primary);
-  background: rgba(22, 119, 255, 0.05);
+  border-color: transparent;
+  background: linear-gradient(135deg, rgba(22, 119, 255, 0.1), rgba(6, 182, 212, 0.12));
+  box-shadow: 0 10px 22px rgba(22, 119, 255, 0.12);
+  transform: translateY(-2px);
 }
 
 .opt-icon {
@@ -310,17 +324,19 @@ onMounted(fetchCaptcha)
 }
 
 .btn-primary {
-  background: var(--primary);
+  background: linear-gradient(135deg, #1677ff, #06b6d4);
   color: #fff;
   font-size: 16px;
   font-weight: 600;
   padding: 13px;
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
   letter-spacing: 4px;
+  box-shadow: 0 12px 26px rgba(22, 119, 255, 0.28);
 }
 
 .btn-primary:hover {
-  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 16px 32px rgba(22, 119, 255, 0.34);
 }
 
 .btn-primary:disabled {

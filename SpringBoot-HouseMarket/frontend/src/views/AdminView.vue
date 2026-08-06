@@ -13,21 +13,21 @@
       <!-- Dashboard -->
       <div v-if="activeTab === 'dashboard'" class="tab-content">
         <div class="stat-cards">
-          <div class="stat-card">
+          <div class="stat-card" v-reveal="{ delay: 0 }">
             <div class="stat-icon stat-icon-users">👥</div>
             <div class="stat-body">
               <h3>{{ users.length }}</h3>
               <p>用户总数</p>
             </div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" v-reveal="{ delay: 80 }">
             <div class="stat-icon stat-icon-houses">🏠</div>
             <div class="stat-body">
               <h3>{{ allHouses.length }}</h3>
               <p>房源总数</p>
             </div>
           </div>
-          <div class="stat-card">
+          <div class="stat-card" v-reveal="{ delay: 160 }">
             <div class="stat-icon stat-icon-apts">📅</div>
             <div class="stat-body">
               <h3>{{ allAppointments.length }}</h3>
@@ -39,11 +39,11 @@
 
       <!-- Appointment Management -->
       <div v-if="activeTab === 'appointments'" class="tab-content">
-        <div class="section-header">
+        <div class="section-header" v-reveal>
           <h3>预约管理</h3>
           <span class="count-tag">共 {{ allAppointments.length }} 条</span>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap" v-reveal="{ delay: 100 }">
           <table class="table">
             <thead>
               <tr><th>订单ID</th><th>房源</th><th>租客</th><th>房东</th><th>预约时间</th><th>状态</th><th>操作</th></tr>
@@ -70,18 +70,18 @@
 
       <!-- House Management -->
       <div v-if="activeTab === 'houses'" class="tab-content">
-        <div class="section-header">
+        <div class="section-header" v-reveal>
           <h3>房源管理</h3>
           <span class="count-tag">共 {{ filteredHouses.length }} 条</span>
         </div>
-        <div class="search-bar">
+        <div class="search-bar" v-reveal="{ delay: 80 }">
           <div class="input-wrap">
             <input v-model="houseSearch" placeholder="搜索房源标题或地址..." @keyup.enter="searchHouses" />
           </div>
           <button class="btn btn-sm" @click="searchHouses">搜索</button>
           <button class="btn btn-sm btn-outline" @click="houseSearch = ''; loadAllHouses()">重置</button>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap" v-reveal="{ delay: 120 }">
           <table class="table">
             <thead>
               <tr><th>ID</th><th>标题</th><th>户型</th><th>面积</th><th>价格</th><th>地址</th><th>操作</th></tr>
@@ -108,11 +108,11 @@
 
       <!-- User Management -->
       <div v-if="activeTab === 'users'" class="tab-content">
-        <div class="section-header">
+        <div class="section-header" v-reveal>
           <h3>用户管理</h3>
           <span class="count-tag">共 {{ filteredUsers.length }} 条</span>
         </div>
-        <div class="search-bar">
+        <div class="search-bar" v-reveal="{ delay: 80 }">
           <div class="input-wrap" style="flex:1">
             <input v-model="userSearch" placeholder="搜索用户名..." @keyup.enter="searchUsers" />
           </div>
@@ -125,7 +125,7 @@
           <button class="btn btn-sm" @click="searchUsers">搜索</button>
           <button class="btn btn-sm btn-outline" @click="userSearch = ''; userRoleFilter = ''">重置</button>
         </div>
-        <div class="table-wrap">
+        <div class="table-wrap" v-reveal="{ delay: 120 }">
           <table class="table">
             <thead>
               <tr><th>ID</th><th>用户名</th><th>角色</th><th>状态</th><th>操作</th></tr>
@@ -269,7 +269,11 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.admin-page { min-height: 100vh; background: var(--bg); }
+.admin-page {
+  min-height: 100vh;
+  background: linear-gradient(rgba(244, 247, 252, 0.94), rgba(244, 247, 252, 0.97)),
+  url('/backgrounds/admin-hero.png') center / cover fixed;
+}
 .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
 .tab-content { animation: fadeIn 0.25s ease; }
 
@@ -281,10 +285,11 @@ onMounted(async () => {
   margin-bottom: 8px;
 }
 .stat-card {
-  background: var(--bg-white);
-  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 18px;
   padding: 24px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
   display: flex;
   align-items: center;
   gap: 16px;
@@ -323,8 +328,8 @@ onMounted(async () => {
   margin-bottom: 16px;
 }
 .section-header h3 {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 22px;
+  font-weight: 800;
   color: var(--text);
 }
 .count-tag {
@@ -371,10 +376,11 @@ onMounted(async () => {
 
 /* Table */
 .table-wrap {
-  background: var(--bg-white);
-  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 18px;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 16px 44px rgba(15, 23, 42, 0.09);
 }
 .table {
   width: 100%;
@@ -406,10 +412,11 @@ onMounted(async () => {
 .id-tag {
   font-family: "SF Mono", "Fira Code", monospace;
   font-size: 12px;
-  color: var(--text-muted);
-  background: #f5f5f5;
-  padding: 2px 8px;
-  border-radius: 4px;
+  color: #1677ff;
+  background: #eff6ff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 700;
 }
 
 

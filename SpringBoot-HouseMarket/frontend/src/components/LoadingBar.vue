@@ -26,7 +26,8 @@ watch(() => props.loading, (val) => {
 <style scoped>
 .progress-bar {
   position: fixed; top: 0; left: 0; height: 3px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
+  background: linear-gradient(90deg, #1677ff, #06b6d4, #8b5cf6, #ec4899);
   transition: width 0.3s, opacity 0.3s; z-index: 9999;
+  box-shadow: 0 1px 6px rgba(139, 92, 246, 0.4);
 }
 </style>

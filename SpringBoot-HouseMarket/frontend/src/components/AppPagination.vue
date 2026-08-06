@@ -44,7 +44,7 @@ const pages = computed(() => {
   height: 36px;
   padding: 0 8px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   background: var(--bg-white);
   color: var(--text);
   font-size: 14px;
@@ -60,9 +60,10 @@ const pages = computed(() => {
   color: var(--primary);
 }
 .page-btn.active {
-  background: var(--primary);
+  background: linear-gradient(135deg, #1677ff, #06b6d4);
   color: #fff;
-  border-color: var(--primary);
+  border-color: transparent;
+  box-shadow: 0 8px 18px rgba(22, 119, 255, 0.26);
 }
 .page-btn:disabled {
   opacity: 0.35;

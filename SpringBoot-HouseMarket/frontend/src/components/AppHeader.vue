@@ -45,15 +45,15 @@ const roleLabelComputed = computed(() => roleLabel(props.role))
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(20px) saturate(170%);
+  -webkit-backdrop-filter: blur(20px) saturate(170%);
   border-bottom: 1px solid transparent;
   transition: all var(--transition);
 }
 .app-header.scrolled {
-  border-bottom-color: var(--border);
-  box-shadow: 0 1px 8px rgba(0,0,0,0.06);
+  border-bottom-color: rgba(229, 231, 235, 0.8);
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
 }
 .header-inner {
   max-width: 1200px;
@@ -77,8 +77,24 @@ const roleLabelComputed = computed(() => roleLabel(props.role))
   color: var(--text);
 }
 .logo-link:hover { color: var(--primary); }
-.logo-icon { font-size: 22px; }
-.logo-text { font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+
+.logo-icon {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1677ff, #06b6d4);
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 6px 16px rgba(22, 119, 255, 0.3);
+}
+
+.logo-text {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
 
 /* Nav tabs */
 .nav-links {
@@ -86,21 +102,23 @@ const roleLabelComputed = computed(() => roleLabel(props.role))
   gap: 2px;
 }
 :deep(.nav-links a) {
-  padding: 7px 16px;
-  border-radius: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
   text-decoration: none;
   color: var(--text-secondary);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   transition: all var(--transition);
 }
 :deep(.nav-links a:hover) {
   color: var(--primary);
   background: var(--primary-light);
+  transform: translateY(-1px);
 }
 :deep(.nav-links a.active) {
-  background: var(--primary);
+  background: linear-gradient(135deg, #1677ff, #06b6d4);
   color: #fff;
+  box-shadow: 0 8px 18px rgba(22, 119, 255, 0.26);
 }
 
 /* Right side */
@@ -115,13 +133,15 @@ const roleLabelComputed = computed(() => roleLabel(props.role))
   gap: 8px;
   padding: 5px 14px;
   border-radius: 20px;
-  background: #f5f5f5;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #e5e7eb;
   cursor: pointer;
   transition: all var(--transition);
   font-size: 13px;
 }
 .user-chip:hover {
-  background: var(--primary-light);
+  border-color: #06b6d4;
+  box-shadow: 0 8px 18px rgba(22, 119, 255, 0.1);
 }
 .role-dot {
   width: 8px;
@@ -146,7 +166,7 @@ const roleLabelComputed = computed(() => roleLabel(props.role))
   width: 34px;
   height: 34px;
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
+  border-radius: 10px;
   background: #fff;
   color: var(--text-secondary);
   cursor: pointer;

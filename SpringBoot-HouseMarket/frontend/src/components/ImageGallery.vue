@@ -26,9 +26,10 @@ const mainImage = ref(props.images[0] || '')
 
 <style scoped>
 .main-image-wrap {
-  border-radius: var(--radius);
+  border-radius: 20px;
   overflow: hidden;
-  background: #f0f0f0;
+  background: #f1f5f9;
+  box-shadow: 0 22px 54px rgba(15, 23, 42, 0.14);
 }
 .main-image {
   width: 100%;
@@ -48,7 +49,7 @@ const mainImage = ref(props.images[0] || '')
   width: 76px;
   height: 56px;
   border: 2px solid transparent;
-  border-radius: 6px;
+  border-radius: 12px;
   overflow: hidden;
   cursor: pointer;
   padding: 0;
@@ -56,7 +57,8 @@ const mainImage = ref(props.images[0] || '')
   transition: border-color var(--transition);
 }
 .thumb-btn.active {
-  border-color: var(--primary);
+  border-color: #06b6d4;
+  box-shadow: 0 6px 16px rgba(6, 182, 212, 0.2);
 }
 .thumb-btn:hover {
   border-color: var(--primary);

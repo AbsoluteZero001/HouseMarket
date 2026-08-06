@@ -104,6 +104,26 @@ CREATE TABLE `appointment`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='预约表';
 
 -- --------------------------------------------
+-- 3.1 预约流程轨迹表（审批引擎时间线）
+-- --------------------------------------------
+CREATE TABLE `appointment_flow`
+(
+    `id`             BIGINT      NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `appointment_id` BIGINT      NOT NULL COMMENT '预约ID',
+    `from_status`    VARCHAR(50)  DEFAULT NULL COMMENT '原状态',
+    `to_status`      VARCHAR(50) NOT NULL COMMENT '目标状态',
+    `action`         VARCHAR(50) NOT NULL COMMENT '动作: PUBLISH/BOOK/APPROVE/REJECT/CANCEL/COMPLETE/NOTIFY',
+    `operator_id`    BIGINT       DEFAULT NULL COMMENT '操作人ID',
+    `operator_role`  VARCHAR(50)  DEFAULT NULL COMMENT '操作人角色',
+    `remark`         VARCHAR(500) DEFAULT NULL COMMENT '审批意见',
+    `create_time`    DATETIME     DEFAULT CURRENT_TIMESTAMP COMMENT '发生时间',
+    PRIMARY KEY (`id`),
+    KEY              `idx_flow_appointment` (`appointment_id`),
+    KEY              `idx_flow_action` (`action`),
+    CONSTRAINT `fk_flow_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointment` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='预约流程轨迹表';
+
+-- --------------------------------------------
 -- 4. 收藏表
 -- --------------------------------------------
 CREATE TABLE `favorites`

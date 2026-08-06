@@ -8,7 +8,7 @@
 
     <div class="container" v-if="house">
       <!-- Breadcrumb -->
-      <div class="breadcrumb">
+      <div class="breadcrumb" v-reveal>
         <RouterLink to="/">首页</RouterLink>
         <span class="sep">/</span>
         <span>{{ house.type }}</span>
@@ -18,12 +18,12 @@
 
       <div class="detail-layout">
         <!-- Gallery -->
-        <div class="detail-gallery">
+        <div class="detail-gallery" v-reveal="{ delay: 80 }">
           <ImageGallery :images="imageList" />
         </div>
 
         <!-- Info -->
-        <div class="detail-info">
+        <div class="detail-info" v-reveal="{ delay: 160 }">
           <h2 class="house-title">{{ house.title }}</h2>
           <div class="house-price">{{ formatPrice(house.price) }}</div>
           <div class="house-meta">
@@ -61,7 +61,7 @@
       </div>
 
       <!-- Landlord Info -->
-      <div class="landlord-section" v-if="house.landlordId">
+      <div class="landlord-section" v-if="house.landlordId" v-reveal="{ delay: 120 }">
         <h3>房东信息</h3>
         <div class="landlord-card">
           <div class="landlord-avatar">🏠</div>
@@ -226,7 +226,12 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.detail-page { min-height: 100vh; background: var(--bg); }
+.detail-page {
+  min-height: 100vh;
+  background: radial-gradient(900px 460px at 88% -4%, rgba(139, 92, 246, 0.1), transparent 58%),
+  radial-gradient(900px 460px at 2% 4%, rgba(6, 182, 212, 0.1), transparent 55%),
+  #f4f7fc;
+}
 .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
 
 /* Breadcrumb */
@@ -237,21 +242,38 @@ onMounted(async () => {
 .breadcrumb .current { color: var(--text); font-weight: 500; }
 
 /* Detail layout */
-.detail-layout { display: flex; gap: 30px; flex-wrap: wrap; }
+.detail-layout {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
 .detail-gallery { flex: 1; min-width: 480px; }
 .detail-info {
   flex: 1; min-width: 340px;
-  background: var(--bg-white);
-  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
   padding: 32px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(14px);
 }
 
-.house-title { font-size: 24px; font-weight: 700; color: var(--text); margin-bottom: 12px; line-height: 1.3; }
+.house-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 12px;
+  line-height: 1.3;
+}
 .house-price {
   font-size: 32px;
-  font-weight: 700;
-  color: var(--accent);
+  font-weight: 800;
+  background: linear-gradient(135deg, #ff6b35, #f43f5e);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
   margin-bottom: 20px;
 }
 .house-meta {
@@ -272,6 +294,10 @@ onMounted(async () => {
 .house-description {
   padding-top: 20px;
   border-top: 1px solid var(--border);
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 18px;
+  border: 1px solid #eef2f7;
 }
 .house-description h4 {
   font-size: 16px;
@@ -291,6 +317,11 @@ onMounted(async () => {
   margin-top: 28px;
 }
 .house-actions .btn-lg { padding: 12px 28px; font-size: 15px; }
+
+.house-actions .btn-lg:first-child {
+  background: linear-gradient(135deg, #ff6b35, #f43f5e);
+  box-shadow: 0 12px 26px rgba(244, 63, 94, 0.3);
+}
 
 .btn-fav {
   background: #fff;
@@ -313,11 +344,12 @@ onMounted(async () => {
 
 /* Landlord section */
 .landlord-section {
-  background: var(--bg-white);
-  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 18px;
   padding: 24px;
   margin-top: 20px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
 }
 .landlord-section h3 {
   font-size: 16px;
@@ -333,7 +365,8 @@ onMounted(async () => {
 .landlord-avatar {
   width: 48px; height: 48px;
   border-radius: 50%;
-  background: var(--primary-light);
+  background: linear-gradient(135deg, #1677ff, #06b6d4);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -353,6 +386,11 @@ onMounted(async () => {
   border: 1px solid #ffa39e;
   color: #cf1322;
   font-size: 13px;
+}
+
+.btn-block {
+  background: linear-gradient(135deg, #1677ff, #06b6d4);
+  border-radius: 11px;
 }
 
 /* Loading skeleton */

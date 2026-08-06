@@ -38,7 +38,7 @@ defineEmits(['close'])
   right: 24px;
   bottom: 24px;
   padding: 12px 20px;
-  border-radius: var(--radius-sm);
+  border-radius: 14px;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -46,7 +46,7 @@ defineEmits(['close'])
   max-width: 360px;
   font-size: 14px;
   font-weight: 500;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 22px 50px rgba(15, 23, 42, 0.18);
   animation: alertIn 0.25s ease;
 }
 .alert-success { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }

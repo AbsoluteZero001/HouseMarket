@@ -29,7 +29,8 @@ defineEmits(['confirm', 'cancel'])
   position: fixed;
   inset: 0;
   z-index: 3000;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(7, 20, 40, 0.5);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -40,9 +41,9 @@ defineEmits(['confirm', 'cancel'])
   width: 100%;
   max-width: 380px;
   background: #fff;
-  border-radius: 10px;
+  border-radius: 18px;
   padding: 24px;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 32px 80px rgba(7, 20, 40, 0.34);
 }
 
 .confirm-box h3 {

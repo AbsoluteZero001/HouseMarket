@@ -1,6 +1,7 @@
 package com.springboot.springboothousemarket.Controller;
 
 import com.springboot.springboothousemarket.Entity.Appointment;
+import com.springboot.springboothousemarket.Entity.AppointmentFlow;
 import com.springboot.springboothousemarket.Entity.Houses;
 import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Service.AppointmentService;
@@ -97,8 +98,11 @@ public class AppointmentController {
             return ResponseResult.fail("只能批准待处理的预约");
         }
 
-        boolean result = appointmentService.updateAppointmentStatus(id, "approved");
+        boolean result = appointmentService.transitionStatus(id, "pending", "approved", "APPROVE",
+                currentUser.getId(), "LANDLORD", "房东审批通过");
         if (result) {
+            appointmentService.recordNotification(id, "approved",
+                    currentUser.getId(), "LANDLORD", "已通知租客审批结果");
             notifyTenant(appointment, "approved", "预约已批准");
             return ResponseResult.ok("预约已批准");
         }
@@ -124,8 +128,11 @@ public class AppointmentController {
             return ResponseResult.fail("只能拒绝待处理的预约");
         }
 
-        boolean result = appointmentService.updateAppointmentStatus(id, "rejected");
+        boolean result = appointmentService.transitionStatus(id, "pending", "rejected", "REJECT",
+                currentUser.getId(), "LANDLORD", "房东拒绝本次预约");
         if (result) {
+            appointmentService.recordNotification(id, "rejected",
+                    currentUser.getId(), "LANDLORD", "已通知租客审批结果");
             notifyTenant(appointment, "rejected", "预约已拒绝");
             return ResponseResult.ok("预约已拒绝");
         }
@@ -151,8 +158,12 @@ public class AppointmentController {
             return ResponseResult.fail("只能取消待处理或已批准的预约");
         }
 
-        boolean result = appointmentService.cancelAppointment(id);
+        String expectedStatus = appointment.getStatus();
+        boolean result = appointmentService.transitionStatus(id, expectedStatus, "canceled", "CANCEL",
+                currentUser.getId(), currentUser.getRole(), "预约已取消");
         if (result) {
+            appointmentService.recordNotification(id, "canceled",
+                    currentUser.getId(), currentUser.getRole(), "已通知对方取消结果");
             AppointmentMessage msg = buildMessage(appointment, "canceled", "预约已取消");
             if ("TENANT".equals(currentUser.getRole())) {
                 messagingTemplate.convertAndSendToUser(appointment.getLandlordId().toString(), "/queue/appointment", msg);
@@ -179,8 +190,11 @@ public class AppointmentController {
             return ResponseResult.fail("只有已批准的预约才能标记完成");
         }
 
-        boolean result = appointmentService.updateAppointmentStatus(id, "completed");
+        boolean result = appointmentService.transitionStatus(id, "approved", "completed", "COMPLETE",
+                currentUser.getId(), "LANDLORD", "看房完成，预约闭环结束");
         if (result) {
+            appointmentService.recordNotification(id, "completed",
+                    currentUser.getId(), "LANDLORD", "已通知租客看房完成");
             notifyTenant(appointment, "completed", "看房预约已完成");
             return ResponseResult.ok("预约已完成");
         }
@@ -201,6 +215,22 @@ public class AppointmentController {
 
         boolean result = appointmentService.deleteAppointment(id);
         return result ? ResponseResult.ok("预约已删除") : ResponseResult.fail("预约删除失败");
+    }
+
+    @GetMapping("/{id}/flow")
+    public ResponseResult getAppointmentFlow(@PathVariable Long id,
+                                             @AuthenticationPrincipal Users currentUser) {
+        Appointment appointment = appointmentService.getById(id);
+        if (appointment == null) {
+            return ResponseResult.fail("预约不存在");
+        }
+        boolean isParticipant = appointment.getLandlordId().equals(currentUser.getId())
+                || appointment.getTenantId().equals(currentUser.getId());
+        if (!isParticipant && !"ADMIN".equals(currentUser.getRole())) {
+            return ResponseResult.fail("没有权限查看该预约流程");
+        }
+        List<AppointmentFlow> flows = appointmentService.getFlows(id);
+        return ResponseResult.ok(null, Map.of("flows", flows));
     }
 
     private void notifyLandlord(Appointment appointment, Long landlordId, Long tenantId, String message) {

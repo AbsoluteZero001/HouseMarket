@@ -24,6 +24,10 @@ export function completeAppointment(id) {
     return http.put(`/api/appointments/${id}/complete`)
 }
 
+export function getAppointmentFlow(id) {
+    return http.get(`/api/appointments/${id}/flow`)
+}
+
 export function deleteAppointment(id) {
   return http.delete(`/api/appointments/${id}`)
 }

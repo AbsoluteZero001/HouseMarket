@@ -11,6 +11,18 @@
     <div class="container">
       <!-- Search Section -->
       <div v-if="activeTab === 'search'" class="tab-content">
+        <section class="tenant-hero" v-reveal>
+          <div class="tenant-hero-copy">
+            <p class="kicker">RENT SMARTER</p>
+            <h1>找到你的理想家</h1>
+            <p>真实房源实时更新，预约、审批、通知全程透明可溯</p>
+          </div>
+          <div class="tenant-hero-stats">
+            <div><strong>{{ houseStore.houses.length }}</strong><span>在找房源</span></div>
+            <div><strong>{{ favStore.favorites.length }}</strong><span>我的收藏</span></div>
+            <div><strong>{{ aptStore.appointments.length }}</strong><span>预约记录</span></div>
+          </div>
+        </section>
         <HouseFilter @search="handleSearch" @reset="handleReset" />
 
         <div v-if="houseStore.loading" class="loading-grid">
@@ -31,7 +43,7 @@
         </div>
 
         <div v-else class="house-grid">
-          <HouseCard v-for="h in houseStore.houses" :key="h.id" :house="h">
+          <HouseCard v-for="(h, i) in houseStore.houses" :key="h.id" :house="h" v-reveal="{ delay: (i % 3) * 70 }">
             <template #actions="{ house }">
               <button class="btn btn-sm" @click="viewDetail(house.id)">查看详情</button>
               <button class="btn btn-sm btn-accent" @click="bookHouse(house.id)">预约看房</button>
@@ -56,6 +68,7 @@
           :isLandlord="false"
           @cancel="handleCancelAppointment"
           @delete="handleDeleteAppointment"
+          @flow="openFlow"
         />
       </div>
 
@@ -67,7 +80,8 @@
           <button class="btn btn-outline" @click="activeTab = 'search'">去发现好房</button>
         </div>
         <div v-else class="house-grid">
-          <HouseCard v-for="f in favStore.favorites" :key="f.id" :house="f.house || f">
+          <HouseCard v-for="(f, i) in favStore.favorites" :key="f.id" :house="f.house || f"
+                     v-reveal="{ delay: (i % 3) * 70 }">
             <template #actions="{ house }">
               <button class="btn btn-sm" @click="viewDetail(house.id)">查看详情</button>
               <button class="btn btn-sm btn-accent" @click="bookHouse(house.id)">预约看房</button>
@@ -107,6 +121,12 @@
         @confirm="confirmAction"
         @cancel="confirmState.visible = false"
     />
+    <AppointmentFlow
+        :visible="showFlow"
+        :appointment="flowAppointment"
+        :flows="flowRecords"
+        @close="showFlow = false"
+    />
   </div>
 </template>
 
@@ -124,6 +144,7 @@ import AppHeader from '../components/AppHeader.vue'
 import HouseFilter from '../components/HouseFilter.vue'
 import HouseCard from '../components/HouseCard.vue'
 import AppointmentTable from '../components/AppointmentTable.vue'
+import AppointmentFlow from '../components/AppointmentFlow.vue'
 import AppPagination from '../components/AppPagination.vue'
 import AppModal from '../components/AppModal.vue'
 import AppAlert from '../components/AppAlert.vue'
@@ -146,6 +167,9 @@ const showProfile = ref(false)
 const {alertMsg, alertType, showAlert} = useAlert()
 const passwordForm = reactive({ newPassword: '', confirmNewPassword: '' })
 const confirmState = reactive({visible: false, title: '', message: '', handler: null})
+const showFlow = ref(false)
+const flowAppointment = ref(null)
+const flowRecords = ref([])
 
 function askConfirm(title, message, handler) {
   confirmState.title = title
@@ -196,6 +220,17 @@ async function handleDeleteAppointment(id) {
   })
 }
 
+async function openFlow(apt) {
+  flowAppointment.value = apt
+  flowRecords.value = []
+  showFlow.value = true
+  try {
+    const res = await aptStore.fetchFlow(apt.id)
+    flowRecords.value = res?.data?.flows || []
+  } catch (e) { /* ignore */
+  }
+}
+
 async function handleChangePassword() {
   if (!passwordForm.newPassword) {
     showAlert('请输入新密码', 'error');
@@ -233,6 +268,72 @@ onMounted(async () => {
 .tenant-page { min-height: 100vh; background: var(--bg); }
 .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
 .tab-content { animation: fadeIn 0.25s ease; }
+
+.tenant-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+  padding: 30px 34px;
+  border-radius: 20px;
+  color: #fff;
+  background: linear-gradient(90deg, rgba(11, 31, 63, 0.9), rgba(91, 33, 182, 0.72)),
+  url('/backgrounds/tenant-hero.png') center / cover no-repeat;
+  box-shadow: 0 22px 54px rgba(11, 31, 63, 0.24);
+  overflow: hidden;
+}
+
+.tenant-hero::after {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  background: conic-gradient(from 210deg at 50% 50%, rgba(103, 232, 249, 0.16), transparent 28%, rgba(236, 72, 153, 0.13) 52%, transparent 78%);
+  animation: aurora-drift 16s ease-in-out infinite alternate;
+}
+
+.tenant-hero-copy,
+.tenant-hero-stats {
+  position: relative;
+  z-index: 1;
+}
+
+.tenant-hero .kicker {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: #67e8f9;
+  margin-bottom: 6px;
+}
+
+.tenant-hero h1 {
+  font-size: 30px;
+  font-weight: 800;
+  margin-bottom: 6px;
+  letter-spacing: 0;
+}
+
+.tenant-hero-copy p:last-child {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.tenant-hero-stats {
+  display: flex;
+  gap: 26px;
+}
+
+.tenant-hero-stats strong {
+  display: block;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.tenant-hero-stats span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.66);
+}
 
 /* House grid */
 .house-grid {
@@ -318,9 +419,36 @@ onMounted(async () => {
   margin-top: 16px;
 }
 
+@keyframes aurora-drift {
+  0% {
+    transform: translate3d(-4%, -3%, 0) rotate(0deg) scale(1);
+  }
+  50% {
+    transform: translate3d(5%, 4%, 0) rotate(8deg) scale(1.1);
+  }
+  100% {
+    transform: translate3d(-4%, -3%, 0) rotate(0deg) scale(1);
+  }
+}
 
 @media (max-width: 768px) {
   .container { padding: 16px; }
   .house-grid { grid-template-columns: 1fr; }
+
+  .tenant-hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 24px 20px;
+  }
+
+  .tenant-hero-stats {
+    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .tenant-hero-stats strong {
+    font-size: 22px;
+  }
 }
 </style>

@@ -6,6 +6,7 @@ import {
   completeAppointment,
   createAppointment,
   deleteAppointment,
+    getAppointmentFlow,
   getAppointments,
   rejectAppointment
 } from '../api/appointments'
@@ -52,10 +53,26 @@ export const useAppointmentStore = defineStore('appointments', () => {
         return res.data
     }
 
+    async function fetchFlow(id) {
+        const res = await getAppointmentFlow(id)
+        return res.data
+    }
+
   async function remove(id) {
     const res = await deleteAppointment(id)
     return res.data
   }
 
-    return {appointments, loading, fetchAppointments, addAppointment, approve, reject, cancel, complete, remove}
+    return {
+        appointments,
+        loading,
+        fetchAppointments,
+        addAppointment,
+        approve,
+        reject,
+        cancel,
+        complete,
+        remove,
+        fetchFlow
+    }
 })

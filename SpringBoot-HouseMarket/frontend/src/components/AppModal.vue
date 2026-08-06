@@ -22,7 +22,8 @@ defineEmits(['close'])
 <style scoped>
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(0,0,0,0.45);
+  background: rgba(7, 20, 40, 0.55);
+  backdrop-filter: blur(8px);
   display: flex; align-items: center; justify-content: center;
   z-index: 1000;
   animation: fadeIn 0.2s ease;
@@ -30,9 +31,9 @@ defineEmits(['close'])
 }
 .modal-content {
   background: #fff;
-  border-radius: var(--radius);
+  border-radius: 20px;
   width: 90%;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 36px 90px rgba(7, 20, 40, 0.36);
   max-height: 80vh;
   display: flex;
   flex-direction: column;
@@ -43,11 +44,12 @@ defineEmits(['close'])
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid #eef2f7;
+  background: linear-gradient(135deg, #f8fafc, #f0f9ff);
 }
 .modal-header h3 {
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 800;
   color: var(--text);
 }
 .modal-close {
@@ -63,8 +65,9 @@ defineEmits(['close'])
   transition: all var(--transition);
 }
 .modal-close:hover {
-  background: #f0f0f0;
+  background: rgba(22, 119, 255, 0.1);
   color: var(--text);
+  transform: rotate(90deg);
 }
 .modal-body {
   padding: 24px;

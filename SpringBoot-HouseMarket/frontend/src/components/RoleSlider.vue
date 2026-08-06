@@ -26,10 +26,11 @@ const options = [
 <style scoped>
 .role-slider {
   display: flex;
-  background: #f0f2f5;
-  border-radius: var(--radius-sm);
+  background: #f1f5f9;
+  border-radius: 12px;
   padding: 4px;
   gap: 4px;
+  box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.06);
 }
 .role-slider button {
   flex: 1;
@@ -46,12 +47,14 @@ const options = [
   font-weight: 500;
   cursor: pointer;
   transition: all var(--transition);
+  border-radius: 9px;
 }
 .role-slider button.active {
-  background: #fff;
-  color: var(--primary);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  background: linear-gradient(135deg, #1677ff, #06b6d4);
+  color: #fff;
+  box-shadow: 0 8px 18px rgba(22, 119, 255, 0.26);
   font-weight: 600;
+  transform: translateY(-1px);
 }
 .opt-icon { font-size: 16px; }
 </style>

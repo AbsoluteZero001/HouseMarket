@@ -52,8 +52,8 @@ defineExpose({ selectedFile, clearFile })
 <style scoped>
 .image-upload { text-align: center; }
 .upload-area {
-  border: 2px dashed var(--border);
-  border-radius: var(--radius-sm);
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
   padding: 30px 20px;
   cursor: pointer;
   transition: all var(--transition);
@@ -61,11 +61,13 @@ defineExpose({ selectedFile, clearFile })
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fafafa;
+  background: linear-gradient(135deg, #f8fafc, #f0f9ff);
 }
 .upload-area:hover {
-  border-color: var(--primary);
-  background: var(--primary-light);
+  border-color: #06b6d4;
+  background: linear-gradient(135deg, #eff6ff, #ecfeff);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(6, 182, 212, 0.12);
 }
 .upload-area.has-image {
   padding: 0;
@@ -75,7 +77,7 @@ defineExpose({ selectedFile, clearFile })
 .preview-img {
   max-width: 100%;
   max-height: 260px;
-  border-radius: var(--radius-sm);
+  border-radius: 12px;
 }
 .upload-placeholder {
   color: var(--text-muted);

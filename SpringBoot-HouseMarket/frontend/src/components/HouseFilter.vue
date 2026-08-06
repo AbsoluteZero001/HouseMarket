@@ -83,10 +83,12 @@ function reset() { Object.assign(local, defaults()); emit('reset') }
 
 <style scoped>
 .filter-card {
-  background: var(--bg-white);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-sm);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 18px;
+  box-shadow: 0 16px 44px rgba(15, 23, 42, 0.09);
   overflow: hidden;
+  backdrop-filter: blur(14px);
 }
 .filter-header {
   padding: 16px 20px;
@@ -96,8 +98,8 @@ function reset() { Object.assign(local, defaults()); emit('reset') }
   gap: 10px;
 }
 .filter-header h3 {
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 800;
   color: var(--text);
 }
 .filter-hint {
@@ -141,7 +143,8 @@ function reset() { Object.assign(local, defaults()); emit('reset') }
 .form-group select:focus {
   border-color: var(--primary);
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(22,119,255,0.08);
+  box-shadow: 0 0 0 4px rgba(22, 119, 255, 0.12);
+  transform: translateY(-1px);
 }
 
 .range-inputs {
