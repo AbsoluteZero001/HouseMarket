@@ -1,6 +1,6 @@
 <h1 align="center">房屋租赁市场系统 | House Rental Market System</h1>
 
-> 基于 Spring Boot 3.2 + Spring Security + WebSocket + Vue 3 构建的北京房源租赁市场系统，完整覆盖“房东入驻审核 → 房源发布 → 租客预约 → 房东审批 → 实时通知”的业务闭环。
+> 基于 Vue 3 + Spring Boot 3 + Spring Security + WebSocket 构建的北京房源租赁市场系统，完整覆盖“房东入驻审核 → 房源发布 → 租客预约 → 房东审批 → 实时通知”的业务闭环。
 
 <br/>
 

@@ -1,6 +1,6 @@
 <h1 align="center">House Rental Market System | 房屋租赁市场系统</h1>
 
-> A Beijing house rental market platform built with Spring Boot 3.2 + Spring Security + WebSocket + Vue 3, covering the full business loop of "landlord onboarding review → listing publication → tenant booking → landlord approval → real-time notification".
+> A Beijing house rental market platform built with Vue 3 + Spring Boot 3 + Spring Security + WebSocket, covering the full business loop of "landlord onboarding review → listing publication → tenant booking → landlord approval → real-time notification".
 
 <br/>
 
