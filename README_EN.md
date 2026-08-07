@@ -262,6 +262,42 @@ mvn spring-boot:run -Dspring-boot.run.profiles=redis
 
 The application runs fully without Redis, using in-memory cache and single-instance rate limiting.
 
+## 🐳 Docker One-Click Deployment
+
+The project includes a complete Docker deployment setup:
+
+- `Dockerfile`: multi-stage Maven build for the backend, running a Java 21 image.
+- `frontend/Dockerfile`: Node build for the frontend with Nginx static hosting.
+- `frontend/nginx.conf`: proxies `/api`, `/uploads`, `/ws`, and `/user`, including WebSocket support.
+- `docker-compose.yml`: orchestrates MySQL, Redis, backend, and frontend services, and runs `00-schema.sql` → `01-data.sql` automatically.
+- `一键启动.bat`: checks Docker, builds images, starts services, waits for readiness, and opens the browser on Windows.
+
+Start with:
+
+```bash
+一键启动.bat
+```
+
+Or the equivalent command:
+
+```bash
+docker compose up -d --build
+```
+
+On first startup, the database is created and Beijing seed data is loaded automatically. If an existing database volume is detected, the script asks whether to reset and re-initialize it.
+
+Default ports:
+
+| Service | Address |
+| --- | --- |
+| Frontend | http://localhost:5173 |
+| Backend | http://localhost:8082 |
+| Swagger | http://localhost:8082/swagger-ui/index.html |
+| MySQL | `localhost:3308` (container internal `3306`) |
+| Redis | `localhost:6380` (container internal `6379`) |
+
+To change ports or passwords, copy `.env.example` to `.env` and adjust the values, or override them in `docker-compose.yml`.
+
 ## 👤 Demo Accounts
 
 | Role | Username | Password |
