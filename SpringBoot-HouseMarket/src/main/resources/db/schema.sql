@@ -3,13 +3,11 @@
 -- 数据库: housemarket, 字符集: utf8mb4
 -- ============================================
 
-CREATE
-DATABASE IF NOT EXISTS housemarket
+CREATE DATABASE IF NOT EXISTS housemarket
     DEFAULT CHARACTER SET utf8mb4
     DEFAULT COLLATE utf8mb4_unicode_ci;
 
-USE
-housemarket;
+USE housemarket;
 
 DROP TABLE IF EXISTS `favorites`;
 DROP TABLE IF EXISTS `appointment`;

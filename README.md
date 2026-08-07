@@ -262,6 +262,42 @@ mvn spring-boot:run -Dspring-boot.run.profiles=redis
 
 不启用 Redis 也能完整运行，默认使用内存缓存和单机限流。
 
+## 🐳 Docker 一键部署
+
+项目已内置 Docker 一键部署：
+
+- `Dockerfile`：后端 Maven 多阶段构建，运行 Java 21 镜像。
+- `frontend/Dockerfile`：前端 Node 构建 + Nginx 静态托管。
+- `frontend/nginx.conf`：代理 `/api`、`/uploads`、`/ws`、`/user`，支持 WebSocket。
+- `docker-compose.yml`：编排 MySQL、Redis、后端、前端四个服务，并自动执行 `00-schema.sql` → `01-data.sql` 初始化。
+- `一键启动.bat`：Windows 下检测 Docker、构建镜像、启动服务、等待就绪并打开浏览器。
+
+启动方式：
+
+```bash
+一键启动.bat
+```
+
+等价命令：
+
+```bash
+docker compose up -d --build
+```
+
+首次启动会自动创建数据库并写入北京房源演示数据。如果检测到已有数据库卷，脚本会询问是否重置并重新初始化。
+
+默认端口：
+
+| 服务 | 地址 |
+| --- | --- |
+| 前端 | http://localhost:5173 |
+| 后端 | http://localhost:8082 |
+| Swagger | http://localhost:8082/swagger-ui/index.html |
+| MySQL | `localhost:3308`（容器内部 `3306`） |
+| Redis | `localhost:6380`（容器内部 `6379`） |
+
+如需修改端口或密码，复制 `.env.example` 为 `.env` 后调整，或在 `docker-compose.yml` 中覆盖。
+
 ## 👤 演示账号
 
 | 角色 | 用户名 | 密码 |

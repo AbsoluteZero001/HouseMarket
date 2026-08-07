@@ -3,8 +3,7 @@
 -- 密码均为 BCrypt 哈希: admin123 / 123456
 -- ============================================
 
-USE
-housemarket;
+USE housemarket;
 
 INSERT INTO `sysuser` (`id`, `username`, `password`, `real_name`, `role`, `phone`, `avatar`, `status`, `register_time`)
 VALUES (1, 'admin', '$2a$10$4KGLBUeN89vGB/7vW10YiuP6YwKjHyKqw.nbAbhEsLHS.9X447tfe', '系统管理员', 'ADMIN',
