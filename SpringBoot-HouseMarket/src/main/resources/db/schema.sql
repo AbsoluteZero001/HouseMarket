@@ -9,6 +9,8 @@ CREATE DATABASE IF NOT EXISTS housemarket
 
 USE housemarket;
 
+SET NAMES utf8mb4;
+
 DROP TABLE IF EXISTS `favorites`;
 DROP TABLE IF EXISTS `appointment`;
 DROP TABLE IF EXISTS `house_order`;

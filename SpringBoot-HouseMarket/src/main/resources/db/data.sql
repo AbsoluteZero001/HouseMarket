@@ -5,6 +5,8 @@
 
 USE housemarket;
 
+SET NAMES utf8mb4;
+
 INSERT INTO `sysuser` (`id`, `username`, `password`, `real_name`, `role`, `phone`, `avatar`, `status`, `register_time`)
 VALUES (1, 'admin', '$2a$10$4KGLBUeN89vGB/7vW10YiuP6YwKjHyKqw.nbAbhEsLHS.9X447tfe', '系统管理员', 'ADMIN',
         '13800000001', NULL, 'normal', NOW()),
