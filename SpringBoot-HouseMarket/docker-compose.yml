@@ -59,7 +59,7 @@ services:
     ports:
       - "${BACKEND_PORT:-8082}:8082"
     volumes:
-      - ./uploads:/app/uploads
+      - housemarket-uploads:/app/uploads
     depends_on:
       mysql:
         condition: service_healthy
@@ -94,3 +94,5 @@ volumes:
     name: housemarket-mysql-data
   housemarket-redis-data:
     name: housemarket-redis-data
+  housemarket-uploads:
+    name: housemarket-uploads

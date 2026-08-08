@@ -21,18 +21,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [1/4] Checking database volume...
-docker volume inspect housemarket-mysql-data >nul 2>nul
-if not errorlevel 1 (
-    echo An existing database volume was found.
-    choice /C YN /T 10 /D N /M "Reset database and re-run seed data"
-    if errorlevel 2 goto START
-    echo Resetting database volume...
-    docker compose down -v
-)
-
-:START
-echo [2/4] Building and starting containers...
+echo [1/3] Building and starting containers...
 docker compose up -d --build
 if errorlevel 1 (
     echo [ERROR] Failed to start containers. See messages above.
@@ -40,8 +29,8 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [3/4] Waiting for services...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ok=$false; for($i=0;$i -lt 90;$i++){ try { $r=Invoke-WebRequest -UseBasicParsing 'http://localhost:5173/api/public/stats' -TimeoutSec 2; if($r.StatusCode -eq 200){$ok=$true; break} } catch {}; Start-Sleep -Seconds 2 }; if(-not $ok){ Write-Host 'Backend did not become ready in time.'; exit 1 }"
+echo [2/3] Waiting for services...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ok=$false; for($i=0;$i -lt 90;$i++){ try { $r=Invoke-RestMethod -Uri 'http://localhost:5173/api/public/stats' -TimeoutSec 2; if($r.data.houses -gt 0){$ok=$true; break} } catch {}; Start-Sleep -Seconds 2 }; if(-not $ok){ Write-Host 'Backend did not become ready in time or seed data is empty.'; exit 1 }"
 if errorlevel 1 (
     echo [ERROR] Services did not become ready in time.
     echo Run "docker compose ps" and "docker compose logs backend" to debug.
@@ -49,7 +38,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [4/4] Starting browser...
+echo [3/3] Starting browser...
 start "" http://localhost:5173
 
 echo.

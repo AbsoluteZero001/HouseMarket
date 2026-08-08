@@ -64,14 +64,14 @@ public class JwtFilter extends OncePerRequestFilter {
 
             // 3. 检查 Token 是否过期
             if (username != null && jwtUtil.isTokenExpired(jwtToken)) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 返回 401
-                response.getWriter().write("Token has expired");
+                logger.warn("Ignoring expired JWT for request: {}", request.getRequestURI());
+                chain.doFilter(request, response);
                 return;
             }
         } catch (Exception e) {
             // Token 非法 / 解析失败
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 返回 401
-            response.getWriter().write("Invalid Token: " + e.getMessage());
+            logger.warn("Ignoring invalid JWT for request: {}", request.getRequestURI());
+            chain.doFilter(request, response);
             return;
         }
 
@@ -81,13 +81,13 @@ public class JwtFilter extends OncePerRequestFilter {
             // 从数据库中获取用户信息
             Users user = usersService.getUserByUsername(username);
             if (user == null) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // 返回 401
-                response.getWriter().write("User not found");
+                logger.warn("Ignoring JWT for missing user: {}", username);
+                chain.doFilter(request, response);
                 return;
             }
             if (!"normal".equals(user.getStatus())) {
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                response.getWriter().write("User disabled");
+                logger.warn("Ignoring JWT for disabled user: {}", username);
+                chain.doFilter(request, response);
                 return;
             }
 

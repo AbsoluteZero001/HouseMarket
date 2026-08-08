@@ -13,6 +13,7 @@ RUN apk add --no-cache curl tzdata
 WORKDIR /app
 COPY --from=build /build/target/SpringBoot-HouseMarket-0.0.1-SNAPSHOT.jar /app/app.jar
 RUN mkdir -p /app/uploads
+COPY uploads /app/uploads
 ENV TZ=Asia/Shanghai
 EXPOSE 8082
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

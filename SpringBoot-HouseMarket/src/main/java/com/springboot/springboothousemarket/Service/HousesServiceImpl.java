@@ -145,7 +145,9 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
     }
 
     @Override
-    @Cacheable(cacheNames = "houses:list", key = "{#keyword,#type,#district,#minArea,#maxArea,#minPrice,#maxPrice,#address,#status,#page,#pageSize}")
+    @Cacheable(cacheNames = "houses:list",
+            key = "{#keyword,#type,#district,#minArea,#maxArea,#minPrice,#maxPrice,#address,#status,#page,#pageSize}",
+            unless = "#result == null || #result.getRecords().isEmpty()")
     public Page<Houses> getHouses(String keyword, String type, String district, Double minArea, Double maxArea,
                                   Double minPrice, Double maxPrice, String address, String status, int page, int pageSize) {
 
