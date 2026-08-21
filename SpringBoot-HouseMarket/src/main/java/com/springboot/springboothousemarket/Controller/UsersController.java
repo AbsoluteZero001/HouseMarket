@@ -13,8 +13,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 
@@ -154,13 +157,15 @@ public class UsersController {
                 extension = original.substring(dot);
             }
         }
-        File avatarDir = new File(uploadDir, "avatars");
-        if (!avatarDir.exists() && !avatarDir.mkdirs()) {
-            throw new IOException("无法创建头像目录");
-        }
+        Path basePath = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Path avatarDir = basePath.resolve("avatars");
+        Files.createDirectories(avatarDir);
         String fileName = currentUser.getId() + "_" + System.currentTimeMillis() + extension;
-        File target = new File(avatarDir, fileName);
-        upload.transferTo(target);
+        Path target = avatarDir.resolve(fileName).normalize();
+        if (!target.startsWith(avatarDir)) {
+            throw new IOException("非法的头像文件名");
+        }
+        Files.copy(upload.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
 
         Users user = sysUserService.getUserById(currentUser.getId());
         user.setAvatar("/uploads/avatars/" + fileName);

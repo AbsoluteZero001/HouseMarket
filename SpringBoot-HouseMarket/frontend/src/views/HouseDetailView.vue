@@ -90,8 +90,6 @@
             <div class="landlord-sub">
               <span v-if="Number(house.landlord?.realNameVerified) === 1" class="verified-badge">已实名</span>
               <span v-else class="unverified-badge">未实名</span>
-              <span v-if="house.landlord?.realName">{{ house.landlord.realName }}</span>
-              <span v-if="house.landlord?.idCardNoMasked">身份证 {{ house.landlord.idCardNoMasked }}</span>
             </div>
           </div>
           <div class="landlord-actions">

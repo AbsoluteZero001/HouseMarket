@@ -16,8 +16,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
 
@@ -56,14 +59,12 @@ public class HousesController {
             throw new RuntimeException("上传图片不能为空");
         }
 
-        File uploadDirFile = new File(uploadDir);
-        if (!uploadDirFile.exists() && !uploadDirFile.mkdirs()) {
-            throw new IOException("无法创建上传目录");
-        }
+        Path uploadDirPath = Paths.get(uploadDir).toAbsolutePath().normalize();
+        Files.createDirectories(uploadDirPath);
 
         String original = uploadFile.getOriginalFilename();
         String baseName = original == null || original.isBlank() ? "image" : original;
-        baseName = new File(baseName).getName();
+        baseName = Paths.get(baseName).getFileName().toString();
         String extension = "";
         int dot = baseName.lastIndexOf('.');
         if (dot > 0) {
@@ -71,8 +72,11 @@ public class HousesController {
             baseName = baseName.substring(0, dot);
         }
         String uniqueFileName = baseName + "_" + System.currentTimeMillis() + extension;
-        File targetFile = new File(uploadDirFile, uniqueFileName);
-        uploadFile.transferTo(targetFile);
+        Path targetFile = uploadDirPath.resolve(uniqueFileName).normalize();
+        if (!targetFile.startsWith(uploadDirPath)) {
+            throw new IOException("非法的上传文件名");
+        }
+        Files.copy(uploadFile.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
 
         String url = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/uploads/")
