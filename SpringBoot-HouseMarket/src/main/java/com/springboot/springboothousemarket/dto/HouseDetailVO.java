@@ -10,4 +10,5 @@ import java.util.List;
 public class HouseDetailVO extends HouseListVO {
     private String description;
     private List<HouseImageVO> images;
+    private LandlordInfoVO landlord;
 }

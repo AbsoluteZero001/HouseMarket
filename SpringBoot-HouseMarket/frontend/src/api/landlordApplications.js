@@ -15,3 +15,11 @@ export function rejectLandlordApplication(id, note) {
 export function getMyLandlordApplication() {
   return http.get('/api/landlord/application')
 }
+
+export function getLandlordProfile() {
+    return http.get('/api/landlord/profile')
+}
+
+export function verifyLandlord(data) {
+    return http.put('/api/landlord/verify', data)
+}

@@ -1,16 +1,19 @@
 package com.springboot.springboothousemarket.Controller;
 
 import com.springboot.springboothousemarket.Entity.Users;
+import com.springboot.springboothousemarket.Service.RateLimiter;
 import com.springboot.springboothousemarket.Service.RegisterRequestService;
 import com.springboot.springboothousemarket.Service.UsersService;
-import com.springboot.springboothousemarket.Service.RateLimiter;
 import com.springboot.springboothousemarket.Util.JwtUtil;
 import com.springboot.springboothousemarket.dto.LoginRequest;
 import com.springboot.springboothousemarket.dto.LoginResponse;
 import com.springboot.springboothousemarket.dto.RegisterRequest;
 import com.springboot.springboothousemarket.dto.ResponseResult;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Duration;
 
@@ -42,6 +45,7 @@ public class RegisterRequestController {
             RegisterRequest user = new RegisterRequest();
             user.setUsername(request.getUsername());
             user.setPassword(request.getPassword());
+            user.setNickname(request.getNickname());
             user.setRole(request.getRole());
             user.setStatus("normal");
             service.register(user);

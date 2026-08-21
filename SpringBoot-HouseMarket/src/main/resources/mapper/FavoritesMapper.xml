@@ -27,6 +27,7 @@
             <result property="landlordId" column="h_landlord_id"/>
             <result property="status" column="h_status"/>
             <result property="views" column="h_views"/>
+            <result property="coverImage" column="h_cover_image"/>
         </association>
     </resultMap>
 
@@ -60,7 +61,13 @@
                h.image       AS h_image,
                h.landlord_id AS h_landlord_id,
                h.status      AS h_status,
-               h.views       AS h_views
+               h.views AS h_views,
+               (SELECT hi.image_url
+                FROM house_image hi
+                WHERE hi.house_id = h.id
+                  AND hi.is_cover = 1
+                ORDER BY hi.sort_order ASC, hi.id ASC
+                          LIMIT 1) AS h_cover_image
         FROM favorites f
                  INNER JOIN house h ON f.house_id = h.id
         WHERE f.user_id = #{userId}
@@ -91,7 +98,13 @@
                h.image       AS h_image,
                h.landlord_id AS h_landlord_id,
                h.status      AS h_status,
-               h.views       AS h_views
+               h.views AS h_views,
+               (SELECT hi.image_url
+                FROM house_image hi
+                WHERE hi.house_id = h.id
+                  AND hi.is_cover = 1
+                ORDER BY hi.sort_order ASC, hi.id ASC
+                          LIMIT 1) AS h_cover_image
         FROM favorites f
                  INNER JOIN house h ON f.house_id = h.id
         WHERE f.user_id = #{userId}

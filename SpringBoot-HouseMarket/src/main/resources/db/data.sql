@@ -7,21 +7,36 @@ USE housemarket;
 
 SET NAMES utf8mb4;
 
-INSERT INTO `sysuser` (`id`, `username`, `password`, `real_name`, `role`, `phone`, `avatar`, `status`, `register_time`)
-VALUES (1, 'admin', '$2a$10$4KGLBUeN89vGB/7vW10YiuP6YwKjHyKqw.nbAbhEsLHS.9X447tfe', '系统管理员', 'ADMIN',
-        '13800000001', NULL, 'normal', NOW()),
-       (2, 'landlord1', '$2a$10$4yrbcM6dxO2zuB.2Ri13C.xY9NiF1hG43UrttMNU8zUcTXgYjujkm', '张明', 'LANDLORD',
-        '13800000002', NULL, 'normal', NOW()),
-       (3, 'landlord2', '$2a$10$4yrbcM6dxO2zuB.2Ri13C.xY9NiF1hG43UrttMNU8zUcTXgYjujkm', '李华', 'LANDLORD',
-        '13800000003', NULL, 'normal', NOW()),
-       (4, 'landlord3', '$2a$10$4yrbcM6dxO2zuB.2Ri13C.xY9NiF1hG43UrttMNU8zUcTXgYjujkm', '王芳', 'LANDLORD',
-        '13800000004', NULL, 'normal', NOW()),
-       (5, 'tenant1', '$2a$10$4yrbcM6dxO2zuB.2Ri13C.xY9NiF1hG43UrttMNU8zUcTXgYjujkm', '赵小雨', 'TENANT', '13900000001',
-        NULL, 'normal', NOW()),
-       (6, 'tenant2', '$2a$10$4yrbcM6dxO2zuB.2Ri13C.xY9NiF1hG43UrttMNU8zUcTXgYjujkm', '孙丽', 'TENANT', '13900000002',
-        NULL, 'normal', NOW()),
-       (7, 'tenant3', '$2a$10$4yrbcM6dxO2zuB.2Ri13C.xY9NiF1hG43UrttMNU8zUcTXgYjujkm', '周强', 'TENANT', '13900000003',
-        NULL, 'normal', NOW());
+INSERT INTO `sysuser` (`id`, `username`, `password`, `real_name`, `nickname`, `id_card_no`, `real_name_verified`,
+                       `verified_time`, `role`, `phone`, `avatar`, `status`, `register_time`)
+VALUES (1, 'admin', '$2a$10$4KGLBUeN89vGB/7vW10YiuP6YwKjHyKqw.nbAbhEsLHS.9X447tfe', '系统管理员', NULL, NULL, 0, NULL,
+        'ADMIN', '13800000001', NULL, 'normal', NOW()),
+       (2, 'landlord1', '$2a$10$4yrbcM6dxO2zuB.2Ri13C.xY9NiF1hG43UrttMNU8zUcTXgYjujkm', '张明', '低调玩家',
+        '110101199001011234', 1, NOW(), 'LANDLORD', '13800000002', NULL, 'normal', NOW()),
+       (3, 'landlord2', '$2a$10$4yrbcM6dxO2zuB.2Ri13C.xY9NiF1hG43UrttMNU8zUcTXgYjujkm', '李华', '房东李华',
+        '110101199102022345', 1, NOW(), 'LANDLORD', '13800000003', NULL, 'normal', NOW()),
+       (4, 'landlord3', '$2a$10$4yrbcM6dxO2zuB.2Ri13C.xY9NiF1hG43UrttMNU8zUcTXgYjujkm', '王芳', '房东王芳',
+        '110101199203033456', 1, NOW(), 'LANDLORD', '13800000004', NULL, 'normal', NOW()),
+       (5, 'tenant1', '$2a$10$4yrbcM6dxO2zuB.2Ri13C.xY9NiF1hG43UrttMNU8zUcTXgYjujkm', '赵小雨', NULL, NULL, 0, NULL,
+        'TENANT', '13900000001', NULL, 'normal', NOW()),
+       (6, 'tenant2', '$2a$10$4yrbcM6dxO2zuB.2Ri13C.xY9NiF1hG43UrttMNU8zUcTXgYjujkm', '孙丽', NULL, NULL, 0, NULL,
+        'TENANT', '13900000002', NULL, 'normal', NOW()),
+       (7, 'tenant3', '$2a$10$4yrbcM6dxO2zuB.2Ri13C.xY9NiF1hG43UrttMNU8zUcTXgYjujkm', '周强', NULL, NULL, 0, NULL,
+        'TENANT', '13900000003', NULL, 'normal', NOW());
+
+UPDATE `sysuser`
+SET `avatar` = '/uploads/avatars/default.png'
+WHERE `avatar` IS NULL
+   OR `avatar` = '';
+
+UPDATE `sysuser`
+SET `nickname` = CASE `username`
+                     WHEN 'tenant1' THEN '租客202608221'
+                     WHEN 'tenant2' THEN '租客202608222'
+                     WHEN 'tenant3' THEN '租客202608223'
+                     ELSE `nickname`
+    END
+WHERE `role` = 'TENANT';
 
 INSERT INTO `landlord_application` (`user_id`, `username`, `real_name`, `phone`, `status`, `review_note`, `reviewer_id`, `review_time`)
 VALUES (2, 'landlord1', '张明', '13800000002', 'approved', '审核通过', 1, NOW()),

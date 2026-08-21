@@ -24,10 +24,12 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
 
     private final HouseImageService houseImageService;
     private final ObjectMapper objectMapper;
+    private final UsersService usersService;
 
-    public HousesServiceImpl(HouseImageService houseImageService, ObjectMapper objectMapper) {
+    public HousesServiceImpl(HouseImageService houseImageService, ObjectMapper objectMapper, UsersService usersService) {
         this.houseImageService = houseImageService;
         this.objectMapper = objectMapper;
+        this.usersService = usersService;
     }
 
     @Override
@@ -202,6 +204,35 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
         return vo;
     }
 
+    private LandlordInfoVO buildLandlordInfo(Long landlordId) {
+        if (landlordId == null) {
+            return null;
+        }
+        Users landlord = usersService.getUserById(landlordId);
+        if (landlord == null) {
+            return null;
+        }
+        LandlordInfoVO vo = new LandlordInfoVO();
+        vo.setId(landlord.getId());
+        vo.setUsername(landlord.getUsername());
+        vo.setNickname(landlord.getNickname());
+        vo.setRealName(landlord.getRealName());
+        vo.setRealNameVerified(landlord.getRealNameVerified());
+        vo.setVerifiedTime(landlord.getVerifiedTime());
+        vo.setIdCardNoMasked(maskIdCard(landlord.getIdCardNo()));
+        if (Integer.valueOf(1).equals(landlord.getRealNameVerified())) {
+            vo.setPhone(landlord.getPhone());
+        }
+        return vo;
+    }
+
+    private String maskIdCard(String idCardNo) {
+        if (idCardNo == null || idCardNo.length() < 15) {
+            return null;
+        }
+        return idCardNo.substring(0, 6) + "********" + idCardNo.substring(14);
+    }
+
     private HouseDetailVO toDetailVO(Houses house, List<HouseImage> images) {
         HouseDetailVO vo = new HouseDetailVO();
         copyBase(house, vo);
@@ -212,6 +243,7 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
                 .map(this::toImageVO)
                 .collect(Collectors.toList()));
         vo.setCoverImage(findCover(images));
+        vo.setLandlord(buildLandlordInfo(house.getLandlordId()));
         return vo;
     }
 

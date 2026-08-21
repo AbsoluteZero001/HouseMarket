@@ -7,6 +7,7 @@ import com.springboot.springboothousemarket.Mapper.UsersMapper;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -68,6 +69,31 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         QueryWrapper<Users> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("is_deleted", 0);
         return usersMapper.selectList(queryWrapper);
+    }
+
+    @Override
+    public Users verifyLandlord(Long userId, String nickname, String realName, String idCardNo) {
+        Users user = getUserById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        if (!"LANDLORD".equals(user.getRole())) {
+            throw new RuntimeException("只有房东可以进行实名认证");
+        }
+        if (idCardNo == null || !idCardNo.matches("\\d{17}[\\dXx]")) {
+            throw new RuntimeException("请输入18位有效身份证号");
+        }
+        if (realName == null || realName.isBlank()) {
+            throw new RuntimeException("请输入真实姓名");
+        }
+
+        user.setNickname(nickname == null || nickname.isBlank() ? user.getUsername() : nickname);
+        user.setRealName(realName);
+        user.setIdCardNo(idCardNo);
+        user.setRealNameVerified(1);
+        user.setVerifiedTime(LocalDateTime.now());
+        updateById(user);
+        return user;
     }
 
 }

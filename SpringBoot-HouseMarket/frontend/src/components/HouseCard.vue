@@ -1,5 +1,5 @@
 <template>
-  <div class="house-card">
+  <div class="house-card" :class="{ clickable }" @click="handleCardClick">
     <div class="house-image-wrap">
       <img :src="imageUrl" :alt="house.title" class="house-image" />
       <div class="house-tag">{{ house.type || '未分类' }}</div>
@@ -32,7 +32,7 @@
       <div class="house-address">
         {{ house.community ? house.community + ' · ' : '' }}{{ house.address || '未填写' }}
       </div>
-      <div class="house-actions">
+      <div class="house-actions" @click.stop>
         <slot name="actions" :house="house" />
       </div>
       <div class="house-hover-line"></div>
@@ -44,7 +44,12 @@
 import {computed} from 'vue'
 import {formatPrice} from '../composables/useFormat'
 
-const props = defineProps({ house: Object })
+const props = defineProps({house: Object, clickable: {type: Boolean, default: true}})
+const emit = defineEmits(['open'])
+
+function handleCardClick() {
+  if (props.clickable) emit('open')
+}
 
 const imageUrl = computed(() => {
   if (props.house?.coverImage) return props.house.coverImage
@@ -74,6 +79,10 @@ const tags = computed(() => {
 .house-card:hover {
   transform: translateY(-7px);
   box-shadow: 0 26px 54px rgba(15, 23, 42, 0.15);
+}
+
+.house-card.clickable {
+  cursor: pointer;
 }
 .house-image-wrap {
   position: relative;

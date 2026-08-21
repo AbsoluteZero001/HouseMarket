@@ -135,4 +135,8 @@ public class Houses {
     @Schema(description = "浏览量")
     @TableField("views")
     private Integer views;
+
+    @Schema(description = "封面图片(非数据库字段)")
+    @TableField(exist = false)
+    private String coverImage;
 }

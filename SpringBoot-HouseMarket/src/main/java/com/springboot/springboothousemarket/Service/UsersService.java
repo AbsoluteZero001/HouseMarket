@@ -63,4 +63,6 @@ public interface UsersService extends IService<Users> {
      * @return 用户信息
      */
     Users getUserByUsername(String username);
+
+    Users verifyLandlord(Long userId, String nickname, String realName, String idCardNo);
 }

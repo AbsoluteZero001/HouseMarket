@@ -9,18 +9,27 @@
         <id property="id" column="id"/>
         <result property="username" column="username"/>
         <result property="password" column="password"/>
+        <result property="nickname" column="nickname"/>
+        <result property="avatar" column="avatar"/>
         <result property="role" column="role"/>
         <result property="status" column="status"/>
         <result property="isDeleted" column="is_deleted"/>
     </resultMap>
 
     <insert id="register" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO sysuser(username, password, role, status)
-        VALUES (#{username}, #{password}, #{role}, #{status})
+        INSERT INTO sysuser(username, password, nickname, avatar, role, status)
+        VALUES (#{username}, #{password}, #{nickname}, #{avatar}, #{role}, #{status})
     </insert>
 
     <select id="findUserByUsername" resultMap="BaseResultMap">
-        SELECT id, username, password, role, status, is_deleted
+        SELECT id,
+               username,
+               password,
+               nickname,
+               avatar,
+               role,
+               status,
+               is_deleted
         FROM sysuser
         WHERE username = #{username}
           AND is_deleted = 0

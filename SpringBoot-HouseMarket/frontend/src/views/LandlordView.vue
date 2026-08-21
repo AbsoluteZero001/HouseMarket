@@ -1,6 +1,8 @@
 <template>
   <div class="landlord-page">
-    <AppHeader :username="user?.username" :role="user?.role" @logout="handleLogout" @profile="showProfile = true">
+    <AppHeader :username="user?.nickname || user?.username" :role="user?.role"
+               :avatar="user?.avatar || '/uploads/avatars/default.png'" @logout="handleLogout"
+               @profile="showProfile = true">
       <template #nav>
         <a href="#" :class="{ active: activeTab === 'dashboard' }" @click.prevent="activeTab = 'dashboard'">工作台</a>
         <a href="#" :class="{ active: activeTab === 'houses' }" @click.prevent="activeTab = 'houses'">房源管理</a>
@@ -246,13 +248,63 @@
 
     <!-- Profile Modal -->
     <AppModal :visible="showProfile" title="个人信息" @close="showProfile = false">
+      <div class="avatar-block">
+        <img :src="user?.avatar || '/uploads/avatars/default.png'" alt="头像"/>
+        <label class="btn btn-sm">
+          更换头像
+          <input type="file" accept="image/*" hidden @change="handleAvatarChange"/>
+        </label>
+      </div>
       <div class="form-group"><label>用户名</label><input :value="user?.username" disabled /></div>
       <div class="form-group"><label>角色</label><input :value="roleLabelComputed" disabled/></div>
-      <div class="form-group"><label>旧密码</label><input v-model="passwordForm.oldPassword" type="password" /></div>
-      <div class="form-group"><label>新密码</label><input v-model="passwordForm.newPassword" type="password" placeholder="留空则不修改" /></div>
-      <div class="form-group"><label>确认新密码</label><input v-model="passwordForm.confirmNewPassword" type="password" /></div>
-      <button class="btn btn-block" @click="handleChangePassword">保存修改</button>
+
+      <div class="verify-card">
+        <div class="verify-title"><span>我的昵称</span></div>
+        <div class="form-group"><label>昵称</label><input v-model="nicknameForm.nickname" placeholder="设置你的昵称"/>
+        </div>
+        <button class="btn btn-block" @click="handleSaveNickname">保存昵称</button>
+      </div>
+
+      <div class="verify-card">
+        <div class="verify-title">
+          <span>房东实名认证</span>
+          <small v-if="Number(userProfile?.realNameVerified) === 1" class="verified">已实名</small>
+          <small v-else class="unverified">未实名</small>
+        </div>
+        <div class="form-group"><label>房东网名</label><input v-model="verifyForm.nickname" placeholder="如：低调玩家"/>
+        </div>
+        <div class="form-group"><label>真实姓名</label><input v-model="verifyForm.realName"
+                                                              placeholder="请输入真实姓名"/></div>
+        <div class="form-group"><label>身份证号</label><input v-model="verifyForm.idCardNo" maxlength="18"
+                                                              placeholder="请输入18位身份证号"/></div>
+        <button class="btn btn-block" :disabled="Number(userProfile?.realNameVerified) === 1" @click="handleVerify">
+          {{ Number(userProfile?.realNameVerified) === 1 ? '已完成实名认证' : '提交实名认证' }}
+        </button>
+      </div>
+
+      <div class="verify-card">
+        <div class="verify-title"><span>修改密码</span></div>
+        <div class="form-group"><label>旧密码</label><input v-model="passwordForm.oldPassword" type="password"/></div>
+        <div class="form-group"><label>新密码</label><input v-model="passwordForm.newPassword" type="password"
+                                                            placeholder="留空则不修改"/></div>
+        <div class="form-group"><label>确认新密码</label><input v-model="passwordForm.confirmNewPassword"
+                                                                type="password"/></div>
+        <button class="btn btn-block" @click="handleChangePassword">保存修改</button>
+      </div>
     </AppModal>
+
+    <button class="chat-fab" :class="{ 'has-unread': chatUnread }" @click="showChat = true">
+      在线聊
+      <span v-if="chatUnread" class="chat-badge">{{ chatUnread }}</span>
+    </button>
+    <ChatPanel
+        :current-user-id="Number(user.id)"
+        :current-user-name="user.nickname || user.username || '我'"
+        :house-id="0"
+        :visible="showChat"
+        @close="showChat = false"
+        @unread="chatUnread = $event"
+    />
 
     <AppointmentFlow
         :visible="showFlow"
@@ -277,15 +329,16 @@ import {computed, onMounted, onUnmounted, reactive, ref, watch} from 'vue'
 import {useRouter} from 'vue-router'
 import {useHouseStore} from '../stores/houses'
 import {useAppointmentStore} from '../stores/appointments'
-import {changePassword} from '../api/users'
+import {changePassword, updateNickname, uploadAvatar} from '../api/users'
 import {useWebSocket} from '../composables/useWebSocket'
 import {roleLabel, useAuth} from '../composables/useAuth'
 import {useAlert} from '../composables/useAlert'
-import {getMyLandlordApplication} from '../api/landlordApplications'
+import {getLandlordProfile, getMyLandlordApplication, verifyLandlord} from '../api/landlordApplications'
 import AppHeader from '../components/AppHeader.vue'
 import HouseCard from '../components/HouseCard.vue'
 import HouseForm from '../components/HouseForm.vue'
 import HouseImageManager from '../components/HouseImageManager.vue'
+import ChatPanel from '../components/ChatPanel.vue'
 import AppointmentTable from '../components/AppointmentTable.vue'
 import AppointmentFlow from '../components/AppointmentFlow.vue'
 import NotificationCenter from '../components/NotificationCenter.vue'
@@ -317,6 +370,12 @@ const showFlow = ref(false)
 const flowAppointment = ref(null)
 const flowRecords = ref([])
 const applicationStatus = ref(null)
+const userProfile = ref(user || {})
+const showChat = ref(false)
+const chatUnread = ref(0)
+const verifyForm = reactive({nickname: '', realName: '', idCardNo: ''})
+const nicknameForm = reactive({nickname: user?.nickname || user?.username || ''})
+const avatarUploading = ref(false)
 
 function askConfirm(title, message, handler) {
   confirmState.title = title
@@ -345,7 +404,9 @@ let pollTimer = null
 
 const roleLabelComputed = computed(() => roleLabel(user.role))
 const approvedCount = computed(() => aptStore.appointments.filter(a => a.status === 'approved').length)
-const canPublish = computed(() => applicationStatus.value === 'approved')
+const canPublish = computed(() =>
+    applicationStatus.value === 'approved' && Number(userProfile.value?.realNameVerified) === 1
+)
 const pipelineStages = computed(() => [
   {key: 'PUBLISH', label: '发布', count: houseStore.houses.length, sub: '在线房源'},
   {key: 'BOOK', label: '预约', count: aptStore.appointments.length, sub: '累计预约'},
@@ -365,8 +426,77 @@ async function loadApplicationStatus() {
   try {
     const res = await getMyLandlordApplication()
     applicationStatus.value = res.data?.data?.application?.status || null
+    const profileRes = await getLandlordProfile()
+    userProfile.value = profileRes.data?.data?.user || user
+    verifyForm.nickname = userProfile.value?.nickname || ''
+    verifyForm.realName = userProfile.value?.realName || ''
   } catch (e) {
     applicationStatus.value = null
+    userProfile.value = user || {}
+  }
+}
+
+async function handleVerify() {
+  if (!/^\d{17}[\dXx]$/.test(verifyForm.idCardNo)) {
+    showAlert('请输入18位有效身份证号', 'error')
+    return
+  }
+  if (!verifyForm.realName) {
+    showAlert('请输入真实姓名', 'error')
+    return
+  }
+  try {
+    const res = await verifyLandlord({
+      nickname: verifyForm.nickname,
+      realName: verifyForm.realName,
+      idCardNo: verifyForm.idCardNo
+    })
+    userProfile.value = res.data?.data?.user || {}
+    const stored = JSON.parse(localStorage.getItem('user') || '{}')
+    Object.assign(stored, userProfile.value)
+    localStorage.setItem('user', JSON.stringify(stored))
+    showAlert('实名认证成功，历史房源已同步展示实名状态')
+    await loadHouses()
+  } catch (e) {
+    showAlert(e.response?.data?.message || '实名认证失败', 'error')
+  }
+}
+
+async function handleSaveNickname() {
+  if (!nicknameForm.nickname.trim()) {
+    showAlert('昵称不能为空', 'error')
+    return
+  }
+  try {
+    const res = await updateNickname(nicknameForm.nickname.trim())
+    const updated = res.data?.data?.user || {}
+    Object.assign(user, updated)
+    const stored = JSON.parse(localStorage.getItem('user') || '{}')
+    Object.assign(stored, updated)
+    localStorage.setItem('user', JSON.stringify(stored))
+    showAlert('昵称已更新')
+  } catch (e) {
+    showAlert(e.response?.data?.message || '昵称更新失败', 'error')
+  }
+}
+
+async function handleAvatarChange(event) {
+  const file = event.target.files?.[0]
+  event.target.value = ''
+  if (!file) return
+  avatarUploading.value = true
+  try {
+    const res = await uploadAvatar(file)
+    const updated = res.data?.data?.user || {}
+    Object.assign(user, updated)
+    const stored = JSON.parse(localStorage.getItem('user') || '{}')
+    Object.assign(stored, updated)
+    localStorage.setItem('user', JSON.stringify(stored))
+    showAlert('头像已更新')
+  } catch (e) {
+    showAlert(e.response?.data?.message || '头像上传失败', 'error')
+  } finally {
+    avatarUploading.value = false
   }
 }
 
@@ -1094,6 +1224,102 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
   margin-top: 16px;
 }
 
+.verify-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 14px;
+  background: #fff;
+}
+
+.avatar-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.avatar-block img {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+}
+
+.verify-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.verify-title span {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.verify-title .verified {
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.verify-title .unverified {
+  color: #d97706;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.chat-fab {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 850;
+  border: none;
+  border-radius: 999px;
+  padding: 13px 22px;
+  background: linear-gradient(135deg, #1677ff, #06b6d4);
+  color: #fff;
+  font-weight: 700;
+  box-shadow: 0 14px 34px rgba(22, 119, 255, 0.36);
+  cursor: pointer;
+}
+
+.chat-fab.has-unread {
+  animation: fab-pulse 1.4s ease-in-out infinite;
+}
+
+.chat-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: #f43f5e;
+  color: #fff;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes fab-pulse {
+  0%, 100% {
+    box-shadow: 0 14px 34px rgba(22, 119, 255, 0.36);
+  }
+  50% {
+    box-shadow: 0 14px 40px rgba(244, 63, 94, 0.4);
+  }
+}
+
 @keyframes aurora-drift {
   0% {
     transform: translate3d(-4%, -3%, 0) rotate(0deg) scale(1);
@@ -1165,6 +1391,11 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
 
   .approval-summary {
     flex-wrap: wrap;
+  }
+
+  .chat-fab {
+    right: 16px;
+    bottom: 16px;
   }
 }
 </style>

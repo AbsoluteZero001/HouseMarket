@@ -75,4 +75,9 @@ public class PublicController {
                 "tenants", tenantsCount,
                 "appointments", appointmentsCount));
     }
+
+    @GetMapping("/server-time")
+    public ResponseResult getServerTime() {
+        return ResponseResult.ok(null, Map.of("serverTime", java.time.LocalDateTime.now()));
+    }
 }

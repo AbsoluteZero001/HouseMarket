@@ -7,6 +7,10 @@
         <result property="username" column="username"/>
         <result property="password" column="password"/>
         <result property="realName" column="real_name"/>
+        <result property="nickname" column="nickname"/>
+        <result property="idCardNo" column="id_card_no"/>
+        <result property="realNameVerified" column="real_name_verified"/>
+        <result property="verifiedTime" column="verified_time"/>
         <result property="role" column="role"/>
         <result property="phone" column="phone"/>
         <result property="avatar" column="avatar"/>
@@ -21,6 +25,10 @@
                username,
                password,
                real_name,
+               nickname,
+               id_card_no,
+               real_name_verified,
+               verified_time,
                role,
                phone,
                avatar,

@@ -3,10 +3,12 @@ package com.springboot.springboothousemarket.Service;
 import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Mapper.RegisterRequestMapper;
 import com.springboot.springboothousemarket.dto.RegisterRequest;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Set;
 
 @Service
@@ -41,6 +43,9 @@ public class RegisterRequestServiceImpl implements RegisterRequestService {
         }
         user.setRole(role);
         user.setStatus("normal");
+        user.setNickname(user.getNickname() == null || user.getNickname().isBlank()
+                ? defaultNickname(role) : user.getNickname());
+        user.setAvatar("/uploads/avatars/default.png");
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         mapper.register(user);
 
@@ -54,6 +59,16 @@ public class RegisterRequestServiceImpl implements RegisterRequestService {
                 landlordApplicationService.submit(userId, user.getUsername(), null, null);
             }
         }
+    }
+
+    private String defaultNickname(String role) {
+        String date = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        long count = usersService.lambdaQuery()
+                .eq(Users::getRole, role)
+                .apply("DATE(register_time) = CURDATE()")
+                .count();
+        String prefix = "LANDLORD".equals(role) ? "房东" : "租客";
+        return prefix + date + (count + 1);
     }
 
     @Override

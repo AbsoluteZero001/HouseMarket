@@ -25,6 +25,20 @@
         <p v-if="fieldErrors.username" class="field-error">{{ fieldErrors.username }}</p>
       </div>
 
+      <div class="form-group" :class="{ 'has-error': fieldErrors.nickname }">
+        <label>昵称</label>
+        <div class="input-wrap">
+          <span class="input-icon">✨</span>
+          <input
+              v-model="form.nickname"
+              placeholder="留空自动生成，如：低调玩家"
+              maxlength="20"
+              @input="clearField('nickname')"
+          />
+        </div>
+        <p v-if="fieldErrors.nickname" class="field-error">{{ fieldErrors.nickname }}</p>
+      </div>
+
       <div class="form-group" :class="{ 'has-error': fieldErrors.password }">
         <label>密码</label>
         <div class="input-wrap">
@@ -98,9 +112,9 @@ const router = useRouter()
 const loading = ref(false)
 const formError = ref('')
 const successMsg = ref('')
-const fieldErrors = reactive({username: '', password: '', confirmPassword: ''})
+const fieldErrors = reactive({username: '', nickname: '', password: '', confirmPassword: ''})
 
-const form = reactive({username: '', password: '', confirmPassword: '', role: 'TENANT'})
+const form = reactive({username: '', nickname: '', password: '', confirmPassword: '', role: 'TENANT'})
 
 const roleOptions = [
   {value: 'TENANT', label: '我是租客', icon: '👥'},
@@ -115,6 +129,7 @@ function clearField(field) {
 function validate() {
   formError.value = ''
   fieldErrors.username = form.username.trim().length >= 3 ? '' : '用户名至少3位字符'
+  fieldErrors.nickname = ''
   fieldErrors.password = form.password.length >= 6 ? '' : '密码至少6位字符'
   fieldErrors.confirmPassword = form.confirmPassword === form.password ? '' : '两次输入的密码不一致'
   return !fieldErrors.username && !fieldErrors.password && !fieldErrors.confirmPassword
@@ -130,6 +145,7 @@ async function handleRegister() {
   try {
     const res = await register({
       username: form.username.trim(),
+      nickname: form.nickname.trim(),
       password: form.password,
       role: form.role
     })

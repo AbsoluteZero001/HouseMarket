@@ -1,6 +1,7 @@
 <template>
   <div class="detail-page">
-    <AppHeader :username="user?.username" :role="user?.role" @logout="handleLogout">
+    <AppHeader :username="user?.nickname || user?.username" :role="user?.role"
+               :avatar="user?.avatar || '/uploads/avatars/default.png'" @logout="handleLogout">
       <template #nav>
         <a href="#" @click.prevent="goBack">&larr; 返回</a>
       </template>
@@ -85,8 +86,17 @@
         <div class="landlord-card">
           <div class="landlord-avatar">🏠</div>
           <div>
-            <div class="landlord-name">房东 #{{ house.landlordId }}</div>
-            <div class="landlord-sub">认证房东</div>
+            <div class="landlord-name">{{ house.landlord?.nickname || house.landlord?.username || '房东' }}</div>
+            <div class="landlord-sub">
+              <span v-if="Number(house.landlord?.realNameVerified) === 1" class="verified-badge">已实名</span>
+              <span v-else class="unverified-badge">未实名</span>
+              <span v-if="house.landlord?.realName">{{ house.landlord.realName }}</span>
+              <span v-if="house.landlord?.idCardNoMasked">身份证 {{ house.landlord.idCardNoMasked }}</span>
+            </div>
+          </div>
+          <div class="landlord-actions">
+            <button class="btn btn-sm" @click="showPhone = true">打电话</button>
+            <button class="btn btn-sm btn-accent" @click="openChat">在线聊</button>
           </div>
         </div>
       </div>
@@ -118,7 +128,25 @@
       </button>
     </AppModal>
 
+    <AppModal :visible="showPhone" title="房东电话" @close="showPhone = false">
+      <div class="phone-result">
+        <span>{{ house.landlord?.nickname || house.landlord?.username || '房东' }}</span>
+        <strong>{{ house.landlord?.phone || '暂未公开电话' }}</strong>
+      </div>
+      <button class="btn btn-block" @click="showPhone = false">关闭</button>
+    </AppModal>
+
     <AppAlert :visible="!!alertMsg" :message="alertMsg" :type="alertType" @close="alertMsg = ''" />
+
+    <ChatPanel
+        :current-user-id="Number(user.id)"
+        :current-user-name="user.username || '我'"
+        :house-id="Number(house?.id)"
+        :partner-id="Number(house?.landlord?.id)"
+        :partner-name="house?.landlord?.nickname || house?.landlord?.username"
+        :visible="showChat"
+        @close="showChat = false"
+    />
 
     <div v-if="lightboxImage" class="lightbox" @click="lightboxImage = ''">
       <img :src="lightboxImage" alt="房源大图"/>
@@ -135,6 +163,7 @@ import {useFavoriteStore} from '../stores/favorites'
 import {useAppointmentStore} from '../stores/appointments'
 import AppHeader from '../components/AppHeader.vue'
 import ImageGallery from '../components/ImageGallery.vue'
+import ChatPanel from '../components/ChatPanel.vue'
 import AppModal from '../components/AppModal.vue'
 import AppAlert from '../components/AppAlert.vue'
 import {useAuth} from '../composables/useAuth'
@@ -160,6 +189,8 @@ const isLoggedIn = computed(() => !!localStorage.getItem('token'))
 const house = ref(null)
 const isFav = ref(false)
 const showBookModal = ref(false)
+const showPhone = ref(false)
+const showChat = ref(false)
 const bookingError = ref('')
 const bookingLoading = ref(false)
 const {alertMsg, alertType, showAlert} = useAlert()
@@ -209,6 +240,14 @@ function goBack() {
   if (role === 'tenant') router.push('/tenant')
   else if (role === 'landlord') router.push('/landlord')
   else router.push('/')
+}
+
+function openChat() {
+  if (!isLoggedIn.value) {
+    router.push('/login')
+    return
+  }
+  showChat.value = true
 }
 
 async function toggleFavorite() {
@@ -453,6 +492,50 @@ onMounted(async () => {
 .landlord-name { font-size: 15px; font-weight: 600; color: var(--text); }
 .landlord-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
+.landlord-sub span {
+  margin-right: 10px;
+}
+
+.verified-badge {
+  color: #059669;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.unverified-badge {
+  color: #d97706;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 999px;
+  padding: 2px 9px;
+}
+
+.landlord-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.phone-result {
+  text-align: center;
+  padding: 18px 0;
+}
+
+.phone-result span {
+  display: block;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.phone-result strong {
+  font-size: 24px;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+
 .section-card {
   margin-top: 20px;
   background: rgba(255, 255, 255, 0.92);
@@ -615,6 +698,11 @@ onMounted(async () => {
 
   .detail-spec-grid {
     grid-template-columns: 1fr;
+  }
+
+  .landlord-actions {
+    margin-left: 0;
+    width: 100%;
   }
 }
 </style>

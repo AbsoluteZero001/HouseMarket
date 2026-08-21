@@ -13,6 +13,7 @@
       <div class="header-right">
         <div class="user-chip" @click="$emit('profile')" v-if="username">
           <span class="role-dot" :class="'dot-' + role.toLowerCase()"></span>
+          <img v-if="avatar" :src="avatar" class="user-avatar" alt="头像"/>
           <span class="username-text">{{ username }}</span>
           <span class="role-tag">{{ roleLabelComputed }}</span>
         </div>
@@ -28,7 +29,7 @@
 import {computed, onMounted, onUnmounted, ref} from 'vue'
 import {roleLabel} from '../composables/useAuth'
 
-const props = defineProps({ username: String, role: String })
+const props = defineProps({username: String, role: String, avatar: String})
 defineEmits(['logout', 'profile'])
 
 const scrolled = ref(false)
@@ -138,6 +139,13 @@ const roleLabelComputed = computed(() => roleLabel(props.role))
   cursor: pointer;
   transition: all var(--transition);
   font-size: 13px;
+}
+
+.user-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 .user-chip:hover {
   border-color: #06b6d4;

@@ -199,6 +199,10 @@ public class HousesController {
                 && !landlordApplicationService.hasApproved(currentUser.getId())) {
             throw new RuntimeException("房东入驻审核通过后才能发布房源");
         }
+        if ("LANDLORD".equals(currentUser.getRole())
+                && !Integer.valueOf(1).equals(currentUser.getRealNameVerified())) {
+            throw new RuntimeException("请先完成房东实名认证后再发布房源");
+        }
     }
 
     private void requireHouseOwner(Long houseId, Users currentUser) {

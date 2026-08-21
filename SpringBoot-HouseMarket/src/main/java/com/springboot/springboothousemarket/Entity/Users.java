@@ -49,6 +49,23 @@ public class Users {
     @TableField("real_name")
     private String realName;
 
+    @Schema(description = "房东网名")
+    @TableField("nickname")
+    private String nickname;
+
+    @Schema(description = "身份证号")
+    @TableField("id_card_no")
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String idCardNo;
+
+    @Schema(description = "实名认证状态: 0未实名, 1已实名")
+    @TableField("real_name_verified")
+    private Integer realNameVerified;
+
+    @Schema(description = "实名认证时间")
+    @TableField("verified_time")
+    private java.time.LocalDateTime verifiedTime;
+
     /**
      * 角色
      * 用户在系统中的角色类型，可选值为：

@@ -3,13 +3,20 @@ package com.springboot.springboothousemarket.Controller;
 import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Service.UsersService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Tag(name = "用户信息API")
 @RequestMapping("/user")
@@ -18,6 +25,9 @@ public class UsersController {
 
     private final UsersService sysUserService;
     private final PasswordEncoder passwordEncoder;
+
+    @Value("${upload.dir:./uploads}")
+    private String uploadDir;
 
     public UsersController(UsersService sysUserService, PasswordEncoder passwordEncoder) {
         this.sysUserService = sysUserService;
@@ -110,6 +120,53 @@ public class UsersController {
             throw new SecurityException("未登录或登录状态失效");
         }
         return sysUserService.getUserByUsername(currentUsername);
+    }
+
+    @PutMapping("/profile")
+    public com.springboot.springboothousemarket.dto.ResponseResult updateNickname(
+            @RequestBody Map<String, String> body,
+            @AuthenticationPrincipal Users currentUser) {
+        Users user = sysUserService.getUserById(currentUser.getId());
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        String nickname = body.get("nickname");
+        user.setNickname(nickname == null || nickname.isBlank() ? user.getUsername() : nickname);
+        sysUserService.updateUser(user.getId(), user);
+        return com.springboot.springboothousemarket.dto.ResponseResult.ok(null,
+                Map.of("user", sysUserService.getUserById(user.getId())));
+    }
+
+    @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public com.springboot.springboothousemarket.dto.ResponseResult updateAvatar(
+            @RequestParam(value = "avatar", required = false) MultipartFile avatar,
+            @RequestParam(value = "file", required = false) MultipartFile file,
+            @AuthenticationPrincipal Users currentUser) throws IOException {
+        MultipartFile upload = avatar != null && !avatar.isEmpty() ? avatar : file;
+        if (upload == null || upload.isEmpty()) {
+            throw new RuntimeException("上传头像不能为空");
+        }
+        String extension = "";
+        String original = upload.getOriginalFilename();
+        if (original != null) {
+            int dot = original.lastIndexOf('.');
+            if (dot >= 0) {
+                extension = original.substring(dot);
+            }
+        }
+        File avatarDir = new File(uploadDir, "avatars");
+        if (!avatarDir.exists() && !avatarDir.mkdirs()) {
+            throw new IOException("无法创建头像目录");
+        }
+        String fileName = currentUser.getId() + "_" + System.currentTimeMillis() + extension;
+        File target = new File(avatarDir, fileName);
+        upload.transferTo(target);
+
+        Users user = sysUserService.getUserById(currentUser.getId());
+        user.setAvatar("/uploads/avatars/" + fileName);
+        sysUserService.updateUser(user.getId(), user);
+        return com.springboot.springboothousemarket.dto.ResponseResult.ok(null,
+                Map.of("user", sysUserService.getUserById(user.getId())));
     }
 
     /**

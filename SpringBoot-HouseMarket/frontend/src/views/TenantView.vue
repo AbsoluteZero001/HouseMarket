@@ -1,6 +1,8 @@
 <template>
   <div class="tenant-page">
-    <AppHeader :username="user?.username" :role="user?.role" @logout="handleLogout" @profile="showProfile = true">
+    <AppHeader :username="user?.nickname || user?.username" :role="user?.role"
+               :avatar="user?.avatar || '/uploads/avatars/default.png'" @logout="handleLogout"
+               @profile="showProfile = true">
       <template #nav>
         <a href="#" :class="{ active: activeTab === 'search' }" @click.prevent="activeTab = 'search'">找房源</a>
         <a href="#" :class="{ active: activeTab === 'appointments' }" @click.prevent="activeTab = 'appointments'">预约记录</a>
@@ -44,7 +46,8 @@
         </div>
 
         <div v-else class="house-grid">
-          <HouseCard v-for="(h, i) in houseStore.houses" :key="h.id" :house="h" v-reveal="{ delay: (i % 3) * 70 }">
+          <HouseCard v-for="(h, i) in houseStore.houses" :key="h.id" :house="h" @open="viewDetail(h.id)"
+                     v-reveal="{ delay: (i % 3) * 70 }">
             <template #actions="{ house }">
               <button class="btn btn-sm" @click="viewDetail(house.id)">查看详情</button>
               <button class="btn btn-sm btn-accent" @click="bookHouse(house.id)">预约看房</button>
@@ -82,6 +85,7 @@
         </div>
         <div v-else class="house-grid">
           <HouseCard v-for="(f, i) in favStore.favorites" :key="f.id" :house="f.house || f"
+                     @open="viewDetail((f.house || f).id)"
                      v-reveal="{ delay: (i % 3) * 70 }">
             <template #actions="{ house }">
               <button class="btn btn-sm" @click="viewDetail(house.id)">查看详情</button>
@@ -100,6 +104,18 @@
 
     <!-- Profile Modal -->
     <AppModal :visible="showProfile" title="个人信息" @close="showProfile = false">
+      <div class="avatar-block">
+        <img :src="user?.avatar || '/uploads/avatars/default.png'" alt="头像"/>
+        <label class="btn btn-sm">
+          更换头像
+          <input type="file" accept="image/*" hidden @change="handleAvatarChange"/>
+        </label>
+      </div>
+      <div class="form-group">
+        <label>昵称</label>
+        <input v-model="profileForm.nickname" placeholder="设置你的昵称"/>
+      </div>
+      <button class="btn btn-block" @click="handleSaveNickname">保存昵称</button>
       <div class="form-group">
         <label>用户名</label>
         <input :value="user?.username" disabled />
@@ -142,7 +158,7 @@ import {useRouter} from 'vue-router'
 import {useHouseStore} from '../stores/houses'
 import {useAppointmentStore} from '../stores/appointments'
 import {useFavoriteStore} from '../stores/favorites'
-import {changePassword} from '../api/users'
+import {changePassword, updateNickname, uploadAvatar} from '../api/users'
 import {useWebSocket} from '../composables/useWebSocket'
 import {roleLabel, useAuth} from '../composables/useAuth'
 import {useAlert} from '../composables/useAlert'
@@ -173,6 +189,8 @@ const searchParams = ref({})
 const showProfile = ref(false)
 const {alertMsg, alertType, showAlert} = useAlert()
 const passwordForm = reactive({ newPassword: '', confirmNewPassword: '' })
+const profileForm = reactive({nickname: user?.nickname || user?.username || ''})
+const avatarUploading = ref(false)
 const confirmState = reactive({visible: false, title: '', message: '', handler: null})
 const showFlow = ref(false)
 const flowAppointment = ref(null)
@@ -251,6 +269,44 @@ async function handleChangePassword() {
   showAlert('密码修改成功')
   showProfile.value = false
   passwordForm.newPassword = ''; passwordForm.confirmNewPassword = ''
+}
+
+async function handleSaveNickname() {
+  if (!profileForm.nickname.trim()) {
+    showAlert('昵称不能为空', 'error')
+    return
+  }
+  try {
+    const res = await updateNickname(profileForm.nickname.trim())
+    const updated = res.data?.data?.user || {}
+    Object.assign(user, updated)
+    const stored = JSON.parse(localStorage.getItem('user') || '{}')
+    Object.assign(stored, updated)
+    localStorage.setItem('user', JSON.stringify(stored))
+    showAlert('昵称已更新')
+  } catch (e) {
+    showAlert(e.response?.data?.message || '昵称更新失败', 'error')
+  }
+}
+
+async function handleAvatarChange(event) {
+  const file = event.target.files?.[0]
+  event.target.value = ''
+  if (!file) return
+  avatarUploading.value = true
+  try {
+    const res = await uploadAvatar(file)
+    const updated = res.data?.data?.user || {}
+    Object.assign(user, updated)
+    const stored = JSON.parse(localStorage.getItem('user') || '{}')
+    Object.assign(stored, updated)
+    localStorage.setItem('user', JSON.stringify(stored))
+    showAlert('头像已更新')
+  } catch (e) {
+    showAlert(e.response?.data?.message || '头像上传失败', 'error')
+  } finally {
+    avatarUploading.value = false
+  }
 }
 
 function handleLogout() {
@@ -424,6 +480,21 @@ onMounted(async () => {
   width: 100%;
   padding: 12px;
   margin-top: 16px;
+}
+
+.avatar-block {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.avatar-block img {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
 }
 
 @keyframes aurora-drift {
