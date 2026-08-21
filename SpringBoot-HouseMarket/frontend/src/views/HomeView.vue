@@ -132,11 +132,12 @@
           <div class="showcase-body">
             <div class="showcase-price">{{ formatPrice(h.price) }}</div>
             <h3>{{ h.title }}</h3>
-            <p>{{ h.address }}</p>
+            <p>{{ h.community ? h.community + ' · ' : '' }}{{ h.address }}</p>
             <div class="showcase-specs">
-              <span>{{ h.bedrooms || 1 }}室 {{ h.bathrooms || 1 }}卫</span>
+              <span>{{ h.layout || h.type || '未分类' }}</span>
               <span>{{ h.area }}㎡</span>
               <span>{{ h.orientation }}</span>
+              <span v-if="h.subwayDistance">{{ h.subwayDistance }}</span>
             </div>
           </div>
         </article>
@@ -179,15 +180,16 @@
             <h3>{{ h.title }}</h3>
             <div class="card-price">{{ formatPrice(h.price) }}</div>
             <div class="card-specs">
-              <span>{{ h.bedrooms || 1 }}室 {{ h.bathrooms || 1 }}卫</span>
+              <span>{{ h.layout || h.type || '未分类' }}</span>
               <span>{{ h.area }}㎡</span>
               <span>{{ h.orientation }}</span>
               <span>{{ h.floor || '楼层待定' }}</span>
+              <span v-if="h.subwayDistance">{{ h.subwayDistance }}</span>
             </div>
             <div class="card-tags" v-if="parseTags(h).length">
               <span v-for="t in parseTags(h).slice(0, 3)" :key="t">{{ t }}</span>
             </div>
-            <div class="card-address">{{ h.address }}</div>
+            <div class="card-address">{{ h.community ? h.community + ' · ' : '' }}{{ h.address }}</div>
             <div class="card-cta">查看房源
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                    stroke-linecap="round" stroke-linejoin="round">

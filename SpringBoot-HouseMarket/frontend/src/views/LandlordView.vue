@@ -225,13 +225,20 @@
     </div>
 
     <!-- Add/Edit House Modal -->
-    <AppModal :visible="showAddModal || showEditModal" :title="showEditModal ? '编辑房源' : '发布新房源'" width="720px"
+    <AppModal :visible="showAddModal || showEditModal" :title="showEditModal ? '编辑房源' : '发布新房源'" width="860px"
               @close="closeHouseModal">
-      <HouseForm ref="houseFormRef" :initial="editingHouse" :submitLabel="showEditModal ? '保存修改' : '发布房源'" @submit="handleHouseSubmit" @cancel="closeHouseModal" />
+      <HouseForm
+          ref="houseFormRef"
+          :initial="editingHouse"
+          :submit-label="showEditModal ? '保存修改' : '发布房源'"
+          :show-image-upload="false"
+          @submit="handleHouseSubmit"
+          @cancel="closeHouseModal"
+      />
       <div v-if="showEditModal" class="image-manager-section">
         <div class="image-section-title">
           <span>房源图片</span>
-          <small>第一张默认作为封面，也可手动设置封面</small>
+          <small>分类上传，未上传的分类不会显示</small>
         </div>
         <HouseImageManager :house-id="editingHouse.id" :images="activeHouseImages" @changed="reloadEditingImages"/>
       </div>
@@ -401,15 +408,25 @@ async function handleHouseSubmit(data) {
   const payload = {
     title: data.title,
     type: data.type,
+    layout: data.layout,
     district: data.district,
+    community: data.community,
     bedrooms: Number(data.bedrooms) || 1,
+    livingRooms: Number(data.livingRooms) || 0,
+    kitchens: Number(data.kitchens) || 0,
     bathrooms: Number(data.bathrooms) || 1,
     area: data.area,
     price: data.price,
+    deposit: data.deposit,
     orientation: data.orientation,
     floor: data.floor,
+    totalFloors: data.totalFloors,
     decoration: data.decoration,
     leaseTerm: data.leaseTerm,
+    hasElevator: data.hasElevator ? 1 : 0,
+    subwayDistance: data.subwayDistance,
+    moveInType: data.moveInType,
+    rentStatus: data.rentStatus,
     tags: JSON.stringify(tags),
     address: data.address,
     description: data.description
@@ -426,7 +443,7 @@ async function handleHouseSubmit(data) {
       pushNotification('房源已发布，等待租客预约', 'success')
     }
     if (data.imageFile && houseId) {
-      await houseStore.addHouseImage(houseId, data.imageFile, 0, true)
+      await houseStore.addHouseImage(houseId, data.imageFile, 'COVER', 0, true)
       showAlert('房源图片已上传')
     }
   } catch (e) {

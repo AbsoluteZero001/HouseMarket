@@ -14,21 +14,24 @@
         <span class="house-price">{{ formatPrice(house.price) }}</span>
       </div>
       <div class="house-meta">
-        <span>{{ house.district || '未知区域' }}</span>
-        <span class="meta-sep">|</span>
-        <span>{{ house.bedrooms || 1 }}室{{ house.bathrooms || 1 }}卫</span>
+        <span>{{ house.layout || house.type || '未分类' }}</span>
         <span class="meta-sep">|</span>
         <span>{{ house.area }}㎡</span>
+        <span class="meta-sep">|</span>
+        <span>{{ house.district || '未知区域' }}</span>
       </div>
       <div class="house-submeta">
         <span>{{ house.orientation || '南北' }}</span>
         <span>{{ house.floor || '楼层待定' }}</span>
         <span>{{ house.decoration || '精装' }}</span>
+        <span v-if="house.subwayDistance">{{ house.subwayDistance }}</span>
       </div>
       <div class="house-tags" v-if="tags.length">
         <span v-for="t in tags" :key="t">{{ t }}</span>
       </div>
-      <div class="house-address">{{ house.address || '未填写' }}</div>
+      <div class="house-address">
+        {{ house.community ? house.community + ' · ' : '' }}{{ house.address || '未填写' }}
+      </div>
       <div class="house-actions">
         <slot name="actions" :house="house" />
       </div>

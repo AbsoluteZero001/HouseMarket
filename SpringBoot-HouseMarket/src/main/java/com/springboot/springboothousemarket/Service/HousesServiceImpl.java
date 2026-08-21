@@ -219,15 +219,25 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
         vo.setId(house.getId());
         vo.setTitle(house.getTitle());
         vo.setType(house.getType());
+        vo.setLayout(house.getLayout());
         vo.setDistrict(house.getDistrict());
+        vo.setCommunity(house.getCommunity());
         vo.setBedrooms(house.getBedrooms());
+        vo.setLivingRooms(house.getLivingRooms());
+        vo.setKitchens(house.getKitchens());
         vo.setBathrooms(house.getBathrooms());
         vo.setArea(house.getArea());
         vo.setPrice(house.getPrice());
+        vo.setDeposit(house.getDeposit());
         vo.setOrientation(house.getOrientation());
         vo.setFloor(house.getFloor());
+        vo.setTotalFloors(house.getTotalFloors());
         vo.setDecoration(house.getDecoration());
         vo.setLeaseTerm(house.getLeaseTerm());
+        vo.setHasElevator(house.getHasElevator());
+        vo.setSubwayDistance(house.getSubwayDistance());
+        vo.setMoveInType(house.getMoveInType());
+        vo.setRentStatus(house.getRentStatus());
         vo.setTags(parseStringList(house.getTags()));
         vo.setAddress(house.getAddress());
         vo.setLandlordId(house.getLandlordId());
@@ -242,6 +252,7 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
         vo.setId(image.getId());
         vo.setHouseId(image.getHouseId());
         vo.setImageUrl(image.getImageUrl());
+        vo.setImageType(image.getImageType());
         vo.setSortOrder(image.getSortOrder());
         vo.setIsCover(image.getIsCover());
         vo.setCreateTime(image.getCreateTime());
@@ -275,15 +286,25 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
     private void copyToEntity(HouseCreateDTO dto, Houses house) {
         house.setTitle(dto.getTitle());
         house.setType(dto.getType());
+        house.setLayout(dto.getLayout());
         house.setDistrict(dto.getDistrict());
+        house.setCommunity(dto.getCommunity());
         house.setBedrooms(dto.getBedrooms());
+        house.setLivingRooms(dto.getLivingRooms());
+        house.setKitchens(dto.getKitchens());
         house.setBathrooms(dto.getBathrooms());
         house.setArea(dto.getArea());
         house.setPrice(dto.getPrice());
+        house.setDeposit(dto.getDeposit());
         house.setOrientation(dto.getOrientation());
         house.setFloor(dto.getFloor());
+        house.setTotalFloors(dto.getTotalFloors());
         house.setDecoration(dto.getDecoration());
         house.setLeaseTerm(dto.getLeaseTerm());
+        house.setHasElevator(dto.getHasElevator());
+        house.setSubwayDistance(dto.getSubwayDistance());
+        house.setMoveInType(dto.getMoveInType());
+        house.setRentStatus(dto.getRentStatus());
         house.setTags(normalizeTags(dto.getTags()));
         house.setAddress(dto.getAddress());
         house.setDescription(dto.getDescription());
@@ -292,15 +313,25 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
     private void copyToEntity(HouseUpdateDTO dto, Houses house) {
         if (dto.getTitle() != null) house.setTitle(dto.getTitle());
         if (dto.getType() != null) house.setType(dto.getType());
+        if (dto.getLayout() != null) house.setLayout(dto.getLayout());
         if (dto.getDistrict() != null) house.setDistrict(dto.getDistrict());
+        if (dto.getCommunity() != null) house.setCommunity(dto.getCommunity());
         if (dto.getBedrooms() != null) house.setBedrooms(dto.getBedrooms());
+        if (dto.getLivingRooms() != null) house.setLivingRooms(dto.getLivingRooms());
+        if (dto.getKitchens() != null) house.setKitchens(dto.getKitchens());
         if (dto.getBathrooms() != null) house.setBathrooms(dto.getBathrooms());
         if (dto.getArea() != null) house.setArea(dto.getArea());
         if (dto.getPrice() != null) house.setPrice(dto.getPrice());
+        if (dto.getDeposit() != null) house.setDeposit(dto.getDeposit());
         if (dto.getOrientation() != null) house.setOrientation(dto.getOrientation());
         if (dto.getFloor() != null) house.setFloor(dto.getFloor());
+        if (dto.getTotalFloors() != null) house.setTotalFloors(dto.getTotalFloors());
         if (dto.getDecoration() != null) house.setDecoration(dto.getDecoration());
         if (dto.getLeaseTerm() != null) house.setLeaseTerm(dto.getLeaseTerm());
+        if (dto.getHasElevator() != null) house.setHasElevator(dto.getHasElevator());
+        if (dto.getSubwayDistance() != null) house.setSubwayDistance(dto.getSubwayDistance());
+        if (dto.getMoveInType() != null) house.setMoveInType(dto.getMoveInType());
+        if (dto.getRentStatus() != null) house.setRentStatus(dto.getRentStatus());
         if (dto.getTags() != null) house.setTags(normalizeTags(dto.getTags()));
         if (dto.getAddress() != null) house.setAddress(dto.getAddress());
         if (dto.getDescription() != null) house.setDescription(dto.getDescription());
@@ -332,6 +363,9 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
         if (house.getType() == null || house.getType().isBlank()) {
             house.setType("平层");
         }
+        if (house.getLayout() == null || house.getLayout().isBlank()) {
+            house.setLayout("其他");
+        }
         if (house.getDistrict() == null || house.getDistrict().isBlank()) {
             house.setDistrict("未知区域");
         }
@@ -341,11 +375,20 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
         if (house.getBathrooms() == null) {
             house.setBathrooms(1);
         }
+        if (house.getLivingRooms() == null) {
+            house.setLivingRooms(0);
+        }
+        if (house.getKitchens() == null) {
+            house.setKitchens(0);
+        }
         if (house.getArea() == null) {
             house.setArea(BigDecimal.ZERO);
         }
         if (house.getPrice() == null) {
             house.setPrice(BigDecimal.ZERO);
+        }
+        if (house.getDeposit() == null) {
+            house.setDeposit(BigDecimal.ZERO);
         }
         if (house.getOrientation() == null || house.getOrientation().isBlank()) {
             house.setOrientation("南北");
@@ -355,6 +398,15 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
         }
         if (house.getLeaseTerm() == null || house.getLeaseTerm().isBlank()) {
             house.setLeaseTerm("押一付三");
+        }
+        if (house.getHasElevator() == null) {
+            house.setHasElevator(0);
+        }
+        if (house.getMoveInType() == null || house.getMoveInType().isBlank()) {
+            house.setMoveInType("随时入住");
+        }
+        if (house.getRentStatus() == null || house.getRentStatus().isBlank()) {
+            house.setRentStatus("随时入住");
         }
         if (house.getTags() == null || house.getTags().isBlank()) {
             house.setTags("[]");
@@ -377,7 +429,7 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
         for (int i = 0; i < imageUrls.size(); i++) {
             String url = imageUrls.get(i);
             if (url != null && !url.isBlank()) {
-                houseImageService.createImage(houseId, url, i, i == 0);
+                houseImageService.createImage(houseId, url, "OTHER", i, i == 0);
             }
         }
     }

@@ -26,19 +26,17 @@
         <div class="detail-info" v-reveal="{ delay: 160 }">
           <h2 class="house-title">{{ house.title }}</h2>
           <div class="house-price">{{ formatPrice(house.price) }}</div>
-          <div class="house-meta">
-            <span class="meta-item">
-              <span class="meta-icon">🏠</span>
-              {{ house.type }}
-            </span>
-            <span class="meta-item">
-              <span class="meta-icon">📐</span>
-              {{ house.area }} ㎡
-            </span>
-            <span class="meta-item">
-              <span class="meta-icon">📍</span>
-              {{ house.address }}
-            </span>
+          <div class="detail-spec-grid">
+            <div><span>户型</span><strong>{{ house.layout || house.type || '未分类' }}</strong></div>
+            <div><span>面积</span><strong>{{ house.area }}㎡</strong></div>
+            <div><span>朝向</span><strong>{{ house.orientation }}</strong></div>
+            <div><span>装修</span><strong>{{ house.decoration }}</strong></div>
+            <div><span>楼层</span><strong>{{ floorText }}</strong></div>
+            <div><span>押金</span><strong>{{ house.deposit || '面议' }}</strong></div>
+            <div><span>电梯</span><strong>{{ Number(house.hasElevator) === 1 ? '有' : '无' }}</strong></div>
+            <div><span>地铁</span><strong>{{ house.subwayDistance || '暂无信息' }}</strong></div>
+            <div><span>入住</span><strong>{{ house.moveInType || '随时入住' }}</strong></div>
+            <div><span>状态</span><strong>{{ house.rentStatus || '随时入住' }}</strong></div>
           </div>
 
           <div class="house-description">
@@ -59,6 +57,27 @@
           </div>
         </div>
       </div>
+
+      <section class="section-card" v-if="categoryGroups.length" v-reveal>
+        <div class="section-title">
+          <h3>房源图片</h3>
+          <span>共 {{ allImages.length }} 张</span>
+        </div>
+        <div class="category-groups">
+          <section v-for="group in categoryGroups" :key="group.key" class="category-group">
+            <header class="category-group-head">
+              <strong>{{ group.label }}</strong>
+              <span>{{ group.images.length }} 张</span>
+            </header>
+            <div class="category-thumbs">
+              <button v-for="image in group.images" :key="image.id" class="thumb-btn"
+                      @click="openLightbox(image.imageUrl)">
+                <img :src="image.imageUrl" :alt="group.label"/>
+              </button>
+            </div>
+          </section>
+        </div>
+      </section>
 
       <!-- Landlord Info -->
       <div class="landlord-section" v-if="house.landlordId" v-reveal="{ delay: 120 }">
@@ -100,6 +119,11 @@
     </AppModal>
 
     <AppAlert :visible="!!alertMsg" :message="alertMsg" :type="alertType" @close="alertMsg = ''" />
+
+    <div v-if="lightboxImage" class="lightbox" @click="lightboxImage = ''">
+      <img :src="lightboxImage" alt="房源大图"/>
+      <span class="lightbox-close">关闭</span>
+    </div>
   </div>
 </template>
 
@@ -142,10 +166,43 @@ const {alertMsg, alertType, showAlert} = useAlert()
 
 const bookForm = reactive({ date: '', time: '', location: '', notes: '', requestId: '' })
 
+const allImages = computed(() => house.value?.images || [])
 const imageList = computed(() => {
-  const images = house.value?.images || []
-  return images.map(img => typeof img === 'string' ? img : img.imageUrl).filter(Boolean)
+  const covers = allImages.value.filter(image => Number(image.isCover) === 1)
+  const source = covers.length ? covers : allImages.value
+  return source.map(img => typeof img === 'string' ? img : img.imageUrl).filter(Boolean)
 })
+const floorText = computed(() => {
+  const current = house.value?.floor
+  const total = house.value?.totalFloors
+  if (current && total) return `${current}/${total}层`
+  if (current) return `${current}层`
+  return '楼层待定'
+})
+const categoryGroups = computed(() => {
+  const types = [
+    {key: 'LIVING_ROOM', label: '客厅'},
+    {key: 'BEDROOM', label: '卧室'},
+    {key: 'KITCHEN', label: '厨房'},
+    {key: 'BATHROOM', label: '卫生间'},
+    {key: 'BALCONY', label: '阳台'},
+    {key: 'DINING_ROOM', label: '餐厅'},
+    {key: 'STUDY', label: '书房'},
+    {key: 'FLOOR_PLAN', label: '户型图'},
+    {key: 'OTHER', label: '其他'}
+  ]
+  return types
+      .map(type => ({
+        ...type,
+        images: allImages.value.filter(image => image.imageType === type.key)
+      }))
+      .filter(group => group.images.length)
+})
+const lightboxImage = ref('')
+
+function openLightbox(url) {
+  lightboxImage.value = url
+}
 
 function goBack() {
   const role = user?.role?.toLowerCase()
@@ -284,20 +341,33 @@ onMounted(async () => {
   color: transparent;
   margin-bottom: 20px;
 }
-.house-meta {
-  display: flex;
-  gap: 20px;
+
+.detail-spec-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
   margin-bottom: 24px;
-  color: var(--text-secondary);
-  flex-wrap: wrap;
 }
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+
+.detail-spec-grid div {
+  background: #f8fafc;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.detail-spec-grid span {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.detail-spec-grid strong {
   font-size: 14px;
+  color: var(--text);
+  font-weight: 700;
 }
-.meta-icon { font-size: 16px; }
 
 .house-description {
   padding-top: 20px;
@@ -383,6 +453,114 @@ onMounted(async () => {
 .landlord-name { font-size: 15px; font-weight: 600; color: var(--text); }
 .landlord-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
+.section-card {
+  margin-top: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.08);
+}
+
+.section-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.section-title h3 {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.section-title span {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.category-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.category-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.category-group-head strong {
+  font-size: 15px;
+  color: var(--text);
+}
+
+.category-group-head span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.category-thumbs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.thumb-btn {
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #f8fafc;
+}
+
+.thumb-btn img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+
+.thumb-btn:hover img {
+  transform: scale(1.06);
+}
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  background: rgba(0, 0, 0, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.lightbox img {
+  max-width: min(1000px, 92vw);
+  max-height: 86vh;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 999px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
 /* Modal */
 .btn-block { width: 100%; padding: 12px; margin-top: 16px; }
 
@@ -434,5 +612,9 @@ onMounted(async () => {
   .house-actions { flex-direction: column; }
   .house-actions .btn { width: 100%; justify-content: center; }
   .skeleton-gallery { min-width: auto; min-height: 280px; }
+
+  .detail-spec-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

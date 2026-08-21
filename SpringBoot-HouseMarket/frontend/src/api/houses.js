@@ -36,9 +36,10 @@ export function uploadImage(file) {
   })
 }
 
-export function uploadHouseImage(houseId, file, sortOrder = 0, isCover = false) {
+export function uploadHouseImage(houseId, file, imageType = 'OTHER', sortOrder = 0, isCover = false) {
     const formData = new FormData()
     formData.append('image', file)
+    formData.append('imageType', imageType)
     formData.append('sortOrder', sortOrder)
     formData.append('isCover', isCover)
     return http.post(`/api/houses/${houseId}/images`, formData, {

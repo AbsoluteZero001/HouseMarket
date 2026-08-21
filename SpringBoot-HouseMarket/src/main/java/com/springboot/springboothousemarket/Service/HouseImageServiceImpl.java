@@ -49,7 +49,7 @@ public class HouseImageServiceImpl extends ServiceImpl<HouseImageMapper, HouseIm
 
     @Override
     @Transactional
-    public HouseImage uploadImage(Long houseId, MultipartFile file, Integer sortOrder, boolean cover) throws IOException {
+    public HouseImage uploadImage(Long houseId, MultipartFile file, String imageType, Integer sortOrder, boolean cover) throws IOException {
         if (houseId == null) {
             throw new RuntimeException("房源ID不能为空");
         }
@@ -89,6 +89,7 @@ public class HouseImageServiceImpl extends ServiceImpl<HouseImageMapper, HouseIm
         HouseImage image = new HouseImage();
         image.setHouseId(houseId);
         image.setImageUrl("/uploads/houses/" + houseId + "/" + fileName);
+        image.setImageType(normalizeImageType(imageType));
         image.setSortOrder(nextSort);
         image.setIsCover(shouldCover ? 1 : 0);
         image.setCreateTime(LocalDateTime.now());
@@ -98,7 +99,7 @@ public class HouseImageServiceImpl extends ServiceImpl<HouseImageMapper, HouseIm
 
     @Override
     @Transactional
-    public HouseImage createImage(Long houseId, String imageUrl, Integer sortOrder, boolean cover) {
+    public HouseImage createImage(Long houseId, String imageUrl, String imageType, Integer sortOrder, boolean cover) {
         if (houseId == null || imageUrl == null || imageUrl.isBlank()) {
             throw new RuntimeException("房源图片地址不能为空");
         }
@@ -109,6 +110,7 @@ public class HouseImageServiceImpl extends ServiceImpl<HouseImageMapper, HouseIm
         HouseImage image = new HouseImage();
         image.setHouseId(houseId);
         image.setImageUrl(imageUrl);
+        image.setImageType(normalizeImageType(imageType));
         image.setSortOrder(sortOrder != null ? sortOrder : listByHouseId(houseId).size());
         image.setIsCover(shouldCover ? 1 : 0);
         image.setCreateTime(LocalDateTime.now());
@@ -192,6 +194,13 @@ public class HouseImageServiceImpl extends ServiceImpl<HouseImageMapper, HouseIm
     private String getExtension(String fileName) {
         int dot = fileName.lastIndexOf('.');
         return dot >= 0 ? fileName.substring(dot) : "";
+    }
+
+    private String normalizeImageType(String imageType) {
+        if (imageType == null || imageType.isBlank()) {
+            return "OTHER";
+        }
+        return imageType.toUpperCase(Locale.ROOT);
     }
 
     private void deleteFile(String imageUrl) {

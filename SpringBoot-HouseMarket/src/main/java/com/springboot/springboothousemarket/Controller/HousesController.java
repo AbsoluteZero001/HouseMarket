@@ -48,8 +48,11 @@ public class HousesController {
 
     @PostMapping("/upload-image")
     @PreAuthorize("hasAnyAuthority('LANDLORD','ADMIN')")
-    public ResponseResult uploadImage(@RequestParam("image") MultipartFile imageFile) throws IOException {
-        if (imageFile == null || imageFile.isEmpty()) {
+    public ResponseResult uploadImage(@RequestParam(value = "image", required = false) MultipartFile imageFile,
+                                      @RequestParam(value = "file", required = false) MultipartFile fileParam,
+                                      @RequestParam(value = "imageFile", required = false) MultipartFile imageFileParam) throws IOException {
+        MultipartFile uploadFile = firstNonEmpty(imageFile, fileParam, imageFileParam);
+        if (uploadFile == null || uploadFile.isEmpty()) {
             throw new RuntimeException("上传图片不能为空");
         }
 
@@ -58,7 +61,7 @@ public class HousesController {
             throw new IOException("无法创建上传目录");
         }
 
-        String original = imageFile.getOriginalFilename();
+        String original = uploadFile.getOriginalFilename();
         String baseName = original == null || original.isBlank() ? "image" : original;
         baseName = new File(baseName).getName();
         String extension = "";
@@ -69,7 +72,7 @@ public class HousesController {
         }
         String uniqueFileName = baseName + "_" + System.currentTimeMillis() + extension;
         File targetFile = new File(uploadDirFile, uniqueFileName);
-        imageFile.transferTo(targetFile);
+        uploadFile.transferTo(targetFile);
 
         String url = ServletUriComponentsBuilder.fromCurrentContextPath()
                 .path("/uploads/")
@@ -147,12 +150,16 @@ public class HousesController {
     @PostMapping(value = "/{houseId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyAuthority('LANDLORD','ADMIN')")
     public ResponseResult uploadHouseImage(@PathVariable Long houseId,
-                                           @RequestParam("image") MultipartFile image,
+                                           @RequestParam(value = "image", required = false) MultipartFile image,
+                                           @RequestParam(value = "file", required = false) MultipartFile fileParam,
+                                           @RequestParam(value = "imageFile", required = false) MultipartFile imageFileParam,
+                                           @RequestParam(value = "imageType", defaultValue = "OTHER") String imageType,
                                            @RequestParam(defaultValue = "0") Integer sortOrder,
                                            @RequestParam(defaultValue = "false") boolean isCover,
                                            @AuthenticationPrincipal Users currentUser) throws IOException {
         requireHouseOwner(houseId, currentUser);
-        return ResponseResult.ok(null, Map.of("image", houseImageService.uploadImage(houseId, image, sortOrder, isCover)));
+        MultipartFile uploadFile = firstNonEmpty(image, fileParam, imageFileParam);
+        return ResponseResult.ok(null, Map.of("image", houseImageService.uploadImage(houseId, uploadFile, imageType, sortOrder, isCover)));
     }
 
     @DeleteMapping("/{houseId}/images/{imageId}")
@@ -202,5 +209,14 @@ public class HousesController {
         if (!"ADMIN".equals(currentUser.getRole()) && !house.getLandlordId().equals(currentUser.getId())) {
             throw new SecurityException("没有权限操作此房源");
         }
+    }
+
+    private MultipartFile firstNonEmpty(MultipartFile... files) {
+        for (MultipartFile file : files) {
+            if (file != null && !file.isEmpty()) {
+                return file;
+            }
+        }
+        return null;
     }
 }

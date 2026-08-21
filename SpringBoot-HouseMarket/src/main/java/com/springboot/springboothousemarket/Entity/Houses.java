@@ -26,13 +26,29 @@ public class Houses {
     @TableField("type")
     private String type;
 
+    @Schema(description = "户型: 一室一厅/两室一厅等")
+    @TableField("layout")
+    private String layout;
+
     @Schema(description = "区域")
     @TableField("district")
     private String district;
 
+    @Schema(description = "小区名称")
+    @TableField("community")
+    private String community;
+
     @Schema(description = "卧室数")
     @TableField("bedrooms")
     private Integer bedrooms;
+
+    @Schema(description = "客厅数")
+    @TableField("living_rooms")
+    private Integer livingRooms;
+
+    @Schema(description = "厨房数")
+    @TableField("kitchens")
+    private Integer kitchens;
 
     @Schema(description = "卫生间数")
     @TableField("bathrooms")
@@ -44,6 +60,9 @@ public class Houses {
     @Schema(description = "价格")
     private BigDecimal price;
 
+    @Schema(description = "押金")
+    private BigDecimal deposit;
+
     @Schema(description = "朝向")
     @TableField("orientation")
     private String orientation;
@@ -52,6 +71,10 @@ public class Houses {
     @TableField("floor")
     private String floor;
 
+    @Schema(description = "总楼层")
+    @TableField("total_floors")
+    private Integer totalFloors;
+
     @Schema(description = "装修情况")
     @TableField("decoration")
     private String decoration;
@@ -59,6 +82,22 @@ public class Houses {
     @Schema(description = "租期/付款方式")
     @TableField("lease_term")
     private String leaseTerm;
+
+    @Schema(description = "是否有电梯: 0无, 1有")
+    @TableField("has_elevator")
+    private Integer hasElevator;
+
+    @Schema(description = "地铁距离")
+    @TableField("subway_distance")
+    private String subwayDistance;
+
+    @Schema(description = "入住方式")
+    @TableField("move_in_type")
+    private String moveInType;
+
+    @Schema(description = "房屋状态")
+    @TableField("rent_status")
+    private String rentStatus;
 
     @Schema(description = "标签(JSON数组)")
     @TableField("tags")

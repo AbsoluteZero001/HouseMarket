@@ -21,6 +21,9 @@ public class HouseImage {
     @TableField("image_url")
     private String imageUrl;
 
+    @TableField("image_type")
+    private String imageType;
+
     @TableField("sort_order")
     private Integer sortOrder;
 

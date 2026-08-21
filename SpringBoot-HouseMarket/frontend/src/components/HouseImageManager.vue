@@ -1,59 +1,132 @@
 <template>
   <div class="house-image-manager">
-    <div class="image-list" v-if="images.length">
-      <div class="image-item" v-for="(image, index) in sortedImages" :key="image.id">
-        <img :src="image.imageUrl" :alt="`房源图片 ${index + 1}`"/>
-        <div class="image-overlay">
-          <span v-if="Number(image.isCover) === 1" class="cover-badge">封面</span>
-          <span class="sort-badge">{{ index + 1 }}</span>
-        </div>
-        <div class="image-actions">
-          <button type="button" class="mini-btn" :disabled="Number(image.isCover) === 1" @click="setCover(image.id)">
-            设为封面
-          </button>
-          <button type="button" class="mini-btn" :disabled="index === 0" @click="move(index, -1)">上移</button>
-          <button type="button" class="mini-btn" :disabled="index === sortedImages.length - 1" @click="move(index, 1)">
-            下移
-          </button>
-          <button type="button" class="mini-btn danger" @click="remove(image.id)">删除</button>
-        </div>
-      </div>
+    <div class="manager-tip">
+      <span>分类上传房源图片</span>
+      <small>只展示实际上传的分类，首页封面单独管理</small>
     </div>
 
-    <div class="upload-row">
-      <input ref="fileInput" type="file" accept="image/*" hidden @change="onFileChange"/>
-      <button type="button" class="btn btn-sm" :disabled="uploading" @click="fileInput?.click()">
-        {{ uploading ? '上传中...' : '上传图片' }}
-      </button>
-      <span class="upload-tip">支持 JPG、PNG、GIF、WEBP，最大 5MB</span>
+    <div class="category-grid">
+      <section
+          v-for="category in categories"
+          :key="category.key"
+          class="category-card"
+          :class="{ 'cover-card': category.key === 'COVER' }"
+      >
+        <header class="category-head">
+          <div>
+            <strong>{{ category.label }}</strong>
+            <span>{{ categoryImages(category.key).length }} 张</span>
+          </div>
+          <input
+              :ref="el => setFileInput(category.key, el)"
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              @change="onFilesChange(category, $event)"
+          />
+          <button
+              type="button"
+              class="btn btn-sm"
+              :disabled="uploadingCategory === category.key"
+              @click="openPicker(category.key)"
+          >
+            {{ uploadingCategory === category.key ? '上传中...' : '上传图片' }}
+          </button>
+        </header>
+
+        <p class="category-hint">{{ category.hint }}</p>
+
+        <div v-if="categoryImages(category.key).length" class="image-list">
+          <article
+              v-for="(image, index) in categoryImages(category.key)"
+              :key="image.id"
+              class="image-item"
+              :class="{ cover: Number(image.isCover) === 1 }"
+          >
+            <img :src="image.imageUrl" :alt="`${category.label} ${index + 1}`"/>
+            <div class="image-overlay">
+              <span v-if="Number(image.isCover) === 1" class="cover-badge">首页封面</span>
+              <span class="sort-badge">{{ index + 1 }}</span>
+            </div>
+            <div class="image-actions">
+              <button type="button" class="mini-btn" :disabled="Number(image.isCover) === 1"
+                      @click="setCover(image.id)">
+                设为首页封面
+              </button>
+              <button type="button" class="mini-btn" :disabled="index === 0" @click="move(category.key, index, -1)">
+                上移
+              </button>
+              <button
+                  type="button"
+                  class="mini-btn"
+                  :disabled="index === categoryImages(category.key).length - 1"
+                  @click="move(category.key, index, 1)"
+              >
+                下移
+              </button>
+              <button type="button" class="mini-btn danger" @click="remove(image.id)">删除</button>
+            </div>
+          </article>
+        </div>
+        <div v-else class="category-empty">暂无{{ category.label }}图片</div>
+      </section>
     </div>
   </div>
 </template>
 
 <script setup>
-import {computed, ref} from 'vue'
+import {ref} from 'vue'
 import {deleteHouseImage, reorderHouseImages, setCoverImage, uploadHouseImage} from '../api/houses'
 
 const props = defineProps({houseId: Number, images: {type: Array, default: () => []}})
 const emit = defineEmits(['changed'])
 
-const fileInput = ref(null)
-const uploading = ref(false)
+const categories = [
+  {key: 'COVER', label: '首页封面', hint: '将展示在租客首页房源卡片中，建议上传 1 张'},
+  {key: 'LIVING_ROOM', label: '客厅', hint: '可上传多张客厅图片'},
+  {key: 'BEDROOM', label: '卧室', hint: '可上传多张卧室图片'},
+  {key: 'KITCHEN', label: '厨房', hint: '可选'},
+  {key: 'BATHROOM', label: '卫生间', hint: '可选'},
+  {key: 'BALCONY', label: '阳台', hint: '可选'},
+  {key: 'DINING_ROOM', label: '餐厅', hint: '可选'},
+  {key: 'STUDY', label: '书房', hint: '可选'},
+  {key: 'FLOOR_PLAN', label: '户型图', hint: '可选'},
+  {key: 'OTHER', label: '其他', hint: '可选'}
+]
 
-const sortedImages = computed(() => {
-  return [...props.images].sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0))
-})
+const fileInputs = {}
+const uploadingCategory = ref('')
 
-async function onFileChange(e) {
-  const file = e.target.files?.[0]
-  e.target.value = ''
-  if (!file || !props.houseId) return
-  uploading.value = true
+function setFileInput(key, el) {
+  if (el) fileInputs[key] = el
+}
+
+function categoryImages(type) {
+  return props.images
+      .filter(image => image.imageType === type)
+      .sort((a, b) => (Number(a.sortOrder) || 0) - (Number(b.sortOrder) || 0))
+}
+
+function openPicker(key) {
+  fileInputs[key]?.click()
+}
+
+async function onFilesChange(category, event) {
+  const files = Array.from(event.target.files || [])
+  event.target.value = ''
+  if (!files.length || !props.houseId) return
+
+  uploadingCategory.value = category.key
   try {
-    await uploadHouseImage(props.houseId, file, props.images.length, props.images.length === 0)
+    for (let i = 0; i < files.length; i++) {
+      const currentCount = categoryImages(category.key).length
+      const isCover = category.key === 'COVER' && currentCount === 0
+      await uploadHouseImage(props.houseId, files[i], category.key, currentCount + i, isCover)
+    }
     emit('changed')
   } finally {
-    uploading.value = false
+    uploadingCategory.value = ''
   }
 }
 
@@ -67,8 +140,8 @@ async function setCover(imageId) {
   emit('changed')
 }
 
-async function move(index, delta) {
-  const ids = sortedImages.value.map(image => image.id)
+async function move(type, index, delta) {
+  const ids = categoryImages(type).map(image => image.id)
   const target = index + delta
   if (target < 0 || target >= ids.length) return
   const moved = ids.splice(index, 1)[0]
@@ -80,25 +153,86 @@ async function move(index, delta) {
 
 <style scoped>
 .house-image-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.manager-tip {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text);
+}
+
+.manager-tip span {
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.manager-tip small {
+  color: var(--text-muted);
+}
+
+.category-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.category-card {
   border: 1px solid var(--border);
   border-radius: 14px;
   padding: 14px;
-  background: #f8fafc;
+  background: #fff;
+}
+
+.category-card.cover-card {
+  border-color: rgba(255, 107, 53, 0.45);
+  background: linear-gradient(135deg, #fff7f5, #fff);
+}
+
+.category-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.category-head strong {
+  font-size: 15px;
+  color: var(--text);
+}
+
+.category-head span {
+  margin-left: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.category-hint {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin: 4px 0 12px;
 }
 
 .image-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-  margin-bottom: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
 }
 
 .image-item {
   position: relative;
-  border-radius: 12px;
   overflow: hidden;
-  background: #fff;
   border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.image-item.cover {
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.16);
 }
 
 .image-item img {
@@ -122,9 +256,9 @@ async function move(index, delta) {
 .sort-badge {
   font-size: 11px;
   color: #fff;
-  background: rgba(0, 0, 0, 0.58);
-  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.6);
   padding: 3px 9px;
+  border-radius: 999px;
 }
 
 .cover-badge {
@@ -144,7 +278,7 @@ async function move(index, delta) {
   background: #fff;
   color: var(--text-secondary);
   font-size: 12px;
-  padding: 5px 9px;
+  padding: 5px 8px;
   cursor: pointer;
 }
 
@@ -158,15 +292,20 @@ async function move(index, delta) {
   border-color: #fecaca;
 }
 
-.upload-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+.category-empty {
+  color: #9ca3af;
+  font-size: 12px;
+  padding: 10px 0 2px;
 }
 
-.upload-tip {
-  color: var(--text-muted);
-  font-size: 12px;
+@media (max-width: 640px) {
+  .category-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .manager-tip {
+    flex-direction: column;
+  }
 }
 </style>

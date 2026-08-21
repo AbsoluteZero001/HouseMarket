@@ -15,9 +15,9 @@ public interface HouseImageService extends IService<HouseImage> {
 
     Map<Long, List<HouseImage>> listByHouseIds(Collection<Long> houseIds);
 
-    HouseImage uploadImage(Long houseId, MultipartFile file, Integer sortOrder, boolean cover) throws IOException;
+    HouseImage uploadImage(Long houseId, MultipartFile file, String imageType, Integer sortOrder, boolean cover) throws IOException;
 
-    HouseImage createImage(Long houseId, String imageUrl, Integer sortOrder, boolean cover);
+    HouseImage createImage(Long houseId, String imageUrl, String imageType, Integer sortOrder, boolean cover);
 
     void deleteImage(Long houseId, Long imageId);
 

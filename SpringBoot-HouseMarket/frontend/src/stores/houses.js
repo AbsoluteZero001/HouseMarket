@@ -11,7 +11,7 @@ import {
     reorderHouseImages,
     setCoverImage,
     updateHouse,
-    uploadImage
+    uploadHouseImage as uploadHouseImageApi
 } from '../api/houses'
 
 export const useHouseStore = defineStore('houses', () => {
@@ -72,13 +72,8 @@ export const useHouseStore = defineStore('houses', () => {
     return res.data
   }
 
-  async function uploadHouseImage(file) {
-    const res = await uploadImage(file)
-    return res.data
-  }
-
-    async function addHouseImage(houseId, file, sortOrder = 0, isCover = false) {
-        const res = await uploadHouseImage(houseId, file, sortOrder, isCover)
+    async function addHouseImage(houseId, file, imageType = 'OTHER', sortOrder = 0, isCover = false) {
+        const res = await uploadHouseImageApi(houseId, file, imageType, sortOrder, isCover)
         return res.data
     }
 
@@ -109,7 +104,6 @@ export const useHouseStore = defineStore('houses', () => {
         addHouse,
         editHouse,
         removeHouse,
-        uploadHouseImage,
         addHouseImage,
         removeHouseImage,
         markCoverImage,
