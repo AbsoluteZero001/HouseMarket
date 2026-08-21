@@ -93,6 +93,10 @@ public class Users {
     @TableField("avatar")
     private String avatar;
 
+    @Schema(description = "头像Base64数据")
+    @TableField("avatar_base64")
+    private String avatarBase64;
+
     /**
      * 用户状态
      * 账户的使用状态，可选值为：

@@ -1,7 +1,7 @@
 <template>
   <div class="detail-page">
     <AppHeader :username="user?.nickname || user?.username" :role="user?.role"
-               :avatar="user?.avatar || '/uploads/avatars/default.png'" @logout="handleLogout">
+               :avatar="user?.avatarBase64 || user?.avatar || '/uploads/avatars/default.png'" @logout="handleLogout">
       <template #nav>
         <a href="#" @click.prevent="goBack">&larr; 返回</a>
       </template>

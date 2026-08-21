@@ -1,7 +1,7 @@
 <template>
   <div class="tenant-page">
     <AppHeader :username="user?.nickname || user?.username" :role="user?.role"
-               :avatar="user?.avatar || '/uploads/avatars/default.png'" @logout="handleLogout"
+               :avatar="user?.avatarBase64 || user?.avatar || '/uploads/avatars/default.png'" @logout="handleLogout"
                @profile="showProfile = true">
       <template #nav>
         <a href="#" :class="{ active: activeTab === 'search' }" @click.prevent="activeTab = 'search'">找房源</a>
@@ -105,7 +105,7 @@
     <!-- Profile Modal -->
     <AppModal :visible="showProfile" title="个人信息" @close="showProfile = false">
       <div class="avatar-block">
-        <img :src="user?.avatar || '/uploads/avatars/default.png'" alt="头像"/>
+        <img :src="user?.avatarBase64 || user?.avatar || '/uploads/avatars/default.png'" alt="头像"/>
         <label class="btn btn-sm">
           更换头像
           <input type="file" accept="image/*" hidden @change="handleAvatarChange"/>

@@ -37,6 +37,7 @@ CREATE TABLE `sysuser`
     `role`          VARCHAR(50)  NOT NULL DEFAULT 'TENANT' COMMENT '角色: ADMIN/LANDLORD/TENANT',
     `phone`         VARCHAR(50)           DEFAULT NULL COMMENT '联系电话',
     `avatar`        VARCHAR(500)          DEFAULT NULL COMMENT '头像URL',
+    `avatar_base64` MEDIUMTEXT COMMENT '头像Base64数据',
     `status`        VARCHAR(50)  NOT NULL DEFAULT 'normal' COMMENT '状态: normal/disabled',
     `register_time` DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
     `update_time`   DATETIME              DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',

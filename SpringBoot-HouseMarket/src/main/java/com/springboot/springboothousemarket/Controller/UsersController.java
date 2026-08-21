@@ -14,10 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -149,6 +146,10 @@ public class UsersController {
         if (upload == null || upload.isEmpty()) {
             throw new RuntimeException("上传头像不能为空");
         }
+        byte[] bytes = upload.getBytes();
+        if (bytes.length > 2 * 1024 * 1024) {
+            throw new RuntimeException("头像大小不能超过 2MB");
+        }
         String extension = "";
         String original = upload.getOriginalFilename();
         if (original != null) {
@@ -157,18 +158,17 @@ public class UsersController {
                 extension = original.substring(dot);
             }
         }
-        Path basePath = Paths.get(uploadDir).toAbsolutePath().normalize();
-        Path avatarDir = basePath.resolve("avatars");
-        Files.createDirectories(avatarDir);
-        String fileName = currentUser.getId() + "_" + System.currentTimeMillis() + extension;
-        Path target = avatarDir.resolve(fileName).normalize();
-        if (!target.startsWith(avatarDir)) {
-            throw new IOException("非法的头像文件名");
+        String mime = upload.getContentType();
+        if (mime == null || mime.isBlank() || "application/octet-stream".equalsIgnoreCase(mime)) {
+            mime = extension.equalsIgnoreCase(".png") ? "image/png"
+                    : extension.equalsIgnoreCase(".webp") ? "image/webp"
+                      : extension.equalsIgnoreCase(".gif") ? "image/gif"
+                        : "image/jpeg";
         }
-        Files.copy(upload.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
+        String dataUrl = "data:" + mime + ";base64," + Base64.getEncoder().encodeToString(bytes);
 
         Users user = sysUserService.getUserById(currentUser.getId());
-        user.setAvatar("/uploads/avatars/" + fileName);
+        user.setAvatarBase64(dataUrl);
         sysUserService.updateUser(user.getId(), user);
         return com.springboot.springboothousemarket.dto.ResponseResult.ok(null,
                 Map.of("user", sysUserService.getUserById(user.getId())));

@@ -56,3 +56,6 @@ frontend/.env.local
 # === 后端运行产物 ===
 captcha.png
 captcha-id.txt
+
+# === 运行时上传目录（隐私数据不入库/不入 git） ===
+uploads/
