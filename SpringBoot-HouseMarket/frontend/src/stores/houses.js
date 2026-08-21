@@ -1,6 +1,18 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
-import { getHouses, getHouseById, getHousesByLandlord, getMyHouses, createHouse, updateHouse, deleteHouse, uploadImage } from '../api/houses'
+import {defineStore} from 'pinia'
+import {ref} from 'vue'
+import {
+    createHouse,
+    deleteHouse,
+    deleteHouseImage,
+    getHouseById,
+    getHouses,
+    getHousesByLandlord,
+    getMyHouses,
+    reorderHouseImages,
+    setCoverImage,
+    updateHouse,
+    uploadImage
+} from '../api/houses'
 
 export const useHouseStore = defineStore('houses', () => {
   const houses = ref([])
@@ -65,5 +77,42 @@ export const useHouseStore = defineStore('houses', () => {
     return res.data
   }
 
-  return { houses, currentHouse, total, loading, fetchHouses, fetchHouseById, fetchLandlordHouses, fetchMyHouses, addHouse, editHouse, removeHouse, uploadHouseImage }
+    async function addHouseImage(houseId, file, sortOrder = 0, isCover = false) {
+        const res = await uploadHouseImage(houseId, file, sortOrder, isCover)
+        return res.data
+    }
+
+    async function removeHouseImage(houseId, imageId) {
+        const res = await deleteHouseImage(houseId, imageId)
+        return res.data
+    }
+
+    async function markCoverImage(houseId, imageId) {
+        const res = await setCoverImage(houseId, imageId)
+        return res.data
+    }
+
+    async function sortHouseImages(houseId, imageIds) {
+        const res = await reorderHouseImages(houseId, imageIds)
+        return res.data
+    }
+
+    return {
+        houses,
+        currentHouse,
+        total,
+        loading,
+        fetchHouses,
+        fetchHouseById,
+        fetchLandlordHouses,
+        fetchMyHouses,
+        addHouse,
+        editHouse,
+        removeHouse,
+        uploadHouseImage,
+        addHouseImage,
+        removeHouseImage,
+        markCoverImage,
+        sortHouseImages
+    }
 })

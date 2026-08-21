@@ -44,12 +44,12 @@ import {formatPrice} from '../composables/useFormat'
 const props = defineProps({ house: Object })
 
 const imageUrl = computed(() => {
-  if (props.house?.image) {
-    try { const arr = JSON.parse(props.house.image); if (Array.isArray(arr) && arr.length) return arr[0] } catch (e) { return props.house.image }
-  }
-  return `/uploads/img.png`
+  if (props.house?.coverImage) return props.house.coverImage
+  const first = props.house?.images?.[0]
+  return typeof first === 'string' ? first : first?.imageUrl || ''
 })
 const tags = computed(() => {
+  if (Array.isArray(props.house?.tags)) return props.house.tags.slice(0, 3)
   try {
     const parsed = JSON.parse(props.house?.tags || '[]')
     return Array.isArray(parsed) ? parsed.slice(0, 3) : []

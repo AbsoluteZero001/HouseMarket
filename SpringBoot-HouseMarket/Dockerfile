@@ -12,8 +12,10 @@ FROM eclipse-temurin:21-jre-alpine
 RUN apk add --no-cache curl tzdata
 WORKDIR /app
 COPY --from=build /build/target/SpringBoot-HouseMarket-0.0.1-SNAPSHOT.jar /app/app.jar
-RUN mkdir -p /app/uploads
-COPY uploads /app/uploads
+RUN mkdir -p /app/uploads /app/seed-uploads
+COPY uploads /app/seed-uploads
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
 ENV TZ=Asia/Shanghai
 EXPOSE 8082
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

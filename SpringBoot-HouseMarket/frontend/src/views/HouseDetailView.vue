@@ -143,8 +143,8 @@ const {alertMsg, alertType, showAlert} = useAlert()
 const bookForm = reactive({ date: '', time: '', location: '', notes: '', requestId: '' })
 
 const imageList = computed(() => {
-  if (!house.value?.image) return []
-  try { const arr = JSON.parse(house.value.image); return Array.isArray(arr) ? arr : [house.value.image] } catch (e) { return [house.value.image] }
+  const images = house.value?.images || []
+  return images.map(img => typeof img === 'string' ? img : img.imageUrl).filter(Boolean)
 })
 
 function goBack() {

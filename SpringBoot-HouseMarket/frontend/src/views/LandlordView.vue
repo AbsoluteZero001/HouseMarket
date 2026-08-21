@@ -228,6 +228,13 @@
     <AppModal :visible="showAddModal || showEditModal" :title="showEditModal ? '编辑房源' : '发布新房源'" width="720px"
               @close="closeHouseModal">
       <HouseForm ref="houseFormRef" :initial="editingHouse" :submitLabel="showEditModal ? '保存修改' : '发布房源'" @submit="handleHouseSubmit" @cancel="closeHouseModal" />
+      <div v-if="showEditModal" class="image-manager-section">
+        <div class="image-section-title">
+          <span>房源图片</span>
+          <small>第一张默认作为封面，也可手动设置封面</small>
+        </div>
+        <HouseImageManager :house-id="editingHouse.id" :images="activeHouseImages" @changed="reloadEditingImages"/>
+      </div>
     </AppModal>
 
     <!-- Profile Modal -->
@@ -271,6 +278,7 @@ import {getMyLandlordApplication} from '../api/landlordApplications'
 import AppHeader from '../components/AppHeader.vue'
 import HouseCard from '../components/HouseCard.vue'
 import HouseForm from '../components/HouseForm.vue'
+import HouseImageManager from '../components/HouseImageManager.vue'
 import AppointmentTable from '../components/AppointmentTable.vue'
 import AppointmentFlow from '../components/AppointmentFlow.vue'
 import NotificationCenter from '../components/NotificationCenter.vue'
@@ -292,6 +300,7 @@ const showEditModal = ref(false)
 const showProfile = ref(false)
 const editingHouse = ref({})
 const houseFormRef = ref(null)
+const activeHouseImages = ref([])
 const {alertMsg, alertType, showAlert} = useAlert()
 const passwordForm = reactive({ oldPassword: '', newPassword: '', confirmNewPassword: '' })
 const pendingCount = ref(0)
@@ -357,9 +366,24 @@ async function loadApplicationStatus() {
 function openAddHouse() { editingHouse.value = {}; showAddModal.value = true }
 async function openEditHouse(id) {
   const res = await houseStore.fetchHouseById(id)
-  if (res.success) { editingHouse.value = res.data.house; showEditModal.value = true }
+  if (res.success) {
+    editingHouse.value = res.data.house
+    activeHouseImages.value = editingHouse.value.images || []
+    showEditModal.value = true
+  }
 }
-function closeHouseModal() { showAddModal.value = false; showEditModal.value = false }
+
+function closeHouseModal() {
+  showAddModal.value = false
+  showEditModal.value = false
+  activeHouseImages.value = []
+}
+
+async function reloadEditingImages() {
+  if (!editingHouse.value.id) return
+  const res = await houseStore.fetchHouseById(editingHouse.value.id)
+  if (res.success) activeHouseImages.value = res.data.house.images || []
+}
 
 async function openFlow(apt) {
   flowAppointment.value = apt
@@ -373,13 +397,6 @@ async function openFlow(apt) {
 }
 
 async function handleHouseSubmit(data) {
-  let imageUrl = data.image || ''
-  if (data.imageFile) {
-    try {
-      const uploadRes = await houseStore.uploadHouseImage(data.imageFile)
-      imageUrl = typeof uploadRes === 'string' ? uploadRes : (uploadRes?.url || uploadRes?.data?.url || '')
-    } catch (e) { showAlert('图片上传失败', 'error'); return }
-  }
   const tags = (data.tags || '').split(',').map(s => s.trim()).filter(Boolean)
   const payload = {
     title: data.title,
@@ -395,16 +412,26 @@ async function handleHouseSubmit(data) {
     leaseTerm: data.leaseTerm,
     tags: JSON.stringify(tags),
     address: data.address,
-    description: data.description,
-    image: imageUrl
+    description: data.description
   }
-  if (showEditModal.value) {
-    await houseStore.editHouse(editingHouse.value.id, payload)
-    showAlert('房源已更新')
-  } else {
-    await houseStore.addHouse(payload)
-    showAlert('房源发布成功')
-    pushNotification('房源已发布，等待租客预约', 'success')
+  try {
+    let houseId = editingHouse.value.id
+    if (showEditModal.value) {
+      await houseStore.editHouse(houseId, payload)
+      showAlert('房源已更新')
+    } else {
+      const created = await houseStore.addHouse(payload)
+      houseId = created?.data?.house?.id
+      showAlert('房源发布成功')
+      pushNotification('房源已发布，等待租客预约', 'success')
+    }
+    if (data.imageFile && houseId) {
+      await houseStore.addHouseImage(houseId, data.imageFile, 0, true)
+      showAlert('房源图片已上传')
+    }
+  } catch (e) {
+    showAlert(e.response?.data?.message || '房源保存失败', 'error')
+    return
   }
   closeHouseModal()
   await loadHouses()
@@ -969,6 +996,31 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 22px;
+}
+
+.image-manager-section {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.image-section-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.image-section-title span {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.image-section-title small {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 /* Badge */

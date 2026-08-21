@@ -112,8 +112,18 @@
       <!-- House Management -->
       <div v-if="activeTab === 'houses'" class="tab-content">
         <div class="section-header" v-reveal>
-          <h3>房源管理</h3>
-          <span class="count-tag">共 {{ filteredHouses.length }} 条</span>
+          <div>
+            <h3>房源管理</h3>
+            <p class="section-sub">新增、编辑、上下架和图片管理会直接写入 MySQL 并实时影响首页</p>
+          </div>
+          <button class="btn" @click="openAddHouse">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            新增房源
+          </button>
         </div>
         <div class="search-bar" v-reveal="{ delay: 80 }">
           <div class="input-wrap">
@@ -125,21 +135,45 @@
         <div class="table-wrap" v-reveal="{ delay: 120 }">
           <table class="table">
             <thead>
-              <tr><th>ID</th><th>标题</th><th>户型</th><th>面积</th><th>价格</th><th>地址</th><th>操作</th></tr>
+            <tr>
+              <th>ID</th>
+              <th>封面</th>
+              <th>标题</th>
+              <th>户型</th>
+              <th>面积</th>
+              <th>价格</th>
+              <th>地址</th>
+              <th>状态</th>
+              <th>操作</th>
+            </tr>
             </thead>
             <tbody>
               <tr v-if="filteredHouses.length === 0">
-                <td colspan="7" class="empty-cell">暂无房源</td>
+                <td colspan="9" class="empty-cell">暂无房源</td>
               </tr>
               <tr v-for="h in filteredHouses" :key="h.id">
                 <td><span class="id-tag">#{{ h.id }}</span></td>
+                <td>
+                  <img v-if="h.coverImage" :src="h.coverImage" class="house-thumb" alt="封面"/>
+                  <span v-else class="no-image">无图</span>
+                </td>
                 <td>{{ h.title }}</td>
                 <td>{{ h.type }}</td>
                 <td>{{ h.area }}㎡</td>
                 <td>&yen;{{ h.price }}</td>
                 <td>{{ h.address }}</td>
                 <td>
-                  <button class="btn btn-sm btn-danger" @click="handleDeleteHouse(h.id)">删除</button>
+                  <StatusBadge :status="h.status === 'NORMAL' ? 'approved' : 'pending'"/>
+                </td>
+                <td>
+                  <div class="action-btns">
+                    <button class="btn btn-sm btn-outline" @click="openEditHouse(h.id)">编辑</button>
+                    <button class="btn btn-sm" @click="toggleHouseStatus(h)">{{
+                        h.status === 'NORMAL' ? '下架' : '上架'
+                      }}
+                    </button>
+                    <button class="btn btn-sm btn-danger" @click="handleDeleteHouse(h.id)">删除</button>
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -210,6 +244,34 @@
         <button class="btn" @click="submitReview">确认{{ reviewAction === 'approve' ? '通过' : '拒绝' }}</button>
       </div>
     </AppModal>
+
+    <AppModal
+        :visible="showHouseModal"
+        :title="houseModalTitle"
+        width="760px"
+        @close="closeHouseModal"
+    >
+      <HouseForm
+          ref="houseFormRef"
+          :initial="editingHouse"
+          :submit-label="houseModalTitle"
+          :show-image-upload="false"
+          :show-landlord="true"
+          @submit="handleHouseSubmit"
+          @cancel="closeHouseModal"
+      />
+      <div v-if="editingHouse.id" class="image-manager-section">
+        <div class="image-section-title">
+          <span>房源图片</span>
+          <small>第一张默认作为封面，也可手动设置封面</small>
+        </div>
+        <HouseImageManager
+            :house-id="editingHouse.id"
+            :images="activeHouseImages"
+            @changed="reloadEditingImages"
+        />
+      </div>
+    </AppModal>
   </div>
 </template>
 
@@ -217,9 +279,13 @@
 import {computed, onMounted, reactive, ref, watch} from 'vue'
 import {useRouter} from 'vue-router'
 import {deleteUser, getUsers} from '../api/users'
-import {deleteHouse, getHouses} from '../api/houses'
+import {createHouse, deleteHouse, getHouseById, getHouses, updateHouse} from '../api/houses'
 import {deleteAppointment, getAppointments} from '../api/appointments'
-import {approveLandlordApplication, getLandlordApplications, rejectLandlordApplication} from '../api/landlordApplications'
+import {
+  approveLandlordApplication,
+  getLandlordApplications,
+  rejectLandlordApplication
+} from '../api/landlordApplications'
 import {useAuth} from '../composables/useAuth'
 import {useAlert} from '../composables/useAlert'
 import AppHeader from '../components/AppHeader.vue'
@@ -227,6 +293,8 @@ import StatusBadge from '../components/StatusBadge.vue'
 import AppAlert from '../components/AppAlert.vue'
 import AppConfirm from '../components/AppConfirm.vue'
 import AppModal from '../components/AppModal.vue'
+import HouseForm from '../components/HouseForm.vue'
+import HouseImageManager from '../components/HouseImageManager.vue'
 
 const router = useRouter()
 const {loadUser, handleLogout: doLogout} = useAuth()
@@ -247,6 +315,12 @@ const showReviewModal = ref(false)
 const reviewId = ref(null)
 const reviewAction = ref('approve')
 const reviewNote = ref('')
+const showHouseModal = ref(false)
+const editingHouse = ref({})
+const houseFormRef = ref(null)
+const activeHouseImages = ref([])
+
+const houseModalTitle = computed(() => editingHouse.value.id ? '编辑房源' : '新增房源')
 
 function askConfirm(title, message, handler) {
   confirmState.title = title
@@ -266,6 +340,10 @@ const filteredHouses = computed(() => {
   const kw = houseSearch.value.toLowerCase()
   return allHouses.value.filter(h => h.title?.toLowerCase().includes(kw) || h.address?.toLowerCase().includes(kw))
 })
+
+function searchHouses() {
+  // filteredHouses is computed from houseSearch, keeping table filtering client-side after server pagination.
+}
 const filteredUsers = computed(() => {
   let list = users.value
   if (userSearch.value) {
@@ -282,6 +360,85 @@ async function loadAllHouses() {
     const res = await getHouses({ page: 1, pageSize: 1000 })
     if (res.data.success) allHouses.value = res.data.data.houses || []
   } catch (e) { /* ignore */ }
+}
+
+function openAddHouse() {
+  editingHouse.value = {}
+  activeHouseImages.value = []
+  showHouseModal.value = true
+}
+
+async function openEditHouse(id) {
+  try {
+    const res = await getHouseById(id)
+    if (res.data.success) {
+      editingHouse.value = res.data.data.house
+      activeHouseImages.value = editingHouse.value.images || []
+      showHouseModal.value = true
+    }
+  } catch (e) {
+    showAlert(e.response?.data?.message || '房源加载失败', 'error')
+  }
+}
+
+function closeHouseModal() {
+  showHouseModal.value = false
+  editingHouse.value = {}
+  activeHouseImages.value = []
+}
+
+async function reloadEditingImages() {
+  if (!editingHouse.value.id) return
+  const res = await getHouseById(editingHouse.value.id)
+  if (res.data.success) activeHouseImages.value = res.data.data.house.images || []
+}
+
+async function handleHouseSubmit(data) {
+  const tags = (data.tags || '').split(',').map(s => s.trim()).filter(Boolean)
+  const payload = {
+    title: data.title,
+    type: data.type,
+    district: data.district,
+    bedrooms: Number(data.bedrooms) || 1,
+    bathrooms: Number(data.bathrooms) || 1,
+    area: data.area,
+    price: data.price,
+    orientation: data.orientation,
+    floor: data.floor,
+    decoration: data.decoration,
+    leaseTerm: data.leaseTerm,
+    tags: JSON.stringify(tags),
+    address: data.address,
+    description: data.description,
+    landlordId: data.landlordId ? Number(data.landlordId) : null
+  }
+
+  try {
+    if (editingHouse.value.id) {
+      const res = await updateHouse(editingHouse.value.id, payload)
+      editingHouse.value = res.data?.data?.house || editingHouse.value
+      showAlert('房源已更新')
+    } else {
+      const res = await createHouse(payload)
+      editingHouse.value = res.data?.data?.house || {}
+      activeHouseImages.value = editingHouse.value.images || []
+      showAlert('房源已创建，可继续上传图片')
+    }
+    await loadAllHouses()
+  } catch (e) {
+    showAlert(e.response?.data?.message || '房源保存失败', 'error')
+  }
+}
+
+async function toggleHouseStatus(house) {
+  const status = house.status === 'NORMAL' ? 'OFFLINE' : 'NORMAL'
+  try {
+    await updateHouse(house.id, {status})
+    showAlert(status === 'NORMAL' ? '房源已上架' : '房源已下架')
+    await loadAllHouses()
+  } catch (e) {
+    showAlert(e.response?.data?.message || '状态更新失败', 'error')
+  }
 }
 async function loadAllAppointments() {
   try { const res = await getAppointments(); if (res.data.success) allAppointments.value = res.data.data.appointments || [] } catch (e) { /* ignore */ }
@@ -539,6 +696,44 @@ onMounted(async () => {
   padding: 4px 10px;
   border-radius: 8px;
   font-weight: 700;
+}
+
+.house-thumb {
+  width: 72px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+
+.no-image {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.image-manager-section {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.image-section-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.image-section-title span {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.image-section-title small {
+  color: var(--text-muted);
+  font-size: 12px;
 }
 
 

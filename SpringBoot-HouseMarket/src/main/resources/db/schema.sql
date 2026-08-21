@@ -12,9 +12,13 @@ USE housemarket;
 SET NAMES utf8mb4;
 
 DROP TABLE IF EXISTS `favorites`;
+DROP TABLE IF EXISTS `appointment_flow`;
+DROP TABLE IF EXISTS `notification_outbox`;
 DROP TABLE IF EXISTS `appointment`;
+DROP TABLE IF EXISTS `house_image`;
 DROP TABLE IF EXISTS `house_order`;
 DROP TABLE IF EXISTS `house`;
+DROP TABLE IF EXISTS `landlord_application`;
 DROP TABLE IF EXISTS `sysuser`;
 
 -- --------------------------------------------
@@ -76,6 +80,23 @@ CREATE TABLE `house`
     CONSTRAINT `fk_house_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `sysuser` (`id`),
     CONSTRAINT `chk_house_status` CHECK (`status` IN ('NORMAL', 'OFFLINE'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='房源表';
+
+-- --------------------------------------------
+-- 2.1 房源图片表
+-- --------------------------------------------
+CREATE TABLE `house_image`
+(
+    `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `house_id`    BIGINT       NOT NULL COMMENT '房源ID',
+    `image_url`   VARCHAR(500) NOT NULL COMMENT '图片访问URL',
+    `sort_order`  INT          NOT NULL DEFAULT 0 COMMENT '排序值，越小越靠前',
+    `is_cover`    INT          NOT NULL DEFAULT 0 COMMENT '是否封面: 0否, 1是',
+    `create_time` DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY           `idx_house_image_house` (`house_id`),
+    KEY           `idx_house_image_cover` (`house_id`, `is_cover`),
+    CONSTRAINT `fk_house_image_house` FOREIGN KEY (`house_id`) REFERENCES `house` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='房源图片表';
 
 -- --------------------------------------------
 -- 3. 预约表

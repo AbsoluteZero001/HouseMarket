@@ -203,6 +203,13 @@
         <p>没有找到符合条件的房源</p>
         <button @click="resetFilters">重置筛选</button>
       </div>
+      <AppPagination
+          v-if="!loading && total > pageSize"
+          :current="page"
+          :total="total"
+          :page-size="pageSize"
+          @change="changePage"
+      />
     </main>
 
     <section class="journey">
@@ -261,11 +268,14 @@ import {computed, nextTick, onMounted, onUnmounted, reactive, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import {getPublicHouses, getPublicStats} from '../api/houses'
 import {formatPrice} from '../composables/useFormat'
+import AppPagination from '../components/AppPagination.vue'
 
 const router = useRouter()
 const loading = ref(true)
 const houses = ref([])
 const total = ref(0)
+const page = ref(1)
+const pageSize = ref(8)
 const stats = reactive({houses: 0, landlords: 0, tenants: 0, appointments: 0})
 const scrollY = ref(0)
 const showcaseTrack = ref(null)
@@ -296,15 +306,13 @@ function onScroll() {
 }
 
 function getImage(h) {
-  try {
-    const arr = JSON.parse(h.image || '[]')
-    if (Array.isArray(arr) && arr.length) return arr[0]
-  } catch { /* ignore */
-  }
-  return '/uploads/img.png'
+  if (h.coverImage) return h.coverImage
+  const first = h.images?.[0]
+  return typeof first === 'string' ? first : first?.imageUrl || ''
 }
 
 function parseTags(h) {
+  if (Array.isArray(h.tags)) return h.tags
   try {
     const arr = JSON.parse(h.tags || '[]')
     return Array.isArray(arr) ? arr : []
@@ -326,8 +334,8 @@ async function fetchHouses() {
   const [minPrice, maxPrice] = filters.priceRange ? filters.priceRange.split('-').map(Number) : [undefined, undefined]
   try {
     const res = await getPublicHouses({
-      page: 1,
-      pageSize: 8,
+      page: page.value,
+      pageSize: pageSize.value,
       keyword: filters.keyword || undefined,
       district: filters.district || undefined,
       type: filters.type || undefined,
@@ -355,6 +363,7 @@ async function loadStats() {
 }
 
 function search() {
+  page.value = 1
   fetchHouses()
   scrollTo('listings')
 }
@@ -374,6 +383,7 @@ function quickSearch(tag) {
 
 function setType(type) {
   filters.type = type
+  page.value = 1
   fetchHouses()
 }
 
@@ -382,7 +392,14 @@ function resetFilters() {
   filters.district = ''
   filters.type = ''
   filters.priceRange = ''
+  page.value = 1
   fetchHouses()
+}
+
+function changePage(nextPage) {
+  page.value = nextPage
+  fetchHouses()
+  document.getElementById('listings')?.scrollIntoView({behavior: 'smooth'})
 }
 
 function scrollShowcase(dir) {

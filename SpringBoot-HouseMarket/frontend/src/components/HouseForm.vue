@@ -78,7 +78,11 @@
       <label>地址 <span class="required">*</span></label>
       <input v-model="form.address" required placeholder="请输入地址"/>
     </div>
-    <div class="form-group">
+    <div v-if="showLandlord" class="form-group">
+      <label>房东ID <span class="required">*</span></label>
+      <input v-model.number="form.landlordId" type="number" min="1" required placeholder="请输入房东用户ID"/>
+    </div>
+    <div v-if="showImageUpload" class="form-group">
       <label>房源图片</label>
       <ImageUpload ref="imageUploadRef" @select="onImageSelect" />
     </div>
@@ -99,7 +103,12 @@
 import {reactive, ref, watch} from 'vue'
 import ImageUpload from './ImageUpload.vue'
 
-const props = defineProps({ initial: { type: Object, default: () => ({}) }, submitLabel: { type: String, default: '提交' } })
+const props = defineProps({
+  initial: {type: Object, default: () => ({})},
+  submitLabel: {type: String, default: '提交'},
+  showImageUpload: {type: Boolean, default: true},
+  showLandlord: {type: Boolean, default: false}
+})
 defineEmits(['submit', 'cancel'])
 
 const form = reactive({
@@ -117,7 +126,8 @@ const form = reactive({
   tags: '',
   address: '',
   description: '',
-  image: ''
+  image: '',
+  landlordId: ''
 })
 const selectedFile = ref(null)
 const imageUploadRef = ref(null)
@@ -139,7 +149,8 @@ watch(() => props.initial, (val) => {
       tags: Array.isArray(val.tags) ? val.tags.join(',') : (val.tags || ''),
       address: val.address || '',
       description: val.description || '',
-      image: val.image || ''
+      image: val.image || '',
+      landlordId: val.landlordId || ''
     })
   }
 }, { immediate: true })

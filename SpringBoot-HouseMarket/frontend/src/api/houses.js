@@ -36,6 +36,28 @@ export function uploadImage(file) {
   })
 }
 
+export function uploadHouseImage(houseId, file, sortOrder = 0, isCover = false) {
+    const formData = new FormData()
+    formData.append('image', file)
+    formData.append('sortOrder', sortOrder)
+    formData.append('isCover', isCover)
+    return http.post(`/api/houses/${houseId}/images`, formData, {
+        headers: {'Content-Type': 'multipart/form-data'}
+    })
+}
+
+export function deleteHouseImage(houseId, imageId) {
+    return http.delete(`/api/houses/${houseId}/images/${imageId}`)
+}
+
+export function setCoverImage(houseId, imageId) {
+    return http.put(`/api/houses/${houseId}/images/${imageId}/cover`)
+}
+
+export function reorderHouseImages(houseId, imageIds) {
+    return http.put(`/api/houses/${houseId}/images/reorder`, imageIds)
+}
+
 export function getPublicHouses(params = {}) {
     return http.get('/api/public/houses', {params})
 }

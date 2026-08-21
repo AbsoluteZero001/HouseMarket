@@ -44,7 +44,7 @@ public class PublicController {
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "8") int pageSize) {
-        var pageInfo = housesService.getHouses(
+        var pageInfo = housesService.getHouseListVO(
                 keyword, type, district, minArea, maxArea,
                 minPrice, maxPrice, null, "NORMAL", page, pageSize);
         return ResponseResult.ok(null, Map.of(
