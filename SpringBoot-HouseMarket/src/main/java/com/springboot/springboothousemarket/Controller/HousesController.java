@@ -6,6 +6,7 @@ import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Service.HouseImageService;
 import com.springboot.springboothousemarket.Service.HousesService;
 import com.springboot.springboothousemarket.Service.LandlordApplicationService;
+import com.springboot.springboothousemarket.common.HouseStatus;
 import com.springboot.springboothousemarket.dto.*;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
@@ -44,11 +45,22 @@ public class HousesController {
         this.landlordApplicationService = landlordApplicationService;
     }
 
+    /**
+     * 按房东查房源：仅本人或管理员可查（返回该房东全部状态房源用于管理）。
+     */
     @GetMapping("/landlord/{landlordId}")
-    public ResponseResult getHousesByLandlordId(@PathVariable Long landlordId) {
+    public ResponseResult getHousesByLandlordId(@PathVariable Long landlordId,
+                                                @AuthenticationPrincipal Users currentUser) {
+        if (currentUser == null
+                || (!currentUser.getId().equals(landlordId) && !"ADMIN".equals(currentUser.getRole()))) {
+            throw new org.springframework.security.access.AccessDeniedException("只能查看自己的房源列表");
+        }
         return ResponseResult.ok(null, Map.of("houses", houseService.getHousesByLandlordVO(landlordId)));
     }
 
+    /**
+     * 通用图片上传（房东/管理员）。
+     */
     @PostMapping("/upload-image")
     @PreAuthorize("hasAnyAuthority('LANDLORD','ADMIN')")
     public ResponseResult uploadImage(@RequestParam(value = "image", required = false) MultipartFile imageFile,
@@ -71,6 +83,10 @@ public class HousesController {
             extension = baseName.substring(dot);
             baseName = baseName.substring(0, dot);
         }
+        if (!extension.isBlank()
+                && !List.of(".jpg", ".jpeg", ".png", ".gif", ".webp").contains(extension.toLowerCase())) {
+            throw new RuntimeException("仅支持 JPG、PNG、GIF、WEBP 格式图片");
+        }
         String uniqueFileName = baseName + "_" + System.currentTimeMillis() + extension;
         Path targetFile = uploadDirPath.resolve(uniqueFileName).normalize();
         if (!targetFile.startsWith(uploadDirPath)) {
@@ -90,16 +106,21 @@ public class HousesController {
     public ResponseResult createHouse(@RequestBody HouseCreateDTO dto,
                                       @AuthenticationPrincipal Users currentUser) {
         requireLandlordApproved(currentUser);
-        return ResponseResult.ok(null, Map.of("house", houseService.createHouse(dto, currentUser)));
+        return ResponseResult.ok("房源已提交" + ("ADMIN".equals(currentUser.getRole()) ? "" : "，等待管理员审核后上架"),
+                Map.of("house", houseService.createHouse(dto, currentUser)));
     }
 
+    /**
+     * 房源详情：非 NORMAL 状态仅房东本人/管理员可见；浏览量只对可见用户累计。
+     */
     @GetMapping("/{id}")
-    public ResponseResult getHouseById(@PathVariable Long id) {
-        houseService.incrementViews(id);
-        HouseDetailVO house = houseService.getHouseDetailVO(id);
+    public ResponseResult getHouseById(@PathVariable Long id,
+                                       @AuthenticationPrincipal Users currentUser) {
+        HouseDetailVO house = houseService.getVisibleHouseDetailVO(id, currentUser);
         if (house == null) {
-            throw new RuntimeException("房源不存在");
+            throw new RuntimeException("房源不存在或已下架");
         }
+        houseService.incrementViews(id);
         return ResponseResult.ok(null, Map.of("house", house));
     }
 
@@ -109,17 +130,19 @@ public class HousesController {
                                       @RequestBody HouseUpdateDTO dto,
                                       @AuthenticationPrincipal Users currentUser) {
         requireLandlordApproved(currentUser);
-        return ResponseResult.ok(null, Map.of("house", houseService.updateHouse(id, dto, currentUser)));
+        return ResponseResult.ok("房源已更新", Map.of("house", houseService.updateHouse(id, dto, currentUser)));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('LANDLORD','ADMIN')")
     public ResponseResult deleteHouse(@PathVariable Long id,
                                       @AuthenticationPrincipal Users currentUser) {
-        requireHouseOwner(id, currentUser);
         return ResponseResult.ok(null, Map.of("deleted", houseService.deleteHouse(id, currentUser)));
     }
 
+    /**
+     * 房源列表（公开浏览）。非管理员强制只看 NORMAL 已上架房源。
+     */
     @GetMapping
     public ResponseResult getHouses(
             @RequestParam(required = false) String keyword,
@@ -132,11 +155,15 @@ public class HousesController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String address,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "10") int pageSize) {
+            @RequestParam(defaultValue = "10") int pageSize,
+            @AuthenticationPrincipal Users currentUser) {
+
+        boolean isAdmin = currentUser != null && "ADMIN".equals(currentUser.getRole());
+        String effectiveStatus = isAdmin ? status : HouseStatus.NORMAL;
 
         Page<HouseListVO> pageInfo = houseService.getHouseListVO(
                 keyword, type, district, minArea, maxArea,
-                minPrice, maxPrice, address, status, page, pageSize);
+                minPrice, maxPrice, address, effectiveStatus, page, pageSize);
 
         return ResponseResult.ok(null, Map.of(
                 "houses", pageInfo.getRecords(),
@@ -149,6 +176,35 @@ public class HousesController {
     @PreAuthorize("hasAnyAuthority('LANDLORD','ADMIN')")
     public ResponseResult getMyHouses(@AuthenticationPrincipal Users currentUser) {
         return ResponseResult.ok(null, Map.of("houses", houseService.getHousesByLandlordVO(currentUser.getId())));
+    }
+
+    /**
+     * 房东上下架 / 管理员状态流转。
+     */
+    @PutMapping("/{id}/status")
+    @PreAuthorize("hasAnyAuthority('LANDLORD','ADMIN')")
+    public ResponseResult changeStatus(@PathVariable Long id,
+                                       @RequestBody Map<String, String> body,
+                                       @AuthenticationPrincipal Users currentUser) {
+        String status = body == null ? null : body.get("status");
+        String note = body == null ? null : body.get("note");
+        houseService.changeStatus(id, status, note, currentUser);
+        return ResponseResult.ok(HouseStatus.NORMAL.equals(status) ? "房源已上架" : "房源状态已更新");
+    }
+
+    /**
+     * 管理员审核房源：approve=true → NORMAL 上架；false → REJECTED（需填写意见）。
+     */
+    @PutMapping("/{id}/review")
+    @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseResult reviewHouse(@PathVariable Long id,
+                                      @RequestBody Map<String, Object> body,
+                                      @AuthenticationPrincipal Users currentUser) {
+        boolean approve = Boolean.TRUE.equals(body.get("approve"))
+                || "true".equalsIgnoreCase(String.valueOf(body.get("approve")));
+        String note = body.get("note") == null ? null : String.valueOf(body.get("note"));
+        HouseDetailVO house = houseService.reviewHouse(id, approve, note, currentUser);
+        return ResponseResult.ok(approve ? "房源审核通过，已上架" : "房源已驳回", Map.of("house", house));
     }
 
     @PostMapping(value = "/{houseId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -215,7 +271,7 @@ public class HousesController {
             throw new RuntimeException("房源不存在");
         }
         if (!"ADMIN".equals(currentUser.getRole()) && !house.getLandlordId().equals(currentUser.getId())) {
-            throw new SecurityException("没有权限操作此房源");
+            throw new org.springframework.security.access.AccessDeniedException("没有权限操作此房源");
         }
     }
 

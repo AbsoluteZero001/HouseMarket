@@ -3,7 +3,7 @@ spring:
   application:
     name: SpringBoot-HouseMarket # 应用名称，用于服务注册和发现
   datasource:
-    # 数据库连接URL，包含MySQL特定参数
+    # 生产环境通过环境变量覆盖：SPRING_DATASOURCE_URL / SPRING_DATASOURCE_USERNAME / SPRING_DATASOURCE_PASSWORD
     url: jdbc:mysql://localhost:3306/housemarket?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
     username: root
     password: 123456
@@ -19,17 +19,29 @@ spring:
     default-property-inclusion: non_null
   cache:
     type: simple
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 20MB
 
 app:
   outbox:
     poll-interval: 2000
     reset-interval: 60000
+  appointment:
+    pending-expire-hours: ${APPOINTMENT_PENDING_EXPIRE_HOURS:24}
+  # 跨域来源白名单（逗号分隔）。生产环境务必通过环境变量覆盖为真实域名，禁止使用 *
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:8080,http://localhost:4173,http://localhost:80}
 upload:
-  dir: ./uploads
+  dir: ${UPLOAD_DIR:./uploads}
 
-# SpringDoc Swagger配置
+# SpringDoc Swagger配置（生产环境通过 SWAGGER_ENABLED=false 关闭）
 springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:true}
   swagger-ui:
+    enabled: ${SWAGGER_ENABLED:true}
     tagsSorter: alpha
     operationsSorter: alpha
     defaultModelsExpandDepth: -1
@@ -39,7 +51,10 @@ logging:
     org.springframework.web.socket.config.WebSocketMessageBrokerStats: WARN
 
 server:
-  port: 8082
+  port: ${SERVER_PORT:8082}
 
+# JWT 密钥：生产环境必须通过环境变量 JWT_SECRET 提供（Base64，至少 256 位）。
+# 未提供时应用将使用一次性随机密钥并打印告警（重启后所有登录态失效）。
 jwt:
-  secret: ${JWT_SECRET:DnYFooRaZqdDXLi6GZQ4210ksbgDV3PTZQGa35OZNXJQIt6hGankli3gt6/cT6fP}
+  secret: ${JWT_SECRET:}
+  expiration-hours: ${JWT_EXPIRATION_HOURS:10}

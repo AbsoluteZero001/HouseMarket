@@ -16,12 +16,17 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
  * WebSocket认证拦截器
- * 用于验证WebSocket连接和消息中的JWT令牌
+ * 用于验证WebSocket连接和消息中的JWT令牌。
+ *
+ * 关键约定：STOMP 会话的 Principal name 统一为用户ID字符串，
+ * 服务端 convertAndSendToUser(userId, ...) 依赖该约定做定向推送，
+ * 前端统一订阅 /user/queue/...（由 STOMP 代理按会话隔离，无法越权订阅他人队列）。
  */
 @Component
 public class WebSocketAuthInterceptor implements ChannelInterceptor {
@@ -43,7 +48,6 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
             return message;
         }
 
-        // 只在CONNECT时认证，订阅沿用连接会话中的用户信息
         if (StompCommand.CONNECT.equals(accessor.getCommand())) {
 
             // 从STOMP头中获取Authorization令牌
@@ -84,30 +88,51 @@ public class WebSocketAuthInterceptor implements ChannelInterceptor {
                     throw new SecurityException("令牌无效或已过期");
                 }
 
-                // 从数据库获取用户信息
+                // 从数据库获取用户信息（同时校验账号状态）
                 Users user = usersService.getUserByUsername(username);
                 if (user == null) {
                     logger.warn("WebSocket令牌对应的用户不存在: {}", username);
                     throw new SecurityException("用户不存在");
                 }
+                if (!"normal".equals(user.getStatus())) {
+                    logger.warn("WebSocket连接被拒绝，账号已禁用: {}", username);
+                    throw new SecurityException("账号已被禁用");
+                }
 
                 // 提取角色信息
                 List<GrantedAuthority> authorities = jwtUtil.extractRoles(token).stream()
-                        .map(role -> new SimpleGrantedAuthority(role))
+                        .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 
-                // 创建认证对象
+                // Principal name 固定为用户ID字符串，与 convertAndSendToUser 的目标约定一致
                 UsernamePasswordAuthenticationToken authentication =
-                        new UsernamePasswordAuthenticationToken(user, null, authorities);
+                        new UsernamePasswordAuthenticationToken(user.getId().toString(), null, authorities);
 
-                // 设置认证信息到STOMP头中
                 accessor.setUser(authentication);
 
-                logger.info("WebSocket用户认证成功: {}", username);
+                logger.info("WebSocket用户认证成功: {} (userId={})", username, user.getId());
 
+            } catch (SecurityException e) {
+                throw e;
             } catch (Exception e) {
                 logger.error("WebSocket认证失败: {}", e.getMessage());
-                throw new SecurityException("认证失败: " + e.getMessage());
+                throw new SecurityException("认证失败");
+            }
+        } else if (StompCommand.SUBSCRIBE.equals(accessor.getCommand())) {
+            // 订阅白名单：只允许订阅 /user/...（STOMP 按会话用户隔离），防止猜 ID 越权订阅他人队列
+            Principal principal = accessor.getUser();
+            String destination = accessor.getDestination();
+            if (principal == null) {
+                throw new SecurityException("请先建立认证连接");
+            }
+            if (destination == null || !destination.startsWith("/user/")) {
+                logger.warn("拒绝非法订阅 destination={}, user={}", destination, principal.getName());
+                throw new SecurityException("非法的订阅目的地");
+            }
+        } else if (StompCommand.SEND.equals(accessor.getCommand())) {
+            // 发送消息必须携带认证身份
+            if (accessor.getUser() == null) {
+                throw new SecurityException("请先建立认证连接");
             }
         }
 

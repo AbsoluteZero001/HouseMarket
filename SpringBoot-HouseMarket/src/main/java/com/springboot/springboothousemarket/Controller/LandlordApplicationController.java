@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,10 +30,27 @@ public class LandlordApplicationController {
         this.landlordApplicationService = landlordApplicationService;
     }
 
+    /**
+     * 查看我的入驻申请。
+     */
     @GetMapping("/landlord/application")
     public ResponseResult getMyApplication(@AuthenticationPrincipal Users currentUser) {
         LandlordApplication application = landlordApplicationService.getByUserId(currentUser.getId());
-        return ResponseResult.ok(null, Map.of("application", application));
+        return ResponseResult.ok(null, Map.of("application", application == null ? Map.of() : application));
+    }
+
+    /**
+     * 租客主动提交房东入驻申请（被拒绝后可修改资料重新提交）。
+     */
+    @PostMapping("/landlord/application")
+    @PreAuthorize("hasAuthority('TENANT')")
+    public ResponseResult apply(@AuthenticationPrincipal Users currentUser,
+                                @RequestBody(required = false) Map<String, String> body) {
+        String realName = body == null ? null : body.get("realName");
+        String phone = body == null ? null : body.get("phone");
+        LandlordApplication application = landlordApplicationService.apply(currentUser, realName, phone);
+        return ResponseResult.ok("房东入驻申请已提交，请等待管理员审核",
+                Map.of("application", application));
     }
 
     @GetMapping("/admin/landlord-applications")
@@ -49,7 +67,8 @@ public class LandlordApplicationController {
                                   @RequestBody(required = false) Map<String, String> body) {
         String note = body == null ? null : body.get("note");
         boolean result = landlordApplicationService.approve(id, admin.getId(), note == null ? "审核通过" : note);
-        return result ? ResponseResult.ok("房东入驻申请已通过") : ResponseResult.fail("该申请已处理，无法重复审核");
+        return result ? ResponseResult.ok("房东入驻申请已通过，用户角色已升级为房东")
+                : ResponseResult.fail("该申请已处理，无法重复审核");
     }
 
     @PutMapping("/admin/landlord-applications/{id}/reject")

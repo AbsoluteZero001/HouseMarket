@@ -4,8 +4,10 @@
       <template #nav>
         <a href="#" :class="{ active: activeTab === 'dashboard' }" @click.prevent="activeTab = 'dashboard'">工作台</a>
         <a href="#" :class="{ active: activeTab === 'applications' }" @click.prevent="activeTab = 'applications'">房东审核</a>
+        <a href="#" :class="{ active: activeTab === 'identities' }"
+           @click.prevent="activeTab = 'identities'">实名审核</a>
+        <a href="#" :class="{ active: activeTab === 'houses' }" @click.prevent="activeTab = 'houses'">房源审核</a>
         <a href="#" :class="{ active: activeTab === 'appointments' }" @click.prevent="activeTab = 'appointments'">预约管理</a>
-        <a href="#" :class="{ active: activeTab === 'houses' }" @click.prevent="activeTab = 'houses'">房源管理</a>
         <a href="#" :class="{ active: activeTab === 'users' }" @click.prevent="activeTab = 'users'">用户管理</a>
       </template>
     </AppHeader>
@@ -129,8 +131,17 @@
           <div class="input-wrap">
             <input v-model="houseSearch" placeholder="搜索房源标题或地址..." @keyup.enter="searchHouses" />
           </div>
+          <select v-model="houseStatusFilter" class="select-filter">
+            <option value="">全部状态</option>
+            <option value="PENDING_REVIEW">待审核</option>
+            <option value="NORMAL">已上架</option>
+            <option value="OFFLINE">已下架</option>
+            <option value="REJECTED">审核未通过</option>
+          </select>
           <button class="btn btn-sm" @click="searchHouses">搜索</button>
-          <button class="btn btn-sm btn-outline" @click="houseSearch = ''; loadAllHouses()">重置</button>
+          <button class="btn btn-sm btn-outline" @click="houseSearch = ''; houseStatusFilter = ''; loadAllHouses()">
+            重置
+          </button>
         </div>
         <div class="table-wrap" v-reveal="{ delay: 120 }">
           <table class="table">
@@ -163,16 +174,25 @@
                 <td>&yen;{{ h.price }}</td>
                 <td>{{ h.address }}</td>
                 <td>
-                  <StatusBadge :status="h.status === 'NORMAL' ? 'approved' : 'pending'"/>
+                  <span class="house-status-pill" :class="'pill-' + (h.status || '').toLowerCase()">
+                    {{ houseStatusText(h.status) }}
+                  </span>
+                  <small v-if="h.status === 'REJECTED' && h.reviewNote" class="reject-reason">{{ h.reviewNote }}</small>
                 </td>
                 <td>
                   <div class="action-btns">
+                    <template v-if="h.status === 'PENDING_REVIEW'">
+                      <button class="btn btn-sm btn-success" @click="openHouseReview(h, 'approve')">通过</button>
+                      <button class="btn btn-sm btn-danger" @click="openHouseReview(h, 'reject')">驳回</button>
+                    </template>
                     <button class="btn btn-sm btn-outline" @click="openEditHouse(h.id)">编辑</button>
-                    <button class="btn btn-sm" @click="toggleHouseStatus(h)">{{
-                        h.status === 'NORMAL' ? '下架' : '上架'
-                      }}
+                    <button
+                        v-if="h.status === 'NORMAL' || h.status === 'OFFLINE'"
+                        class="btn btn-sm" @click="toggleHouseStatus(h)">
+                      {{ h.status === 'NORMAL' ? '下架' : '上架' }}
                     </button>
-                    <button class="btn btn-sm btn-danger" @click="handleDeleteHouse(h.id)">删除</button>
+                    <button class="btn btn-sm btn-outline btn-danger-outline" @click="handleDeleteHouse(h.id)">删除
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -197,17 +217,32 @@
             <option value="LANDLORD">房东</option>
             <option value="ADMIN">管理员</option>
           </select>
+          <select v-model="userStatusFilter" class="select-filter">
+            <option value="">全部状态</option>
+            <option value="normal">正常</option>
+            <option value="disabled">已禁用</option>
+          </select>
           <button class="btn btn-sm" @click="searchUsers">搜索</button>
-          <button class="btn btn-sm btn-outline" @click="userSearch = ''; userRoleFilter = ''">重置</button>
+          <button class="btn btn-sm btn-outline" @click="userSearch = ''; userRoleFilter = ''; userStatusFilter = ''">
+            重置
+          </button>
         </div>
         <div class="table-wrap" v-reveal="{ delay: 120 }">
           <table class="table">
             <thead>
-              <tr><th>ID</th><th>用户名</th><th>角色</th><th>状态</th><th>操作</th></tr>
+            <tr>
+              <th>ID</th>
+              <th>用户名</th>
+              <th>角色</th>
+              <th>实名</th>
+              <th>状态</th>
+              <th>注册时间</th>
+              <th>操作</th>
+            </tr>
             </thead>
             <tbody>
               <tr v-if="filteredUsers.length === 0">
-                <td colspan="5" class="empty-cell">暂无用户</td>
+                <td colspan="7" class="empty-cell">暂无用户</td>
               </tr>
               <tr v-for="u in filteredUsers" :key="u.id">
                 <td><span class="id-tag">#{{ u.id }}</span></td>
@@ -215,9 +250,74 @@
                 <td>
                   <StatusBadge :status="u.role === 'ADMIN' ? 'approved' : u.role === 'LANDLORD' ? 'pending' : 'completed'" />
                 </td>
+                <td>{{ Number(u.realNameVerified) === 1 ? '✅ 已实名' : '—' }}</td>
                 <td><StatusBadge :status="u.status || 'normal'" /></td>
+                <td>{{ u.createTime || '-' }}</td>
                 <td>
-                  <button class="btn btn-sm btn-danger" @click="handleDeleteUser(u.id)">删除</button>
+                  <div class="action-btns" v-if="u.role !== 'ADMIN'">
+                    <button
+                        v-if="(u.status || 'normal') === 'normal'"
+                        class="btn btn-sm btn-warning" @click="handleToggleUserStatus(u, 'disabled')">禁用
+                    </button>
+                    <button
+                        v-else
+                        class="btn btn-sm btn-success" @click="handleToggleUserStatus(u, 'normal')">解禁
+                    </button>
+                    <button class="btn btn-sm btn-outline btn-danger-outline" @click="handleDeleteUser(u.id)">删除
+                    </button>
+                  </div>
+                  <span v-else class="reviewed-tag">系统账号</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Identity Verification Review -->
+      <div v-if="activeTab === 'identities'" class="tab-content">
+        <div class="section-header" v-reveal>
+          <div>
+            <p class="kicker">IDENTITY REVIEW</p>
+            <h3>实名认证审核</h3>
+            <p class="section-sub">人工核验用户提交的实名信息，通过后用户实名状态生效</p>
+          </div>
+          <span class="count-tag">共 {{ identities.length }} 条</span>
+        </div>
+        <div class="table-wrap" v-reveal="{ delay: 100 }">
+          <table class="table">
+            <thead>
+            <tr>
+              <th>ID</th>
+              <th>用户名</th>
+              <th>真实姓名</th>
+              <th>身份证号</th>
+              <th>状态</th>
+              <th>申请时间</th>
+              <th>审核意见</th>
+              <th>操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-if="identities.length === 0">
+              <td colspan="8" class="empty-cell">暂无实名认证申请</td>
+            </tr>
+            <tr v-for="v in identities" :key="v.id">
+              <td><span class="id-tag">#{{ v.id }}</span></td>
+              <td>{{ v.username }}</td>
+              <td>{{ v.realName }}</td>
+              <td><code>{{ v.idCardNoMasked || '-' }}</code></td>
+              <td>
+                <StatusBadge :status="v.status"/>
+              </td>
+              <td>{{ v.createTime }}</td>
+              <td>{{ v.reviewNote || '-' }}</td>
+              <td>
+                <div class="action-btns" v-if="v.status === 'pending'">
+                  <button class="btn btn-sm btn-success" @click="openIdentityReview(v.id, 'approve')">通过</button>
+                  <button class="btn btn-sm btn-danger" @click="openIdentityReview(v.id, 'reject')">拒绝</button>
+                </div>
+                <span v-else class="reviewed-tag">已处理</span>
                 </td>
               </tr>
             </tbody>
@@ -242,6 +342,19 @@
       <div class="modal-actions">
         <button class="btn btn-outline" @click="showReviewModal = false">取消</button>
         <button class="btn" @click="submitReview">确认{{ reviewAction === 'approve' ? '通过' : '拒绝' }}</button>
+      </div>
+    </AppModal>
+
+    <AppModal :visible="showHouseRejectModal" title="驳回房源" @close="showHouseRejectModal = false">
+      <p class="reject-target">{{ houseRejectTarget?.title }}</p>
+      <div class="form-group">
+        <label>驳回原因（必填）</label>
+        <textarea v-model="houseRejectNote" rows="4" class="review-textarea"
+                  placeholder="请填写驳回原因，房东可修改后重新提交"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" @click="showHouseRejectModal = false">取消</button>
+        <button class="btn" @click="submitHouseReject">确认驳回</button>
       </div>
     </AppModal>
 
@@ -278,15 +391,24 @@
 <script setup>
 import {computed, onMounted, reactive, ref, watch} from 'vue'
 import {useRouter} from 'vue-router'
-import {deleteUser, getUsers} from '../api/users'
-import {createHouse, deleteHouse, getHouseById, getHouses, updateHouse} from '../api/houses'
+import {deleteUser, getUsers, setUserStatus} from '../api/users'
+import {
+  createHouse,
+  deleteHouse,
+  getHouseById,
+  getHouses,
+  reviewHouse,
+  setHouseStatus,
+  updateHouse
+} from '../api/houses'
 import {deleteAppointment, getAppointments} from '../api/appointments'
 import {
   approveLandlordApplication,
   getLandlordApplications,
   rejectLandlordApplication
 } from '../api/landlordApplications'
-import {useAuth} from '../composables/useAuth'
+import {getAdminIdentityVerifications, approveIdentityVerification, rejectIdentityVerification} from '../api/identity'
+import {useAuthStore} from '../stores/auth'
 import {useAlert} from '../composables/useAlert'
 import AppHeader from '../components/AppHeader.vue'
 import StatusBadge from '../components/StatusBadge.vue'
@@ -297,18 +419,24 @@ import HouseForm from '../components/HouseForm.vue'
 import HouseImageManager from '../components/HouseImageManager.vue'
 
 const router = useRouter()
-const {loadUser, handleLogout: doLogout} = useAuth()
-let user = loadUser()
-if (!user || user.role !== 'ADMIN') { router.push('/login') }
+const authStore = useAuthStore()
+const user = computed(() => authStore.user || {})
+const authorized = computed(() => authStore.isLoggedIn && user.value?.role === 'ADMIN')
+if (!authorized.value) {
+  router.push('/login')
+}
 
 const activeTab = ref('dashboard')
 const users = ref([])
 const allHouses = ref([])
 const allAppointments = ref([])
 const applications = ref([])
+const identities = ref([])
 const houseSearch = ref('')
+const houseStatusFilter = ref('')
 const userSearch = ref('')
 const userRoleFilter = ref('')
+const userStatusFilter = ref('')
 const {alertMsg, alertType, showAlert} = useAlert()
 const confirmState = reactive({visible: false, title: '', message: '', handler: null})
 const showReviewModal = ref(false)
@@ -319,8 +447,21 @@ const showHouseModal = ref(false)
 const editingHouse = ref({})
 const houseFormRef = ref(null)
 const activeHouseImages = ref([])
+// 房源审核驳回弹窗
+const showHouseRejectModal = ref(false)
+const houseRejectTarget = ref(null)
+const houseRejectNote = ref('')
 
 const houseModalTitle = computed(() => editingHouse.value.id ? '编辑房源' : '新增房源')
+
+function houseStatusText(status) {
+  return {
+    PENDING_REVIEW: '待审核',
+    NORMAL: '已上架',
+    OFFLINE: '已下架',
+    REJECTED: '审核未通过'
+  }[status] || (status || '-')
+}
 
 function askConfirm(title, message, handler) {
   confirmState.title = title
@@ -336,9 +477,13 @@ function confirmAction() {
 }
 
 const filteredHouses = computed(() => {
-  if (!houseSearch.value) return allHouses.value
-  const kw = houseSearch.value.toLowerCase()
-  return allHouses.value.filter(h => h.title?.toLowerCase().includes(kw) || h.address?.toLowerCase().includes(kw))
+  let list = allHouses.value
+  if (houseStatusFilter.value) list = list.filter(h => h.status === houseStatusFilter.value)
+  if (houseSearch.value) {
+    const kw = houseSearch.value.toLowerCase()
+    list = list.filter(h => h.title?.toLowerCase().includes(kw) || h.address?.toLowerCase().includes(kw))
+  }
+  return list
 })
 
 function searchHouses() {
@@ -351,10 +496,17 @@ const filteredUsers = computed(() => {
     list = list.filter(u => u.username?.toLowerCase().includes(kw))
   }
   if (userRoleFilter.value) list = list.filter(u => u.role === userRoleFilter.value)
+  if (userStatusFilter.value) list = list.filter(u => (u.status || 'normal') === userStatusFilter.value)
   return list
 })
 
-async function loadAllUsers() { try { const res = await getUsers(); users.value = res.data || [] } catch (e) { /* ignore */ } }
+async function loadAllUsers() {
+  try {
+    const res = await getUsers()
+    users.value = res.data?.data?.users || []
+  } catch (e) { /* ignore */
+  }
+}
 async function loadAllHouses() {
   try {
     const res = await getHouses({ page: 1, pageSize: 1000 })
@@ -443,15 +595,53 @@ async function handleHouseSubmit(data) {
 async function toggleHouseStatus(house) {
   const status = house.status === 'NORMAL' ? 'OFFLINE' : 'NORMAL'
   try {
-    await updateHouse(house.id, {status})
+    await setHouseStatus(house.id, status)
     showAlert(status === 'NORMAL' ? '房源已上架' : '房源已下架')
     await loadAllHouses()
   } catch (e) {
     showAlert(e.response?.data?.message || '状态更新失败', 'error')
   }
 }
+
+function openHouseReview(house, action) {
+  if (action === 'approve') {
+    askConfirm('房源审核', `确认通过「${house.title}」并上架吗？`, async () => {
+      try {
+        await reviewHouse(house.id, true, '审核通过')
+        showAlert('房源已通过审核并上架')
+        await loadAllHouses()
+      } catch (e) {
+        showAlert(e.response?.data?.message || '审核失败', 'error')
+      }
+    })
+  } else {
+    houseRejectTarget.value = house
+    houseRejectNote.value = ''
+    showHouseRejectModal.value = true
+  }
+}
+
+async function submitHouseReject() {
+  if (!houseRejectNote.value.trim()) {
+    showAlert('驳回时必须填写审核意见', 'error')
+    return
+  }
+  try {
+    await reviewHouse(houseRejectTarget.value.id, false, houseRejectNote.value.trim())
+    showAlert('房源已驳回')
+    showHouseRejectModal.value = false
+    await loadAllHouses()
+  } catch (e) {
+    showAlert(e.response?.data?.message || '审核失败', 'error')
+  }
+}
+
 async function loadAllAppointments() {
-  try { const res = await getAppointments(); if (res.data.success) allAppointments.value = res.data.data.appointments || [] } catch (e) { /* ignore */ }
+  try {
+    const res = await getAppointments()
+    if (res.data.success) allAppointments.value = res.data.data.appointments || []
+  } catch (e) { /* ignore */
+  }
 }
 
 async function loadApplications() {
@@ -461,41 +651,90 @@ async function loadApplications() {
   } catch (e) { /* ignore */ }
 }
 
+async function loadIdentities() {
+  try {
+    const res = await getAdminIdentityVerifications()
+    if (res.data.success) identities.value = res.data.data.verifications || []
+  } catch (e) { /* ignore */
+  }
+}
+
+const reviewTarget = ref('landlord')
+
 function openReview(id, action) {
   reviewId.value = id
   reviewAction.value = action
   reviewNote.value = ''
+  reviewTarget.value = 'landlord'
+  showReviewModal.value = true
+}
+
+function openIdentityReview(id, action) {
+  reviewId.value = id
+  reviewAction.value = action
+  reviewNote.value = ''
+  reviewTarget.value = 'identity'
   showReviewModal.value = true
 }
 
 async function submitReview() {
   try {
-    if (reviewAction.value === 'approve') {
-      await approveLandlordApplication(reviewId.value, reviewNote.value || '审核通过')
-      showAlert('房东入驻申请已通过')
+    if (reviewTarget.value === 'identity') {
+      if (reviewAction.value === 'approve') {
+        await approveIdentityVerification(reviewId.value, reviewNote.value || '信息核验通过')
+        showAlert('实名认证已通过')
+      } else {
+        await rejectIdentityVerification(reviewId.value, reviewNote.value || '信息核验未通过')
+        showAlert('实名认证已拒绝')
+      }
+      showReviewModal.value = false
+      await loadIdentities()
     } else {
-      await rejectLandlordApplication(reviewId.value, reviewNote.value || '资料不完整')
-      showAlert('房东入驻申请已拒绝')
+      if (reviewAction.value === 'approve') {
+        await approveLandlordApplication(reviewId.value, reviewNote.value || '审核通过')
+        showAlert('房东入驻申请已通过，用户角色已升级为房东')
+      } else {
+        await rejectLandlordApplication(reviewId.value, reviewNote.value || '资料不完整')
+        showAlert('房东入驻申请已拒绝')
+      }
+      showReviewModal.value = false
+      await loadApplications()
     }
-    showReviewModal.value = false
-    await loadApplications()
   } catch (e) {
     showAlert(e.response?.data?.message || '审核操作失败', 'error')
   }
 }
 
 function handleDeleteUser(id) {
-  askConfirm('删除用户', '删除后该用户将无法登录，确认继续吗？', async () => {
-    await deleteUser(id)
-    showAlert('用户已删除')
+  askConfirm('删除用户', '将删除该用户及其房源/预约/收藏/聊天等关联数据，确认继续吗？', async () => {
+    try {
+      await deleteUser(id)
+      showAlert('用户已删除')
+    } catch (e) {
+      showAlert(e.response?.data?.message || '删除失败', 'error')
+    }
     await loadAllUsers()
   })
 }
 
+async function handleToggleUserStatus(u, status) {
+  try {
+    await setUserStatus(u.id, status)
+    showAlert(status === 'disabled' ? '账号已禁用' : '账号已启用')
+    await loadAllUsers()
+  } catch (e) {
+    showAlert(e.response?.data?.message || '操作失败', 'error')
+  }
+}
+
 function handleDeleteHouse(id) {
-  askConfirm('删除房源', '删除后房源不再展示，确认继续吗？', async () => {
-    await deleteHouse(id)
-    showAlert('房源已删除')
+  askConfirm('删除房源', '删除后房源不再展示，关联数据会一并清理，确认继续吗？', async () => {
+    try {
+      await deleteHouse(id)
+      showAlert('房源已删除')
+    } catch (e) {
+      showAlert(e.response?.data?.message || '删除失败', 'error')
+    }
     await loadAllHouses()
   })
 }
@@ -509,17 +748,20 @@ function handleDeleteApt(id) {
 }
 
 function handleLogout() {
-  doLogout()
+  authStore.logout()
+  router.push('/login')
 }
 
 watch(activeTab, (tab) => {
   if (tab === 'applications') loadApplications()
+  if (tab === 'identities') loadIdentities()
   if (tab === 'users') loadAllUsers()
   if (tab === 'houses') loadAllHouses()
   if (tab === 'appointments') loadAllAppointments()
 })
 
 onMounted(async () => {
+  if (!authorized.value) return
   await Promise.all([loadAllUsers(), loadAllHouses(), loadAllAppointments(), loadApplications()])
 })
 </script>
@@ -753,5 +995,51 @@ onMounted(async () => {
   .search-bar { flex-wrap: wrap; }
   .input-wrap { max-width: none; }
   .table-wrap { overflow-x: auto; }
+}
+
+.house-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pill-normal {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.pill-pending_review {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.pill-offline {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.pill-rejected {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.reject-reason {
+  display: block;
+  color: #b91c1c;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.reject-target {
+  font-weight: 700;
+  margin-bottom: 10px;
+  color: var(--text);
 }
 </style>

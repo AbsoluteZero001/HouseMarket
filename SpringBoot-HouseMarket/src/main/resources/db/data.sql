@@ -85,7 +85,12 @@ VALUES (1, '望京SOHO精装两居室', '平层', '朝阳区', 2, 1, 89.00, 6500
        (10, '亦庄开发区现代三居室', '复式', '大兴区', 3, 2, 135.00, 4500.00, '南北', '15/26层', '简装', '押一付三',
         '["高性价比","绿化率高","近企业总部"]', '大兴区亦庄经济技术开发区荣华南路10号院3-2-1501',
         '复式大三居，上下两层动静分区，一层客厅餐厅厨房，二层三间卧室，品牌家电，步行8分钟到亦庄线荣京东街站。',
-        '[]', 2, 'NORMAL', 104, '2026-07-18 09:30:00');
+        '[]', 2, 'NORMAL', 104, '2026-07-18 09:30:00'),
+       (11, '双井富力城新装两居室（待审核）', '平层', '朝阳区', 2, 1, 92.00, 6800.00, '南北', '8/30层', '精装',
+        '押一付三',
+        '["近地铁","精装修","南北通透"]', '朝阳区东三环双井富力城A区6号楼1201',
+        '富力城新装两居室，业主自住装修保持好，南北通透采光充足，步行8分钟到地铁10号线双井站。',
+        '[]', 2, 'PENDING_REVIEW', 0, '2026-08-20 11:20:00');
 
 INSERT INTO `house_image` (`house_id`, `image_url`, `sort_order`, `is_cover`, `create_time`)
 VALUES (1, '/uploads/houses/1/img_1.png', 0, 1, '2026-06-15 10:30:00'),
@@ -117,7 +122,9 @@ VALUES (1, '/uploads/houses/1/img_1.png', 0, 1, '2026-06-15 10:30:00'),
        (9, '/uploads/houses/9/img_1.png', 2, 0, '2026-07-15 15:02:00'),
        (10, '/uploads/houses/10/img_5.png', 0, 1, '2026-07-18 09:30:00'),
        (10, '/uploads/houses/10/img_1.png', 1, 0, '2026-07-18 09:31:00'),
-       (10, '/uploads/houses/10/img_2.png', 2, 0, '2026-07-18 09:32:00');
+       (10, '/uploads/houses/10/img_2.png', 2, 0, '2026-07-18 09:32:00'),
+       (11, '/uploads/houses/11/img_1.png', 0, 1, '2026-08-20 11:20:00'),
+       (11, '/uploads/houses/11/img_2.png', 1, 0, '2026-08-20 11:21:00');
 
 INSERT INTO `appointment` (`id`, `house_id`, `tenant_id`, `landlord_id`, `time`, `location`, `notes`, `status`,
                            `create_time`, `update_time`)
@@ -174,15 +181,65 @@ VALUES (1, NULL, 'published', 'PUBLISH', 2, 'LANDLORD', '房源已发布上线',
        (6, 'pending', 'rejected', 'REJECT', 4, 'LANDLORD', '时间冲突，房东拒绝本次预约', '2026-07-26 17:00:00'),
        (6, 'rejected', 'rejected', 'NOTIFY', 4, 'LANDLORD', '已通知租客审批结果', '2026-07-26 17:01:00');
 
--- 通知中心历史（事务 Outbox 已送达记录）
-INSERT INTO `notification_outbox` (`business_key`, `appointment_id`, `event_type`, `payload`, `target_user_id`, `status`, `retry_count`, `create_time`, `send_time`)
-VALUES
-       ('1:APPOINTMENT_APPROVED', 1, 'APPOINTMENT_APPROVED', '{"appointmentId":1,"status":"APPOINTMENT_APPROVED","tenantId":5,"landlordId":2,"targetUserId":5,"message":"预约已批准"}', 5, 'sent', 1, '2026-07-21 09:01:00', '2026-07-21 09:01:01'),
-       ('2:APPOINTMENT_CREATED', 2, 'APPOINTMENT_CREATED', '{"appointmentId":2,"status":"APPOINTMENT_CREATED","tenantId":6,"landlordId":2,"targetUserId":2,"message":"有新预约申请待处理"}', 2, 'sent', 1, '2026-07-22 10:16:00', '2026-07-22 10:16:01'),
-       ('3:APPOINTMENT_APPROVED', 3, 'APPOINTMENT_APPROVED', '{"appointmentId":3,"status":"APPOINTMENT_APPROVED","tenantId":5,"landlordId":3,"targetUserId":5,"message":"预约已批准"}', 5, 'sent', 1, '2026-07-23 15:21:00', '2026-07-23 15:21:01'),
-       ('4:APPOINTMENT_CREATED', 4, 'APPOINTMENT_CREATED', '{"appointmentId":4,"status":"APPOINTMENT_CREATED","tenantId":7,"landlordId":4,"targetUserId":4,"message":"有新预约申请待处理"}', 4, 'sent', 1, '2026-07-25 16:46:00', '2026-07-25 16:46:01'),
-       ('5:APPOINTMENT_COMPLETED', 5, 'APPOINTMENT_COMPLETED', '{"appointmentId":5,"status":"APPOINTMENT_COMPLETED","tenantId":6,"landlordId":3,"targetUserId":6,"message":"看房预约已完成"}', 6, 'sent', 1, '2026-07-28 10:00:30', '2026-07-28 10:00:31'),
-       ('6:APPOINTMENT_REJECTED', 6, 'APPOINTMENT_REJECTED', '{"appointmentId":6,"status":"APPOINTMENT_REJECTED","tenantId":7,"landlordId":4,"targetUserId":7,"message":"预约已拒绝"}', 7, 'sent', 1, '2026-07-26 17:01:00', '2026-07-26 17:01:01');
+-- 用户通知中心历史（与 Outbox 投递记录一一对应）
+INSERT INTO `notification` (`id`, `user_id`, `type`, `title`, `content`, `related_type`, `related_id`, `read_status`,
+                            `sent_time`, `create_time`)
+VALUES (1, 5, 'APPOINTMENT_APPROVED', '预约已批准', '您预约的「望京SOHO精装两居室」看房申请已被房东批准', 'APPOINTMENT',
+        1, 0, '2026-07-21 09:01:01', '2026-07-21 09:01:00'),
+       (2, 2, 'APPOINTMENT_CREATED', '有新预约申请待处理', '租客孙丽预约了「中关村软件园精品LOFT公寓」，请及时处理',
+        'APPOINTMENT', 2, 0, '2026-07-22 10:16:01', '2026-07-22 10:16:00'),
+       (3, 5, 'APPOINTMENT_APPROVED', '预约已批准', '您预约的「三里屯时尚复式公寓」看房申请已被房东批准', 'APPOINTMENT',
+        3, 1, '2026-07-23 15:21:01', '2026-07-23 15:21:00'),
+       (4, 4, 'APPOINTMENT_CREATED', '有新预约申请待处理', '租客周强预约了「通州万达广场舒适两居室」，请及时处理',
+        'APPOINTMENT', 4, 0, '2026-07-25 16:46:01', '2026-07-25 16:46:00'),
+       (5, 6, 'APPOINTMENT_COMPLETED', '看房预约已完成', '您在「金融街高端一居室」的看房已完成', 'APPOINTMENT', 5, 1,
+        '2026-07-28 10:00:31', '2026-07-28 10:00:30'),
+       (6, 7, 'APPOINTMENT_REJECTED', '预约已拒绝', '很抱歉，您对「总部基地精装三居室」的预约被房东拒绝', 'APPOINTMENT', 6,
+        0, '2026-07-26 17:01:01', '2026-07-26 17:01:00'),
+       (7, 2, 'LANDLORD_APPROVED', '房东入驻审核通过', '您的房东入驻申请已通过，现在可以发布房源了',
+        'LANDLORD_APPLICATION', 1, 1, '2026-06-15 10:00:01', '2026-06-15 10:00:00');
 
-INSERT INTO `notification_outbox` (`business_key`, `business_type`, `appointment_id`, `event_type`, `payload`, `target_user_id`, `status`, `retry_count`, `create_time`, `send_time`)
-VALUES ('LANDLORD_APPLICATION:1:LANDLORD_APPROVED', 'LANDLORD', NULL, 'LANDLORD_APPROVED', '{"status":"LANDLORD_APPROVED","targetUserId":2,"message":"房东入驻审核通过，现在可以发布房源了"}', 2, 'sent', 1, '2026-06-15 10:00:00', '2026-06-15 10:00:01');
+-- 通知中心历史（事务 Outbox 已送达记录）
+INSERT INTO `notification_outbox` (`business_key`, `appointment_id`, `notification_id`, `event_type`, `payload`,
+                                   `target_user_id`, `status`, `retry_count`, `create_time`, `send_time`)
+VALUES ('1:APPOINTMENT_APPROVED', 1, 1, 'APPOINTMENT_APPROVED',
+        '{"appointmentId":1,"status":"APPOINTMENT_APPROVED","tenantId":5,"landlordId":2,"targetUserId":5,"message":"预约已批准"}',
+        5, 'sent', 1, '2026-07-21 09:01:00', '2026-07-21 09:01:01'),
+       ('2:APPOINTMENT_CREATED', 2, 2, 'APPOINTMENT_CREATED',
+        '{"appointmentId":2,"status":"APPOINTMENT_CREATED","tenantId":6,"landlordId":2,"targetUserId":2,"message":"有新预约申请待处理"}',
+        2, 'sent', 1, '2026-07-22 10:16:00', '2026-07-22 10:16:01'),
+       ('3:APPOINTMENT_APPROVED', 3, 3, 'APPOINTMENT_APPROVED',
+        '{"appointmentId":3,"status":"APPOINTMENT_APPROVED","tenantId":5,"landlordId":3,"targetUserId":5,"message":"预约已批准"}',
+        5, 'sent', 1, '2026-07-23 15:21:00', '2026-07-23 15:21:01'),
+       ('4:APPOINTMENT_CREATED', 4, 4, 'APPOINTMENT_CREATED',
+        '{"appointmentId":4,"status":"APPOINTMENT_CREATED","tenantId":7,"landlordId":4,"targetUserId":4,"message":"有新预约申请待处理"}',
+        4, 'sent', 1, '2026-07-25 16:46:00', '2026-07-25 16:46:01'),
+       ('5:APPOINTMENT_COMPLETED', 5, 5, 'APPOINTMENT_COMPLETED',
+        '{"appointmentId":5,"status":"APPOINTMENT_COMPLETED","tenantId":6,"landlordId":3,"targetUserId":6,"message":"看房预约已完成"}',
+        6, 'sent', 1, '2026-07-28 10:00:30', '2026-07-28 10:00:31'),
+       ('6:APPOINTMENT_REJECTED', 6, 6, 'APPOINTMENT_REJECTED',
+        '{"appointmentId":6,"status":"APPOINTMENT_REJECTED","tenantId":7,"landlordId":4,"targetUserId":7,"message":"预约已拒绝"}',
+        7, 'sent', 1, '2026-07-26 17:01:00', '2026-07-26 17:01:01');
+
+INSERT INTO `notification_outbox` (`business_key`, `business_type`, `appointment_id`, `notification_id`, `event_type`,
+                                   `payload`, `target_user_id`, `status`, `retry_count`, `create_time`, `send_time`)
+VALUES ('LANDLORD_APPLICATION:1:LANDLORD_APPROVED', 'LANDLORD', NULL, 7, 'LANDLORD_APPROVED',
+        '{"status":"LANDLORD_APPROVED","targetUserId":2,"message":"房东入驻审核通过，现在可以发布房源了"}', 2, 'sent', 1,
+        '2026-06-15 10:00:00', '2026-06-15 10:00:01');
+
+-- 实名认证申请（种子房东已完成人工审核）
+INSERT INTO `identity_verification` (`user_id`, `username`, `real_name`, `id_card_no`, `status`, `review_note`,
+                                     `reviewer_id`, `review_time`, `create_time`)
+VALUES (2, 'landlord1', '张明', '110101199001011234', 'approved', '信息核验通过', 1, '2026-06-14 10:00:00',
+        '2026-06-13 10:00:00'),
+       (3, 'landlord2', '李华', '110101199102022345', 'approved', '信息核验通过', 1, '2026-06-14 10:00:00',
+        '2026-06-13 10:00:00'),
+       (4, 'landlord3', '王芳', '110101199203033456', 'approved', '信息核验通过', 1, '2026-06-14 10:00:00',
+        '2026-06-13 10:00:00');
+
+-- 聊天消息（租客1 与 房东1 围绕房源1 的历史会话）
+INSERT INTO `chat_message` (`sender_id`, `receiver_id`, `house_id`, `content`, `message_type`, `read_status`,
+                            `create_time`)
+VALUES (5, 2, 1, '您好，望京SOHO这套房子还在出租吗？', 'TEXT', 1, '2026-07-19 10:00:00'),
+       (2, 5, 1, '您好，在的，房子还在出租，随时可以约看。', 'TEXT', 1, '2026-07-19 10:05:00'),
+       (5, 2, 1, '好的，我已经提交了看房预约，周日上午方便吗？', 'TEXT', 0, '2026-07-19 10:08:00');

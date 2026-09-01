@@ -26,7 +26,8 @@
           </div>
           <div class="review-banner" v-if="applicationStatus && applicationStatus !== 'approved'">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <span>房东入驻审核{{ applicationStatus === 'pending' ? '中，审核通过后才能发布房源' : '未通过，请联系管理员' }}</span>
+            <span v-if="applicationStatus === 'pending'">房东入驻审核中，审核通过后才能发布房源</span>
+            <span v-else>入驻申请未通过：{{ applicationReviewNote || '请联系管理员' }}。可在个人信息中查看原因。</span>
           </div>
           <div class="hero-actions">
             <button class="btn btn-lg" :disabled="!canPublish" @click="openAddHouse">
@@ -103,11 +104,11 @@
               <span class="live-dot"><i></i> 实时</span>
             </div>
             <div class="notif-list">
-              <div v-for="n in notifications" :key="n.id" class="notif-item" :class="'notif-' + n.type">
+              <div v-for="n in notifications" :key="n.id" class="notif-item" :class="'notif-' + notifTone(n.type)">
                 <span class="notif-dot"></span>
                 <div>
                   <p>{{ n.title }}</p>
-                  <small>{{ n.time }}</small>
+                  <small>{{ formatNotifTime(n.createTime) }}</small>
                 </div>
               </div>
               <div v-if="notifications.length === 0" class="panel-empty">暂无通知，有新的预约会实时提醒</div>
@@ -183,12 +184,20 @@
         <div v-else class="house-grid">
           <HouseCard v-for="(h, i) in houseStore.houses" :key="h.id" :house="h" v-reveal="{ delay: (i % 3) * 70 }">
             <template #actions="{ house }">
+              <span class="house-status-tag" :class="'tag-' + (house.status || '').toLowerCase()">
+                {{ houseStatusText(house.status) }}
+              </span>
               <button class="btn btn-sm btn-outline" @click="openEditHouse(house.id)">编辑</button>
               <button class="btn btn-sm btn-danger" @click="handleDeleteHouse(house.id)">删除</button>
-              <button class="btn btn-sm" :class="house.status === 'NORMAL' ? 'btn-offline' : 'btn-online'"
-                      @click="handleToggleStatus(house)">
+              <button
+                  v-if="house.status === 'NORMAL' || house.status === 'OFFLINE'"
+                  class="btn btn-sm" :class="house.status === 'NORMAL' ? 'btn-offline' : 'btn-online'"
+                  @click="handleToggleStatus(house)">
                 {{ house.status === 'NORMAL' ? '下架' : '上架' }}
               </button>
+              <small v-if="house.status === 'REJECTED' && house.reviewNote" class="review-note">
+                未通过原因：{{ house.reviewNote }}
+              </small>
             </template>
           </HouseCard>
         </div>
@@ -232,8 +241,9 @@
       <HouseForm
           ref="houseFormRef"
           :initial="editingHouse"
-          :submit-label="showEditModal ? '保存修改' : '发布房源'"
-          :show-image-upload="false"
+          :submit-label="showEditModal ? '保存修改' : '提交审核'"
+          :show-image-upload="!showEditModal"
+          :require-image="!showEditModal"
           @submit="handleHouseSubmit"
           @cancel="closeHouseModal"
       />
@@ -267,19 +277,32 @@
 
       <div class="verify-card">
         <div class="verify-title">
-          <span>房东实名认证</span>
+          <span>房东实名认证（人工审核）</span>
           <small v-if="Number(userProfile?.realNameVerified) === 1" class="verified">已实名</small>
+          <small v-else-if="identityStatus === 'pending'" class="unverified">审核中</small>
           <small v-else class="unverified">未实名</small>
         </div>
-        <div class="form-group"><label>房东网名</label><input v-model="verifyForm.nickname" placeholder="如：低调玩家"/>
-        </div>
-        <div class="form-group"><label>真实姓名</label><input v-model="verifyForm.realName"
-                                                              placeholder="请输入真实姓名"/></div>
-        <div class="form-group"><label>身份证号</label><input v-model="verifyForm.idCardNo" maxlength="18"
-                                                              placeholder="请输入18位身份证号"/></div>
-        <button class="btn btn-block" :disabled="Number(userProfile?.realNameVerified) === 1" @click="handleVerify">
-          {{ Number(userProfile?.realNameVerified) === 1 ? '已完成实名认证' : '提交实名认证' }}
-        </button>
+        <template v-if="Number(userProfile?.realNameVerified) === 1">
+          <p class="verify-done">实名认证已通过{{ userProfile?.realName ? '（' + userProfile.realName + '）' : '' }}</p>
+        </template>
+        <template v-else-if="identityStatus === 'pending'">
+          <p class="verify-done">实名认证申请审核中，管理员会尽快处理，结果将通过通知中心告知。</p>
+        </template>
+        <template v-else>
+          <div class="status-banner danger" v-if="identityStatus === 'rejected'">
+            上次申请未通过：{{ identityReviewNote || '信息核验未通过' }}，可修改后重新提交。
+          </div>
+          <div class="form-group"><label>房东网名</label><input v-model="verifyForm.nickname"
+                                                                placeholder="如：低调玩家"/>
+          </div>
+          <div class="form-group"><label>真实姓名</label><input v-model="verifyForm.realName"
+                                                                placeholder="请输入真实姓名"/></div>
+          <div class="form-group"><label>身份证号</label><input v-model="verifyForm.idCardNo" maxlength="18"
+                                                                placeholder="请输入18位身份证号"/></div>
+          <button class="btn btn-block" @click="handleVerify">
+            {{ identityStatus === 'rejected' ? '重新提交实名认证' : '提交实名认证' }}
+          </button>
+        </template>
       </div>
 
       <div class="verify-card">
@@ -300,7 +323,6 @@
     <ChatPanel
         :current-user-id="Number(user.id)"
         :current-user-name="user.nickname || user.username || '我'"
-        :house-id="0"
         :visible="showChat"
         @close="showChat = false"
         @unread="chatUnread = $event"
@@ -329,11 +351,15 @@ import {computed, onMounted, onUnmounted, reactive, ref, watch} from 'vue'
 import {useRouter} from 'vue-router'
 import {useHouseStore} from '../stores/houses'
 import {useAppointmentStore} from '../stores/appointments'
+import {useAuthStore} from '../stores/auth'
 import {changePassword, updateNickname, uploadAvatar} from '../api/users'
+import {getMyIdentityVerification, submitIdentityVerification} from '../api/identity'
+import {getNotifications} from '../api/notifications'
+import {setHouseStatus} from '../api/houses'
 import {useWebSocket} from '../composables/useWebSocket'
-import {roleLabel, useAuth} from '../composables/useAuth'
+import {roleLabel} from '../composables/useAuth'
 import {useAlert} from '../composables/useAlert'
-import {getLandlordProfile, getMyLandlordApplication, verifyLandlord} from '../api/landlordApplications'
+import {getLandlordProfile, getMyLandlordApplication} from '../api/landlordApplications'
 import AppHeader from '../components/AppHeader.vue'
 import HouseCard from '../components/HouseCard.vue'
 import HouseForm from '../components/HouseForm.vue'
@@ -349,10 +375,9 @@ import AppConfirm from '../components/AppConfirm.vue'
 const router = useRouter()
 const houseStore = useHouseStore()
 const aptStore = useAppointmentStore()
+const authStore = useAuthStore()
 
-const {loadUser, handleLogout: doLogout} = useAuth()
-let user = loadUser()
-if (!user) user = {}
+const user = computed(() => authStore.user || {})
 
 const activeTab = ref('dashboard')
 const showAddModal = ref(false)
@@ -370,12 +395,14 @@ const showFlow = ref(false)
 const flowAppointment = ref(null)
 const flowRecords = ref([])
 const applicationStatus = ref(null)
-const userProfile = ref(user || {})
+const applicationReviewNote = ref('')
+const identityStatus = ref(null)
+const identityReviewNote = ref('')
+const userProfile = ref(user.value || {})
 const showChat = ref(false)
 const chatUnread = ref(0)
 const verifyForm = reactive({nickname: '', realName: '', idCardNo: ''})
-const nicknameForm = reactive({nickname: user?.nickname || user?.username || ''})
-const avatarUploading = ref(false)
+const nicknameForm = reactive({nickname: user.value?.nickname || user.value?.username || ''})
 
 function askConfirm(title, message, handler) {
   confirmState.title = title
@@ -390,49 +417,82 @@ function confirmAction() {
   if (handler) handler()
 }
 
-function pushNotification(title, type = 'info') {
-  const time = new Date().toLocaleString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-  notifications.value.unshift({id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, title, time, type})
+function houseStatusText(status) {
+  return {
+    PENDING_REVIEW: '待审核',
+    NORMAL: '已上架',
+    OFFLINE: '已下架',
+    REJECTED: '审核未通过'
+  }[status] || status
+}
+
+function notifTone(type) {
+  if (['APPOINTMENT_APPROVED', 'APPOINTMENT_COMPLETED', 'LANDLORD_APPROVED', 'IDENTITY_APPROVED', 'HOUSE_APPROVED'].includes(type)) return 'success'
+  if (['APPOINTMENT_REJECTED', 'LANDLORD_REJECTED', 'IDENTITY_REJECTED', 'HOUSE_REJECTED'].includes(type)) return 'danger'
+  if (['APPOINTMENT_CANCELED', 'APPOINTMENT_EXPIRED'].includes(type)) return 'warn'
+  return 'info'
+}
+
+function formatNotifTime(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value).replace('T', ' ').slice(0, 16)
+  return date.toLocaleString('zh-CN', {month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'})
 }
 
 let pollTimer = null
 
-const roleLabelComputed = computed(() => roleLabel(user.role))
+const roleLabelComputed = computed(() => roleLabel(user.value.role))
 const approvedCount = computed(() => aptStore.appointments.filter(a => a.status === 'approved').length)
 const canPublish = computed(() =>
     applicationStatus.value === 'approved' && Number(userProfile.value?.realNameVerified) === 1
 )
 const pipelineStages = computed(() => [
-  {key: 'PUBLISH', label: '发布', count: houseStore.houses.length, sub: '在线房源'},
+  {key: 'PUBLISH', label: '发布', count: houseStore.houses.length, sub: '全部房源'},
   {key: 'BOOK', label: '预约', count: aptStore.appointments.length, sub: '累计预约'},
   {key: 'APPROVE', label: '审批', count: pendingCount, sub: '待处理'},
-  {key: 'NOTIFY', label: '通知', count: notifications.length, sub: '实时消息'}
+  {key: 'NOTIFY', label: '通知', count: notifications.value.length, sub: '通知记录'}
 ])
 
 const { notification, connect, disconnect } = useWebSocket()
 
-async function loadHouses() { await houseStore.fetchLandlordHouses(user.id) }
+async function loadHouses() {
+  await houseStore.fetchLandlordHouses(user.value.id)
+}
 async function loadAppointments() { await aptStore.fetchAppointments() }
 async function loadPendingCount() {
   try { await aptStore.fetchAppointments('pending'); pendingCount.value = aptStore.appointments.length } catch (e) { /* ignore */ }
 }
 
+async function loadNotifications() {
+  try {
+    const res = await getNotifications(20)
+    notifications.value = res.data?.data?.notifications || []
+  } catch (e) { /* ignore */
+  }
+}
+
 async function loadApplicationStatus() {
   try {
     const res = await getMyLandlordApplication()
-    applicationStatus.value = res.data?.data?.application?.status || null
+    const application = res.data?.data?.application || {}
+    applicationStatus.value = application.status || null
+    applicationReviewNote.value = application.reviewNote || ''
     const profileRes = await getLandlordProfile()
-    userProfile.value = profileRes.data?.data?.user || user
+    userProfile.value = profileRes.data?.data?.user || user.value
     verifyForm.nickname = userProfile.value?.nickname || ''
     verifyForm.realName = userProfile.value?.realName || ''
   } catch (e) {
     applicationStatus.value = null
-    userProfile.value = user || {}
+    userProfile.value = user.value || {}
+  }
+  try {
+    const res = await getMyIdentityVerification()
+    const verification = res.data?.data?.verification || {}
+    identityStatus.value = verification.status || null
+    identityReviewNote.value = verification.reviewNote || ''
+  } catch (e) {
+    identityStatus.value = null
   }
 }
 
@@ -446,19 +506,14 @@ async function handleVerify() {
     return
   }
   try {
-    const res = await verifyLandlord({
-      nickname: verifyForm.nickname,
-      realName: verifyForm.realName,
-      idCardNo: verifyForm.idCardNo
+    await submitIdentityVerification({
+      realName: verifyForm.realName.trim(),
+      idCardNo: verifyForm.idCardNo.trim()
     })
-    userProfile.value = res.data?.data?.user || {}
-    const stored = JSON.parse(localStorage.getItem('user') || '{}')
-    Object.assign(stored, userProfile.value)
-    localStorage.setItem('user', JSON.stringify(stored))
-    showAlert('实名认证成功，历史房源已同步展示实名状态')
-    await loadHouses()
+    identityStatus.value = 'pending'
+    showAlert('实名认证申请已提交，请等待管理员审核')
   } catch (e) {
-    showAlert(e.response?.data?.message || '实名认证失败', 'error')
+    showAlert(e.response?.data?.message || '实名认证提交失败', 'error')
   }
 }
 
@@ -470,10 +525,8 @@ async function handleSaveNickname() {
   try {
     const res = await updateNickname(nicknameForm.nickname.trim())
     const updated = res.data?.data?.user || {}
-    Object.assign(user, updated)
-    const stored = JSON.parse(localStorage.getItem('user') || '{}')
-    Object.assign(stored, updated)
-    localStorage.setItem('user', JSON.stringify(stored))
+    authStore.updateUser(updated)
+    userProfile.value = {...userProfile.value, ...updated}
     showAlert('昵称已更新')
   } catch (e) {
     showAlert(e.response?.data?.message || '昵称更新失败', 'error')
@@ -484,19 +537,14 @@ async function handleAvatarChange(event) {
   const file = event.target.files?.[0]
   event.target.value = ''
   if (!file) return
-  avatarUploading.value = true
   try {
     const res = await uploadAvatar(file)
     const updated = res.data?.data?.user || {}
-    Object.assign(user, updated)
-    const stored = JSON.parse(localStorage.getItem('user') || '{}')
-    Object.assign(stored, updated)
-    localStorage.setItem('user', JSON.stringify(stored))
+    authStore.updateUser(updated)
+    userProfile.value = {...userProfile.value, ...updated}
     showAlert('头像已更新')
   } catch (e) {
     showAlert(e.response?.data?.message || '头像上传失败', 'error')
-  } finally {
-    avatarUploading.value = false
   }
 }
 
@@ -565,16 +613,14 @@ async function handleHouseSubmit(data) {
     let houseId = editingHouse.value.id
     if (showEditModal.value) {
       await houseStore.editHouse(houseId, payload)
-      showAlert('房源已更新')
+      showAlert('房源已更新，内容变更将重新审核')
     } else {
       const created = await houseStore.addHouse(payload)
       houseId = created?.data?.house?.id
-      showAlert('房源发布成功')
-      pushNotification('房源已发布，等待租客预约', 'success')
-    }
-    if (data.imageFile && houseId) {
-      await houseStore.addHouseImage(houseId, data.imageFile, 'COVER', 0, true)
-      showAlert('房源图片已上传')
+      showAlert('房源已提交，等待管理员审核通过后上架')
+      if (data.imageFile && houseId) {
+        await houseStore.addHouseImage(houseId, data.imageFile, 'COVER', 0, true)
+      }
     }
   } catch (e) {
     showAlert(e.response?.data?.message || '房源保存失败', 'error')
@@ -585,32 +631,38 @@ async function handleHouseSubmit(data) {
 }
 
 async function handleDeleteHouse(id) {
-  askConfirm('删除房源', '删除后房源将不再展示，确认继续吗？', async () => {
-    await houseStore.removeHouse(id)
-    showAlert('房源已删除')
+  askConfirm('删除房源', '删除后房源将不再展示，关联预约与收藏会一并清理，确认继续吗？', async () => {
+    try {
+      await houseStore.removeHouse(id)
+      showAlert('房源已删除')
+    } catch (e) {
+      showAlert(e.response?.data?.message || '删除失败', 'error')
+    }
     await loadHouses()
   })
 }
 
 async function handleToggleStatus(house) {
   const status = house.status === 'NORMAL' ? 'OFFLINE' : 'NORMAL'
-  await houseStore.editHouse(house.id, {status})
-  showAlert(status === 'NORMAL' ? '房源已上架' : '房源已下架')
+  try {
+    await setHouseStatus(house.id, status)
+    showAlert(status === 'NORMAL' ? '房源已上架' : '房源已下架')
+  } catch (e) {
+    showAlert(e.response?.data?.message || '状态更新失败', 'error')
+  }
   await loadHouses()
 }
 
 async function handleApprove(id) {
   await aptStore.approve(id)
-  showAlert('预约已批准')
-  pushNotification('已批准预约 #' + id + '，通知已送达租客', 'success')
+  showAlert('预约已批准，已通知租客')
   await loadAppointments();
   await loadPendingCount()
 }
 
 async function handleReject(id) {
   await aptStore.reject(id)
-  showAlert('预约已拒绝')
-  pushNotification('已拒绝预约 #' + id + '，通知已送达租客', 'warning')
+  showAlert('预约已拒绝，已通知租客')
   await loadAppointments();
   await loadPendingCount()
 }
@@ -618,7 +670,6 @@ async function handleReject(id) {
 async function handleComplete(id) {
   await aptStore.complete(id)
   showAlert('预约已完成')
-  pushNotification('预约 #' + id + ' 看房完成，闭环结束', 'success')
   await loadAppointments();
   await loadPendingCount()
 }
@@ -632,41 +683,61 @@ async function handleDeleteApt(id) {
 }
 
 async function handleChangePassword() {
+  if (!passwordForm.oldPassword) {
+    showAlert('请输入旧密码', 'error');
+    return
+  }
   if (!passwordForm.newPassword) {
     showAlert('请输入新密码', 'error');
     return
   }
-  if (passwordForm.newPassword !== passwordForm.confirmNewPassword) {
-    showAlert('两次密码不一致', 'error');
+  if (passwordForm.newPassword.length < 6) {
+    showAlert('新密码长度不能少于6位', 'error');
     return
   }
-  await changePassword(user.id, passwordForm.oldPassword, passwordForm.newPassword)
-  showAlert('密码修改成功')
-  showProfile.value = false
-  passwordForm.newPassword = ''; passwordForm.confirmNewPassword = ''; passwordForm.oldPassword = ''
+  if (passwordForm.newPassword !== passwordForm.confirmNewPassword) {
+    showAlert('两次输入的新密码不一致', 'error');
+    return
+  }
+  if (passwordForm.newPassword === passwordForm.oldPassword) {
+    showAlert('新密码不能与旧密码相同', 'error');
+    return
+  }
+  try {
+    await changePassword(user.value.id, passwordForm.oldPassword, passwordForm.newPassword)
+    showAlert('密码修改成功')
+    showProfile.value = false
+    passwordForm.oldPassword = ''
+    passwordForm.newPassword = ''
+    passwordForm.confirmNewPassword = ''
+  } catch (e) {
+    showAlert(e.response?.data?.message || '密码修改失败', 'error')
+  }
 }
 
 function handleLogout() {
-  doLogout(() => {
-    disconnect();
-    if (pollTimer) clearInterval(pollTimer)
-  })
+  disconnect()
+  authStore.logout()
+  router.push('/login')
 }
 
 watch(notification, (n) => {
   if (n) {
-    showAlert(`新预约通知: ${n.message || ''}`)
-    pushNotification(`预约 #${n.appointmentId || ''} ${n.message || ''}`, n.status === 'approved' ? 'success' : n.status === 'rejected' ? 'warning' : 'info')
-    loadAppointments();
+    showAlert(`${n.title || '新通知'}: ${n.message || ''}`)
+    loadNotifications()
+    loadAppointments()
     loadPendingCount()
   }
 })
 
 onMounted(async () => {
+  if (!authStore.isLoggedIn) {
+    router.push('/login')
+    return
+  }
   await loadHouses(); await loadAppointments(); await loadPendingCount()
   await loadApplicationStatus()
-  if (pendingCount.value > 0) pushNotification(`有 ${pendingCount.value} 条预约待审批`, 'warning')
-  else pushNotification('审批工作台已就绪', 'success')
+  await loadNotifications()
   connect()
   pollTimer = setInterval(loadPendingCount, 30000)
 })
@@ -1397,5 +1468,64 @@ onUnmounted(() => { if (pollTimer) clearInterval(pollTimer) })
     right: 16px;
     bottom: 16px;
   }
+}
+
+.house-status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.house-status-tag.tag-normal {
+  background: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.house-status-tag.tag-pending_review {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.house-status-tag.tag-offline {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.house-status-tag.tag-rejected {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.review-note {
+  display: block;
+  width: 100%;
+  color: #b91c1c;
+  font-size: 12px;
+}
+
+.verify-done {
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.status-banner {
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.status-banner.danger {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
 }
 </style>

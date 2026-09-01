@@ -1,54 +1,46 @@
 package com.springboot.springboothousemarket.Controller;
 
-import com.springboot.springboothousemarket.Entity.Users;
-import com.springboot.springboothousemarket.Service.UsersService;
-import com.springboot.springboothousemarket.dto.ChatMessage;
+import com.springboot.springboothousemarket.Service.ChatService;
+import com.springboot.springboothousemarket.dto.ChatSendRequest;
 import org.springframework.messaging.handler.annotation.MessageMapping;
-import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
-import java.time.LocalDateTime;
 
+/**
+ * 聊天 WebSocket 入口：消息一律先经 ChatService 落库，再做实时推送。
+ * 身份来自 STOMP 会话认证（WebSocketAuthInterceptor 注入，Principal name = 用户ID），
+ * 客户端上报的 fromUserId 一律忽略，防止伪造发送者。
+ */
 @Controller
 public class ChatController {
 
-    private final SimpMessagingTemplate messagingTemplate;
-    private final UsersService usersService;
+    private final ChatService chatService;
 
-    public ChatController(SimpMessagingTemplate messagingTemplate, UsersService usersService) {
-        this.messagingTemplate = messagingTemplate;
-        this.usersService = usersService;
+    public ChatController(ChatService chatService) {
+        this.chatService = chatService;
     }
 
     @MessageMapping("/chat.send")
-    public void send(ChatMessage message, Principal principal) {
-        Users sender = currentUser(principal);
-        if (sender == null || message.getToUserId() == null) {
+    public void send(@Payload ChatSendRequest payload, Principal principal) {
+        Long senderId = currentUserId(principal);
+        if (senderId == null) {
             return;
         }
-        message.setFromUserId(sender.getId());
-        message.setFromName(sender.getNickname() != null && !sender.getNickname().isBlank()
-                ? sender.getNickname()
-                : sender.getRealName() != null && !sender.getRealName().isBlank()
-                  ? sender.getRealName()
-                  : sender.getUsername());
-        message.setTimestamp(LocalDateTime.now());
-        message.setType("CHAT");
-
-        messagingTemplate.convertAndSend("/queue/chat/" + message.getToUserId(), message);
-        messagingTemplate.convertAndSend("/queue/chat/" + sender.getId(), message);
+        chatService.send(senderId, payload.getToUserId(), payload.getHouseId(), payload.getContent());
     }
 
-    private Users currentUser(Principal principal) {
+    private Long currentUserId(Principal principal) {
         if (principal instanceof Authentication authentication
-                && authentication.getPrincipal() instanceof Users users) {
-            return users;
+                && authentication.getPrincipal() instanceof String userId) {
+            try {
+                return Long.valueOf(userId);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
         }
-        if (principal == null) {
-            return null;
-        }
-        return usersService.getUserByUsername(principal.getName());
+        return null;
     }
 }

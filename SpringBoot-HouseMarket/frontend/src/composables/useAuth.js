@@ -1,34 +1,31 @@
-import {ref} from 'vue'
 import {useRouter} from 'vue-router'
+import {useAuthStore} from '../stores/auth'
 
 const roleMap = {ADMIN: '管理员', LANDLORD: '房东', TENANT: '租客'}
 
+/**
+ * 登录态组合式函数：统一委托给 Pinia auth store。
+ * loadUser() 返回 store 中的响应式用户对象（未登录跳转 /login）。
+ */
 export function useAuth() {
     const router = useRouter()
-    const user = ref(null)
-    const token = ref('')
+    const authStore = useAuthStore()
 
     function loadUser() {
-        token.value = localStorage.getItem('token') || ''
-        try {
-            user.value = JSON.parse(localStorage.getItem('user') || 'null')
-        } catch {
-            user.value = null
-        }
-        if (!user.value || !token.value) {
+        if (!authStore.isLoggedIn || !authStore.user) {
             router.push('/login')
             return null
         }
-        return user.value
+        return authStore.user
     }
 
     function handleLogout(cleanup) {
         if (cleanup) cleanup()
-        localStorage.clear()
+        authStore.logout()
         router.push('/login')
     }
 
-    return {user, token, loadUser, handleLogout}
+    return {user: authStore.user, token: authStore.token, loadUser, handleLogout, authStore}
 }
 
 export function roleLabel(role) {

@@ -11,18 +11,25 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 通知 Outbox：仅承担 WebSocket 实时推送的可靠投递。
+ * 用户可见的通知以 notification 表为准（见 NotificationService）。
+ */
 @Service
 public class NotificationOutboxServiceImpl extends ServiceImpl<NotificationOutboxMapper, NotificationOutbox>
         implements NotificationOutboxService {
 
+    private static final int MAX_RETRY = 3;
+
     @Override
     @Transactional
     public void enqueue(String businessKey, String businessType, Long appointmentId, String eventType,
-                        String payload, Long targetUserId) {
+                        String payload, Long targetUserId, Long notificationId) {
         NotificationOutbox outbox = new NotificationOutbox();
         outbox.setBusinessKey(businessKey);
         outbox.setBusinessType(businessType);
         outbox.setAppointmentId(appointmentId);
+        outbox.setNotificationId(notificationId);
         outbox.setEventType(eventType);
         outbox.setPayload(payload);
         outbox.setTargetUserId(targetUserId);
@@ -66,7 +73,7 @@ public class NotificationOutboxServiceImpl extends ServiceImpl<NotificationOutbo
     public boolean markFailed(Long id, int retryCount) {
         return this.lambdaUpdate()
                 .eq(NotificationOutbox::getId, id)
-                .set(NotificationOutbox::getStatus, retryCount >= 3 ? "failed" : "pending")
+                .set(NotificationOutbox::getStatus, retryCount >= MAX_RETRY ? "failed" : "pending")
                 .set(NotificationOutbox::getRetryCount, retryCount)
                 .update();
     }
@@ -84,14 +91,5 @@ public class NotificationOutboxServiceImpl extends ServiceImpl<NotificationOutbo
                 .le(NotificationOutbox::getCreateTime, LocalDateTime.now().minusMinutes(minutes))
                 .set(NotificationOutbox::getStatus, "pending")
                 .update();
-    }
-
-    @Override
-    public List<NotificationOutbox> getNotificationsByUserId(Long userId, int limit) {
-        return this.list(new LambdaQueryWrapper<NotificationOutbox>()
-                .eq(NotificationOutbox::getTargetUserId, userId)
-                .eq(NotificationOutbox::getStatus, "sent")
-                .orderByDesc(NotificationOutbox::getId)
-                .last("LIMIT " + limit));
     }
 }

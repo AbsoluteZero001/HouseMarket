@@ -16,10 +16,11 @@ export function getMyLandlordApplication() {
   return http.get('/api/landlord/application')
 }
 
-export function getLandlordProfile() {
-    return http.get('/api/landlord/profile')
+// 租客主动提交房东入驻申请（被拒绝后可重新提交）
+export function submitLandlordApplication(data) {
+    return http.post('/api/landlord/application', data)
 }
 
-export function verifyLandlord(data) {
-    return http.put('/api/landlord/verify', data)
+export function getLandlordProfile() {
+    return http.get('/api/landlord/profile')
 }

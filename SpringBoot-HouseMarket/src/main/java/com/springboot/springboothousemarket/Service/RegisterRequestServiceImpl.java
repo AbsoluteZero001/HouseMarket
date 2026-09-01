@@ -2,15 +2,24 @@ package com.springboot.springboothousemarket.Service;
 
 import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Mapper.RegisterRequestMapper;
+import com.springboot.springboothousemarket.dto.BusinessException;
 import com.springboot.springboothousemarket.dto.RegisterRequest;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
 
+/**
+ * 注册/登录服务。
+ * <p>
+ * 注册闭环设计：所有新账号一律以 TENANT 角色起步；
+ * 注册时选择"房东"视为同时提交房东入驻申请（同一事务写入 sysuser + landlord_application），
+ * 管理员审核通过后由 LandlordApplicationService 将角色升级为 LANDLORD。
+ */
 @Service
 public class RegisterRequestServiceImpl implements RegisterRequestService {
 
@@ -31,17 +40,24 @@ public class RegisterRequestServiceImpl implements RegisterRequestService {
     }
 
     @Override
+    @Transactional
     @CacheEvict(cacheNames = "home:stats", allEntries = true)
     public void register(RegisterRequest user) {
         String role = user.getRole() == null ? "" : user.getRole().toUpperCase();
         if (!REGISTER_ROLES.contains(role)) {
-            throw new RuntimeException("仅支持注册租客或房东账号");
+            throw new BusinessException("仅支持注册租客或房东账号");
+        }
+        if (user.getUsername() == null || user.getUsername().isBlank()) {
+            throw new BusinessException("用户名不能为空");
+        }
+        if (user.getPassword() == null || user.getPassword().length() < 6) {
+            throw new BusinessException("密码长度不能少于6位");
         }
         Users exist = usersService.getUserByUsername(user.getUsername());
         if (exist != null) {
-            throw new RuntimeException("用户已存在");
+            throw new BusinessException("用户已存在");
         }
-        user.setRole(role);
+        user.setRole("TENANT");
         user.setStatus("normal");
         user.setNickname(user.getNickname() == null || user.getNickname().isBlank()
                 ? defaultNickname(role) : user.getNickname());
@@ -49,6 +65,7 @@ public class RegisterRequestServiceImpl implements RegisterRequestService {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         mapper.register(user);
 
+        // 选择"房东"= 注册即提交入驻申请，审核通过后角色才真正升级
         if ("LANDLORD".equals(role)) {
             Long userId = user.getId();
             if (userId == null) {
@@ -76,16 +93,14 @@ public class RegisterRequestServiceImpl implements RegisterRequestService {
         RegisterRequest user = mapper.findUserByUsername(username);
 
         if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
-            throw new RuntimeException("用户名或密码错误");
-        }
-
-        if (!user.getRole().equals(role)) {
-            throw new RuntimeException("登录类型错误");
+            throw new BusinessException("用户名或密码错误");
         }
         if (!"normal".equals(user.getStatus())) {
-            throw new RuntimeException("账号已被禁用，请联系管理员");
+            throw new BusinessException("账号已被禁用，请联系管理员");
         }
 
+        // 登录不再按请求中的 role 强校验：账号实际角色以数据库为准，
+        // 角色会随管理员审核（房东入驻）动态变化，前端以登录响应中的角色跳转
         return user;
     }
 }

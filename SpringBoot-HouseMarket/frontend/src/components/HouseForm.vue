@@ -5,28 +5,32 @@
         <span>基本信息</span>
         <small>标题、地址、小区和租金</small>
       </div>
-      <div class="form-group">
+      <div class="form-group" :class="{ 'has-error': errors.title }">
         <label>房源标题 <span class="required">*</span></label>
-        <input v-model="form.title" required placeholder="例如：高新区精装套三 近地铁"/>
+        <input v-model="form.title" placeholder="例如：高新区精装套三 近地铁"/>
+        <p v-if="errors.title" class="field-error">{{ errors.title }}</p>
       </div>
       <div class="form-row">
-        <div class="form-group">
+        <div class="form-group" :class="{ 'has-error': errors.district }">
           <label>所在区域 <span class="required">*</span></label>
-          <input v-model="form.district" required placeholder="如：高新区"/>
+          <input v-model="form.district" placeholder="如：高新区"/>
+          <p v-if="errors.district" class="field-error">{{ errors.district }}</p>
         </div>
         <div class="form-group">
           <label>小区名称</label>
           <input v-model="form.community" placeholder="如：天府名邸"/>
         </div>
       </div>
-      <div class="form-group">
+      <div class="form-group" :class="{ 'has-error': errors.address }">
         <label>详细地址 <span class="required">*</span></label>
-        <input v-model="form.address" required placeholder="请输入详细地址"/>
+        <input v-model="form.address" placeholder="请输入详细地址"/>
+        <p v-if="errors.address" class="field-error">{{ errors.address }}</p>
       </div>
       <div class="form-row">
-        <div class="form-group">
+        <div class="form-group" :class="{ 'has-error': errors.price }">
           <label>租金 (元/月) <span class="required">*</span></label>
-          <input v-model.number="form.price" type="number" min="0" required placeholder="请输入租金"/>
+          <input v-model.number="form.price" type="number" min="0" placeholder="请输入租金"/>
+          <p v-if="errors.price" class="field-error">{{ errors.price }}</p>
         </div>
         <div class="form-group">
           <label>押金 (元)</label>
@@ -50,9 +54,9 @@
             <option value="复式">复式</option>
           </select>
         </div>
-        <div class="form-group">
+        <div class="form-group" :class="{ 'has-error': errors.layout }">
           <label>户型 <span class="required">*</span></label>
-          <select v-model="form.layout" required>
+          <select v-model="form.layout">
             <option value="">请选择户型</option>
             <option value="一室一厅">一室一厅</option>
             <option value="两室一厅">两室一厅</option>
@@ -83,9 +87,10 @@
         </div>
       </div>
       <div class="form-row">
-        <div class="form-group">
+        <div class="form-group" :class="{ 'has-error': errors.area }">
           <label>面积 (㎡) <span class="required">*</span></label>
-          <input v-model.number="form.area" type="number" min="1" required placeholder="请输入面积"/>
+          <input v-model.number="form.area" type="number" min="1" placeholder="请输入面积"/>
+          <p v-if="errors.area" class="field-error">{{ errors.area }}</p>
         </div>
         <div class="form-group">
           <label>朝向</label>
@@ -175,8 +180,9 @@
         <span>房源描述</span>
         <small>补充亮点和真实居住体验</small>
       </div>
-      <div class="form-group">
+      <div class="form-group" :class="{ 'has-error': errors.description }">
         <textarea v-model="form.description" rows="5" placeholder="请输入房源描述"></textarea>
+        <p v-if="errors.description" class="field-error">{{ errors.description }}</p>
       </div>
     </section>
 
@@ -185,19 +191,23 @@
         <span>房源归属</span>
         <small>管理员可为指定房东创建房源</small>
       </div>
-      <div class="form-group">
+      <div class="form-group" :class="{ 'has-error': errors.landlordId }">
         <label>房东ID <span class="required">*</span></label>
-        <input v-model.number="form.landlordId" type="number" min="1" required placeholder="请输入房东用户ID"/>
+        <input v-model.number="form.landlordId" type="number" min="1" placeholder="请输入房东用户ID"/>
+        <p v-if="errors.landlordId" class="field-error">{{ errors.landlordId }}</p>
       </div>
     </div>
 
     <div v-if="showImageUpload" class="form-card">
       <div class="form-card-title">
         <span>房源图片</span>
-        <small>也可在保存后进入分类图片管理</small>
+        <small>{{ requireImage ? '封面图必选，提交后管理员审核展示' : '也可在保存后进入分类图片管理' }}</small>
       </div>
       <ImageUpload ref="imageUploadRef" @select="onImageSelect"/>
+      <p v-if="errors.imageFile" class="field-error">{{ errors.imageFile }}</p>
     </div>
+
+    <p v-if="formError" class="form-error">{{ formError }}</p>
 
     <div class="form-actions">
       <button class="btn btn-lg" @click="submitForm">{{ submitLabel }}</button>
@@ -214,7 +224,8 @@ const props = defineProps({
   initial: {type: Object, default: () => ({})},
   submitLabel: {type: String, default: '提交'},
   showImageUpload: {type: Boolean, default: true},
-  showLandlord: {type: Boolean, default: false}
+  showLandlord: {type: Boolean, default: false},
+  requireImage: {type: Boolean, default: false}
 })
 const emit = defineEmits(['submit', 'cancel'])
 
@@ -245,6 +256,8 @@ const form = reactive({
   description: '',
   landlordId: ''
 })
+const errors = reactive({})
+const formError = ref('')
 const selectedFile = ref(null)
 const imageUploadRef = ref(null)
 
@@ -281,9 +294,70 @@ watch(() => props.initial, (val) => {
 
 function onImageSelect(file) {
   selectedFile.value = file
+  errors.imageFile = ''
+}
+
+function validate() {
+  Object.keys(errors).forEach(key => delete errors[key])
+  formError.value = ''
+  let ok = true
+
+  if (!form.title || !form.title.trim()) {
+    errors.title = '请输入房源标题';
+    ok = false
+  } else if (form.title.trim().length > 100) {
+    errors.title = '标题不能超过100个字符';
+    ok = false
+  }
+  if (!form.district || !form.district.trim()) {
+    errors.district = '请输入所在区域';
+    ok = false
+  }
+  if (!form.address || !form.address.trim()) {
+    errors.address = '请输入详细地址';
+    ok = false
+  }
+  const price = Number(form.price)
+  if (!form.price && form.price !== 0 || Number.isNaN(price) || price <= 0) {
+    errors.price = '租金必须大于0';
+    ok = false
+  }
+  const area = Number(form.area)
+  if (!form.area && form.area !== 0 || Number.isNaN(area) || area <= 0) {
+    errors.area = '面积必须大于0';
+    ok = false
+  }
+  if (!form.layout) {
+    errors.layout = '请选择户型';
+    ok = false
+  }
+  if (form.description && form.description.length > 2000) {
+    errors.description = '描述不能超过2000个字符';
+    ok = false
+  }
+  if (form.totalFloors !== '' && form.totalFloors !== null && Number(form.totalFloors) < 0) {
+    errors.totalFloors = '总楼层不能为负数';
+    ok = false
+  }
+  if (props.showLandlord) {
+    const landlordId = Number(form.landlordId)
+    if (!form.landlordId || Number.isNaN(landlordId) || landlordId < 1) {
+      errors.landlordId = '请输入有效的房东用户ID';
+      ok = false
+    }
+  }
+  if (props.showImageUpload && props.requireImage && !selectedFile.value) {
+    errors.imageFile = '请上传至少一张封面图';
+    ok = false
+  }
+  return ok
 }
 
 function submitForm() {
+  if (!validate()) {
+    formError.value = '请检查表单中标红的必填项'
+    return
+  }
   emit('submit', {
     ...form,
     hasElevator: form.hasElevator ? 1 : 0,
@@ -420,5 +494,28 @@ defineExpose({form, selectedFile})
   .form-row {
     flex-direction: column;
   }
+}
+
+.field-error {
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--danger, #ef4444);
+}
+
+.form-error {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.form-group input.has-error,
+.has-error input,
+.has-error select,
+.has-error textarea {
+  border-color: var(--danger, #ef4444) !important;
+  background: #fff5f5;
 }
 </style>

@@ -30,6 +30,10 @@ public class NotificationOutbox {
     @TableField("appointment_id")
     private Long appointmentId;
 
+    @Schema(description = "关联的用户通知ID")
+    @TableField("notification_id")
+    private Long notificationId;
+
     @Schema(description = "事件类型")
     @TableField("event_type")
     private String eventType;

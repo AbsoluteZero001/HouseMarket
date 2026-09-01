@@ -8,16 +8,17 @@ export function getUserById(id) {
   return http.get(`/user/${id}`)
 }
 
-export function getCurrentUser() {
-  return http.get('/user/current')
-}
-
 export function updateUser(id, data) {
   return http.put(`/user/${id}`, data)
 }
 
 export function deleteUser(id) {
   return http.delete(`/user/${id}`)
+}
+
+// 管理员启用/禁用账号：status = 'normal' | 'disabled'
+export function setUserStatus(id, status) {
+    return http.put(`/user/${id}/status`, {status})
 }
 
 export function changePassword(id, oldPassword, newPassword) {

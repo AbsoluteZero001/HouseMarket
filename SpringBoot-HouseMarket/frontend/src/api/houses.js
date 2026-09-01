@@ -28,6 +28,16 @@ export function deleteHouse(id) {
   return http.delete(`/api/houses/${id}`)
 }
 
+// 房东上下架 / 管理员状态流转：status = PENDING_REVIEW | NORMAL | OFFLINE | REJECTED
+export function setHouseStatus(id, status, note) {
+    return http.put(`/api/houses/${id}/status`, {status, note})
+}
+
+// 管理员审核房源：approve=true 通过上架，false 驳回（需 note）
+export function reviewHouse(id, approve, note) {
+    return http.put(`/api/houses/${id}/review`, {approve, note})
+}
+
 export function uploadImage(file) {
   const formData = new FormData()
   formData.append('image', file)

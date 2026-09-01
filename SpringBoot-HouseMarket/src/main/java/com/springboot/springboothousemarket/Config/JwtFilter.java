@@ -59,35 +59,35 @@ public class JwtFilter extends OncePerRequestFilter {
         String username;
 
         try {
-            // 2. 提取用户名
+            // 1. 提取用户名
             username = jwtUtil.extractUsername(jwtToken);
 
-            // 3. 检查 Token 是否过期
+            // 2. 检查 Token 是否过期：明确返回 401，而不是静默降级为匿名
             if (username != null && jwtUtil.isTokenExpired(jwtToken)) {
-                logger.warn("Ignoring expired JWT for request: {}", request.getRequestURI());
-                chain.doFilter(request, response);
+                logger.warn("Rejecting expired JWT for request: {}", request.getRequestURI());
+                writeUnauthorized(response, "登录状态已过期，请重新登录");
                 return;
             }
         } catch (Exception e) {
-            // Token 非法 / 解析失败
-            logger.warn("Ignoring invalid JWT for request: {}", request.getRequestURI());
-            chain.doFilter(request, response);
+            // Token 非法 / 解析失败：明确返回 401
+            logger.warn("Rejecting invalid JWT for request: {}", request.getRequestURI());
+            writeUnauthorized(response, "无效的登录凭证，请重新登录");
             return;
         }
 
-        // 4. 如果用户名不为空，并且当前没有认证，才注入认证信息
+        // 3. 如果用户名不为空，并且当前没有认证，才注入认证信息
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            // 从数据库中获取用户信息
+            // 从数据库中获取用户信息（每次请求实时校验账号存在与状态，禁用账号立即失去业务权限）
             Users user = usersService.getUserByUsername(username);
             if (user == null) {
-                logger.warn("Ignoring JWT for missing user: {}", username);
-                chain.doFilter(request, response);
+                logger.warn("Rejecting JWT for missing user: {}", username);
+                writeUnauthorized(response, "账号不存在或已被删除，请重新登录");
                 return;
             }
             if (!"normal".equals(user.getStatus())) {
-                logger.warn("Ignoring JWT for disabled user: {}", username);
-                chain.doFilter(request, response);
+                logger.warn("Rejecting JWT for disabled user: {}", username);
+                writeUnauthorized(response, "账号已被禁用，请联系管理员");
                 return;
             }
 
@@ -110,5 +110,11 @@ public class JwtFilter extends OncePerRequestFilter {
 
         // 执行后续的过滤器链
         chain.doFilter(request, response);
+    }
+
+    private void writeUnauthorized(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write("{\"success\":false,\"message\":\"" + message + "\",\"code\":401}");
     }
 }

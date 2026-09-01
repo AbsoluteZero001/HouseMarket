@@ -34,6 +34,7 @@ public class HouseListVO {
     private String address;
     private Long landlordId;
     private String status;
+    private String reviewNote;
     private Integer views;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

@@ -22,7 +22,9 @@ const routes = [
         component: () => import('../views/AdminView.vue'),
         meta: {requiresAuth: true, roles: ['ADMIN']}
     },
-    {path: '/house/:id', name: 'HouseDetail', component: () => import('../views/HouseDetailView.vue')}
+    {path: '/house/:id', name: 'HouseDetail', component: () => import('../views/HouseDetailView.vue')},
+    {path: '/403', name: 'Forbidden', component: () => import('../views/Forbidden.vue')},
+    {path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('../views/NotFound.vue')}
 ]
 
 const router = createRouter({
@@ -33,17 +35,20 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
-  if (to.meta.requiresAuth && !token) return next('/login')
+    let user = null
+    try {
+        user = JSON.parse(localStorage.getItem('user') || 'null')
+    } catch {
+        user = null
+    }
+    if (to.meta.requiresAuth && !token) {
+        return next({path: '/login', query: {redirect: to.fullPath}})
+    }
     if (to.meta.roles) {
-        let user = null
-        try {
-            user = JSON.parse(localStorage.getItem('user') || 'null')
-        } catch {
-            user = null
-        }
         if (!user || !to.meta.roles.includes(user.role)) {
-            const fallback = user?.role === 'LANDLORD' ? '/landlord' : user?.role === 'ADMIN' ? '/admin' : '/'
-            return next(fallback)
+            // 角色不匹配：跳到 403 页，让用户明确知道被拒绝的原因
+            if (user) return next('/403')
+            return next('/login')
         }
     }
   next()

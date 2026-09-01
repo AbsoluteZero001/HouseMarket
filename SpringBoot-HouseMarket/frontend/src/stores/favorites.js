@@ -19,8 +19,8 @@ export const useFavoriteStore = defineStore('favorites', () => {
     }
   }
 
-  async function add(houseId, userId) {
-    const res = await addFavorite({ houseId, userId })
+    async function add(houseId) {
+        const res = await addFavorite({houseId})
     return res.data
   }
 

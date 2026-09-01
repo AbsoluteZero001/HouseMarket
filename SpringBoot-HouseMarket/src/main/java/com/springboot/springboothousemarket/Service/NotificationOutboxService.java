@@ -8,7 +8,7 @@ import java.util.List;
 public interface NotificationOutboxService extends IService<NotificationOutbox> {
 
     void enqueue(String businessKey, String businessType, Long appointmentId, String eventType,
-                 String payload, Long targetUserId);
+                 String payload, Long targetUserId, Long notificationId);
 
     List<NotificationOutbox> pollPending(int limit);
 
@@ -21,6 +21,4 @@ public interface NotificationOutboxService extends IService<NotificationOutbox> 
     boolean deleteByAppointmentId(Long appointmentId);
 
     void resetStaleProcessing(int minutes);
-
-    java.util.List<NotificationOutbox> getNotificationsByUserId(Long userId, int limit);
 }

@@ -97,7 +97,9 @@ async function handleLogin() {
       formError.value = res.msg || '登录失败，请检查账号信息'
     } else {
       const role = (res.data?.role || '').toLowerCase()
-      if (role === 'tenant') await router.push('/tenant')
+      const redirect = router.currentRoute.value.query?.redirect
+      if (redirect) await router.push(String(redirect))
+      else if (role === 'tenant') await router.push('/tenant')
       else if (role === 'landlord') await router.push('/landlord')
       else if (role === 'admin') await router.push('/admin')
       else formError.value = '账号角色异常，请联系管理员'

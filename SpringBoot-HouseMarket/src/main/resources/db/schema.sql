@@ -11,12 +11,14 @@ USE housemarket;
 
 SET NAMES utf8mb4;
 
+DROP TABLE IF EXISTS `chat_message`;
+DROP TABLE IF EXISTS `identity_verification`;
 DROP TABLE IF EXISTS `favorites`;
 DROP TABLE IF EXISTS `appointment_flow`;
 DROP TABLE IF EXISTS `notification_outbox`;
+DROP TABLE IF EXISTS `notification`;
 DROP TABLE IF EXISTS `appointment`;
 DROP TABLE IF EXISTS `house_image`;
-DROP TABLE IF EXISTS `house_order`;
 DROP TABLE IF EXISTS `house`;
 DROP TABLE IF EXISTS `landlord_application`;
 DROP TABLE IF EXISTS `sysuser`;
@@ -81,7 +83,8 @@ CREATE TABLE `house`
     `description` TEXT COMMENT '房源描述',
     `image`       VARCHAR(2000)  NOT NULL DEFAULT '[]' COMMENT '图片地址(JSON数组)',
     `landlord_id` BIGINT         NOT NULL COMMENT '房东ID',
-    `status`      VARCHAR(50)  NOT NULL DEFAULT 'NORMAL' COMMENT '状态: NORMAL/OFFLINE',
+    `status`      VARCHAR(50) NOT NULL DEFAULT 'PENDING_REVIEW' COMMENT '状态: PENDING_REVIEW(待审核)/NORMAL(已上架)/OFFLINE(已下架)/REJECTED(审核未通过)',
+    `review_note` VARCHAR(500)         DEFAULT NULL COMMENT '审核意见',
     `views`       INT          NOT NULL DEFAULT 0 COMMENT '浏览量',
     `create_time` DATETIME                DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME                DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -92,8 +95,9 @@ CREATE TABLE `house`
     KEY           `idx_price` (`price`),
     KEY           `idx_area` (`area`),
     KEY           `idx_district` (`district`),
+    KEY           `idx_status` (`status`),
     CONSTRAINT `fk_house_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `sysuser` (`id`),
-    CONSTRAINT `chk_house_status` CHECK (`status` IN ('NORMAL', 'OFFLINE'))
+    CONSTRAINT `chk_house_status` CHECK (`status` IN ('PENDING_REVIEW', 'NORMAL', 'OFFLINE', 'REJECTED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='房源表';
 
 -- --------------------------------------------
@@ -128,7 +132,7 @@ CREATE TABLE `appointment`
     `location`    VARCHAR(500)          DEFAULT NULL COMMENT '预约地点',
     `notes`       VARCHAR(500)          DEFAULT NULL COMMENT '备注',
     `request_id`  VARCHAR(64)           DEFAULT NULL COMMENT '幂等键，防止重复预约',
-    `status`      VARCHAR(50)  NOT NULL DEFAULT 'pending' COMMENT '状态: pending/approved/rejected/completed/canceled',
+    `status` VARCHAR(50) NOT NULL DEFAULT 'pending' COMMENT '状态: pending/approved/rejected/completed/canceled/expired',
     `version`     INT          NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
     `create_time` DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME              DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -137,29 +141,54 @@ CREATE TABLE `appointment`
     KEY           `idx_tenant` (`tenant_id`),
     KEY           `idx_landlord` (`landlord_id`),
     KEY           `idx_status` (`status`),
+    KEY      `idx_house_time` (`house_id`, `time`),
     UNIQUE KEY    `uk_appointment_request` (`request_id`),
     CONSTRAINT `fk_appointment_house` FOREIGN KEY (`house_id`) REFERENCES `house` (`id`),
     CONSTRAINT `fk_appointment_tenant` FOREIGN KEY (`tenant_id`) REFERENCES `sysuser` (`id`),
     CONSTRAINT `fk_appointment_landlord` FOREIGN KEY (`landlord_id`) REFERENCES `sysuser` (`id`),
-    CONSTRAINT `chk_appointment_status` CHECK (`status` IN ('pending', 'approved', 'rejected', 'completed', 'canceled'))
+    CONSTRAINT `chk_appointment_status` CHECK (`status` IN
+                                               ('pending', 'approved', 'rejected', 'completed', 'canceled', 'expired'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='预约表';
 
 -- --------------------------------------------
--- 3.2 通知事务 Outbox（异步通知可靠性）
+-- 3.1 用户通知表（通知中心持久化，用户可见状态以本表为准）
+-- --------------------------------------------
+CREATE TABLE `notification`
+(
+    `id`           BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `user_id`      BIGINT       NOT NULL COMMENT '接收用户ID',
+    `type`         VARCHAR(50)  NOT NULL COMMENT '通知类型: APPOINTMENT_CREATED/APPOINTMENT_APPROVED/LANDLORD_APPROVED/IDENTITY_APPROVED等',
+    `title`        VARCHAR(200) NOT NULL COMMENT '通知标题',
+    `content`      VARCHAR(1000)         DEFAULT NULL COMMENT '通知内容',
+    `related_type` VARCHAR(50)           DEFAULT NULL COMMENT '关联业务类型: APPOINTMENT/LANDLORD_APPLICATION/IDENTITY_VERIFICATION/HOUSE',
+    `related_id`   BIGINT                DEFAULT NULL COMMENT '关联业务ID',
+    `read_status`  INT          NOT NULL DEFAULT 0 COMMENT '已读状态: 0未读, 1已读',
+    `sent_time`    DATETIME              DEFAULT NULL COMMENT 'WebSocket实时推送时间（为空表示用户当时离线，仍可在通知中心查看）',
+    `retry_count`  INT          NOT NULL DEFAULT 0 COMMENT '推送重试次数',
+    `create_time`  DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    KEY            `idx_notification_user` (`user_id`, `read_status`),
+    KEY            `idx_notification_related` (`related_type`, `related_id`),
+    CONSTRAINT `fk_notification_user` FOREIGN KEY (`user_id`) REFERENCES `sysuser` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户通知表';
+
+-- --------------------------------------------
+-- 3.2 通知事务 Outbox（WebSocket 实时投递的可靠性队列）
 -- --------------------------------------------
 CREATE TABLE `notification_outbox`
 (
-    `id`             BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `business_key`   VARCHAR(128) NOT NULL COMMENT '业务幂等键',
-    `business_type`  VARCHAR(50)  NOT NULL DEFAULT 'APPOINTMENT' COMMENT '业务类型: APPOINTMENT/LANDLORD',
-    `appointment_id` BIGINT                DEFAULT NULL COMMENT '预约ID（非预约业务为空）',
-    `event_type`     VARCHAR(50)  NOT NULL COMMENT '事件类型',
-    `payload`        TEXT         NOT NULL COMMENT '通知负载 JSON',
-    `target_user_id` BIGINT                DEFAULT NULL COMMENT '通知目标用户ID',
-    `status`         VARCHAR(20)  NOT NULL DEFAULT 'pending' COMMENT '状态: pending/processing/sent/failed',
-    `retry_count`    INT          NOT NULL DEFAULT 0 COMMENT '重试次数',
-    `create_time`    DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    `send_time`      DATETIME              DEFAULT NULL COMMENT '发送时间',
+    `id`              BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `business_key`    VARCHAR(128) NOT NULL COMMENT '业务幂等键',
+    `business_type`   VARCHAR(50)  NOT NULL DEFAULT 'APPOINTMENT' COMMENT '业务类型: APPOINTMENT/LANDLORD/IDENTITY/HOUSE/CHAT',
+    `appointment_id`  BIGINT                DEFAULT NULL COMMENT '预约ID（非预约业务为空）',
+    `notification_id` BIGINT                DEFAULT NULL COMMENT '关联的用户通知ID',
+    `event_type`      VARCHAR(50)  NOT NULL COMMENT '事件类型',
+    `payload`         TEXT         NOT NULL COMMENT '通知负载 JSON',
+    `target_user_id`  BIGINT                DEFAULT NULL COMMENT '通知目标用户ID',
+    `status`          VARCHAR(20)  NOT NULL DEFAULT 'pending' COMMENT '状态: pending/processing/sent/failed',
+    `retry_count`     INT          NOT NULL DEFAULT 0 COMMENT '重试次数',
+    `create_time`     DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `send_time`       DATETIME              DEFAULT NULL COMMENT '发送时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_outbox_business_key` (`business_key`),
     KEY            `idx_outbox_status` (`status`),
@@ -191,7 +220,30 @@ CREATE TABLE `landlord_application`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='房东入驻申请审核表';
 
 -- --------------------------------------------
--- 3.1 预约流程轨迹表（审批引擎时间线）
+-- 3.4 实名认证申请审核表（人工审核制）
+-- --------------------------------------------
+CREATE TABLE `identity_verification`
+(
+    `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `user_id`     BIGINT       NOT NULL COMMENT '申请人用户ID',
+    `username`    VARCHAR(100) NOT NULL COMMENT '申请人用户名',
+    `real_name`   VARCHAR(100) NOT NULL COMMENT '真实姓名',
+    `id_card_no`  VARCHAR(18)  NOT NULL COMMENT '身份证号（仅服务端留存，接口返回脱敏）',
+    `status`      VARCHAR(20)  NOT NULL DEFAULT 'pending' COMMENT '状态: pending/approved/rejected',
+    `review_note` VARCHAR(500)          DEFAULT NULL COMMENT '审核意见',
+    `reviewer_id` BIGINT                DEFAULT NULL COMMENT '审核人ID',
+    `review_time` DATETIME              DEFAULT NULL COMMENT '审核时间',
+    `create_time` DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
+    `update_time` DATETIME              DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_identity_user` (`user_id`),
+    KEY           `idx_identity_status` (`status`),
+    KEY           `idx_identity_card` (`id_card_no`),
+    CONSTRAINT `fk_identity_user` FOREIGN KEY (`user_id`) REFERENCES `sysuser` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实名认证申请审核表';
+
+-- --------------------------------------------
+-- 3.5 预约流程轨迹表（审批引擎时间线）
 -- --------------------------------------------
 CREATE TABLE `appointment_flow`
 (
@@ -199,7 +251,7 @@ CREATE TABLE `appointment_flow`
     `appointment_id` BIGINT      NOT NULL COMMENT '预约ID',
     `from_status`    VARCHAR(50)  DEFAULT NULL COMMENT '原状态',
     `to_status`      VARCHAR(50) NOT NULL COMMENT '目标状态',
-    `action`         VARCHAR(50) NOT NULL COMMENT '动作: PUBLISH/BOOK/APPROVE/REJECT/CANCEL/COMPLETE/NOTIFY',
+    `action` VARCHAR(50) NOT NULL COMMENT '动作: PUBLISH/BOOK/APPROVE/REJECT/CANCEL/COMPLETE/EXPIRE/NOTIFY',
     `operator_id`    BIGINT       DEFAULT NULL COMMENT '操作人ID',
     `operator_role`  VARCHAR(50)  DEFAULT NULL COMMENT '操作人角色',
     `remark`         VARCHAR(500) DEFAULT NULL COMMENT '审批意见',
@@ -225,3 +277,25 @@ CREATE TABLE `favorites`
     CONSTRAINT `fk_favorites_user` FOREIGN KEY (`user_id`) REFERENCES `sysuser` (`id`),
     CONSTRAINT `fk_favorites_house` FOREIGN KEY (`house_id`) REFERENCES `house` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='收藏表';
+
+-- --------------------------------------------
+-- 5. 聊天消息表（消息落库，支持历史消息/未读/会话）
+-- --------------------------------------------
+CREATE TABLE `chat_message`
+(
+    `id`           BIGINT        NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+    `sender_id`    BIGINT        NOT NULL COMMENT '发送者用户ID',
+    `receiver_id`  BIGINT        NOT NULL COMMENT '接收者用户ID',
+    `house_id`     BIGINT                 DEFAULT NULL COMMENT '关联房源ID（聊天上下文）',
+    `content`      VARCHAR(1000) NOT NULL COMMENT '消息内容',
+    `message_type` VARCHAR(20)   NOT NULL DEFAULT 'TEXT' COMMENT '消息类型: TEXT/SYSTEM',
+    `read_status`  INT           NOT NULL DEFAULT 0 COMMENT '已读状态: 0未读, 1已读',
+    `create_time`  DATETIME               DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
+    PRIMARY KEY (`id`),
+    KEY            `idx_chat_sender` (`sender_id`, `receiver_id`),
+    KEY            `idx_chat_receiver` (`receiver_id`, `read_status`),
+    KEY            `idx_chat_house` (`house_id`),
+    CONSTRAINT `fk_chat_sender` FOREIGN KEY (`sender_id`) REFERENCES `sysuser` (`id`),
+    CONSTRAINT `fk_chat_receiver` FOREIGN KEY (`receiver_id`) REFERENCES `sysuser` (`id`),
+    CONSTRAINT `fk_chat_house` FOREIGN KEY (`house_id`) REFERENCES `house` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聊天消息表';

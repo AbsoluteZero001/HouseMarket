@@ -4,28 +4,46 @@
       <div>
         <p class="nc-kicker">NOTIFICATION CENTER</p>
         <h3>通知中心</h3>
-        <p class="nc-sub">预约审批结果与系统消息的完整历史</p>
+        <p class="nc-sub">预约、审核、实名认证等业务通知的完整记录</p>
       </div>
-      <button class="btn btn-sm btn-outline" @click="load" :disabled="loading">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><polyline points="21 3 21 9 15 9"/></svg>
-        刷新
-      </button>
+      <div class="nc-actions">
+        <button class="btn btn-sm btn-outline" @click="markAll" :disabled="!unreadCount">全部已读</button>
+        <button class="btn btn-sm btn-outline" @click="load" :disabled="loading">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+            <polyline points="21 3 21 9 15 9"/>
+          </svg>
+          刷新
+        </button>
+      </div>
+    </div>
+
+    <div class="nc-unread-bar" v-if="unreadCount">
+      <span>{{ unreadCount }} 条未读通知</span>
     </div>
 
     <div class="nc-list" v-if="items.length">
-      <div class="nc-item" v-for="n in items" :key="n.id" :class="'nc-' + tone(n.eventType)">
+      <button
+          class="nc-item"
+          v-for="n in items"
+          :key="n.id"
+          :class="['nc-' + tone(n.type), { unread: !n.readStatus }]"
+          @click="handleClick(n)"
+      >
         <span class="nc-icon">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         </span>
         <div class="nc-body">
           <div class="nc-title">
-            <strong>{{ eventLabel(n.eventType) }}</strong>
+            <strong>{{ n.title || eventLabel(n.type) }}</strong>
             <span>{{ formatTime(n.createTime) }}</span>
           </div>
-          <p>{{ messageOf(n) }}</p>
+          <p>{{ n.content || '系统通知' }}</p>
         </div>
-        <span class="nc-status">已送达</span>
-      </div>
+        <span v-if="!n.readStatus" class="nc-dot" title="未读"></span>
+        <span v-else class="nc-status">已读</span>
+      </button>
     </div>
 
     <div class="nc-empty" v-else-if="!loading">
@@ -36,9 +54,12 @@
 
 <script setup>
 import {onMounted, ref} from 'vue'
-import {getNotifications} from '../api/notifications'
+import {getNotifications, markAllNotificationsRead, markNotificationRead} from '../api/notifications'
+
+const emit = defineEmits(['open-related'])
 
 const items = ref([])
+const unreadCount = ref(0)
 const loading = ref(false)
 
 const eventMap = {
@@ -47,8 +68,13 @@ const eventMap = {
   APPOINTMENT_REJECTED: '预约已拒绝',
   APPOINTMENT_CANCELED: '预约已取消',
   APPOINTMENT_COMPLETED: '看房已完成',
+  APPOINTMENT_EXPIRED: '预约已过期',
   LANDLORD_APPROVED: '房东入驻审核通过',
-  LANDLORD_REJECTED: '房东入驻审核未通过'
+  LANDLORD_REJECTED: '房东入驻审核未通过',
+  IDENTITY_APPROVED: '实名认证已通过',
+  IDENTITY_REJECTED: '实名认证未通过',
+  HOUSE_APPROVED: '房源审核通过',
+  HOUSE_REJECTED: '房源审核未通过'
 }
 
 function eventLabel(type) {
@@ -56,21 +82,10 @@ function eventLabel(type) {
 }
 
 function tone(type) {
-  if (type === 'APPOINTMENT_APPROVED' || type === 'APPOINTMENT_COMPLETED') return 'success'
-  if (type === 'APPOINTMENT_REJECTED') return 'danger'
-  if (type === 'APPOINTMENT_CANCELED') return 'warn'
-  if (type === 'LANDLORD_APPROVED') return 'success'
-  if (type === 'LANDLORD_REJECTED') return 'danger'
+  if (['APPOINTMENT_APPROVED', 'APPOINTMENT_COMPLETED', 'LANDLORD_APPROVED', 'IDENTITY_APPROVED', 'HOUSE_APPROVED'].includes(type)) return 'success'
+  if (['APPOINTMENT_REJECTED', 'LANDLORD_REJECTED', 'IDENTITY_REJECTED', 'HOUSE_REJECTED'].includes(type)) return 'danger'
+  if (['APPOINTMENT_CANCELED', 'APPOINTMENT_EXPIRED'].includes(type)) return 'warn'
   return 'info'
-}
-
-function messageOf(n) {
-  try {
-    const payload = JSON.parse(n.payload || '{}')
-    return payload.message || n.eventType || '系统通知'
-  } catch (e) {
-    return n.eventType || '系统通知'
-  }
 }
 
 function formatTime(value) {
@@ -85,10 +100,35 @@ async function load() {
   try {
     const res = await getNotifications(100)
     items.value = res.data?.data?.notifications || []
+    unreadCount.value = Number(res.data?.data?.unread) || 0
   } catch (e) {
     items.value = []
   } finally {
     loading.value = false
+  }
+}
+
+async function handleClick(n) {
+  if (!n.readStatus) {
+    try {
+      await markNotificationRead(n.id)
+      n.readStatus = 1
+      unreadCount.value = Math.max(0, unreadCount.value - 1)
+    } catch {
+      /* 静默 */
+    }
+  }
+  // 点击通知跳转对应业务（由父视图决定具体 Tab）
+  emit('open-related', n)
+}
+
+async function markAll() {
+  try {
+    await markAllNotificationsRead()
+    items.value = items.value.map(n => ({...n, readStatus: 1}))
+    unreadCount.value = 0
+  } catch {
+    /* 静默 */
   }
 }
 
@@ -110,6 +150,11 @@ onMounted(load)
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 20px;
+}
+
+.nc-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .nc-kicker {
@@ -136,6 +181,16 @@ onMounted(load)
   margin-top: 4px;
 }
 
+.nc-unread-bar {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #c2410c;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
 .nc-list {
   display: flex;
   flex-direction: column;
@@ -151,12 +206,20 @@ onMounted(load)
   border-radius: 14px;
   padding: 14px 16px;
   transition: all var(--transition);
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
 }
 
 .nc-item:hover {
   transform: translateX(3px);
   border-color: #c7d2fe;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.nc-item.unread {
+  background: #eff6ff;
+  border-color: #bfdbfe;
 }
 
 .nc-icon {
@@ -205,14 +268,19 @@ onMounted(load)
   line-height: 1.55;
 }
 
+.nc-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ef4444;
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
 .nc-status {
   font-size: 11px;
   font-weight: 700;
-  color: #059669;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  padding: 4px 10px;
-  border-radius: 999px;
+  color: #94a3b8;
   flex-shrink: 0;
 }
 

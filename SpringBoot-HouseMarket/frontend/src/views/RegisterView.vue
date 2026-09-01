@@ -118,7 +118,7 @@ const form = reactive({username: '', nickname: '', password: '', confirmPassword
 
 const roleOptions = [
   {value: 'TENANT', label: '我是租客', icon: '👥'},
-  {value: 'LANDLORD', label: '我是房东', icon: '🏠'}
+  {value: 'LANDLORD', label: '我想成为房东（需审核）', icon: '🏠'}
 ]
 
 function clearField(field) {

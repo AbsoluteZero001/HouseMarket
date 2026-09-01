@@ -4,25 +4,33 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Mapper.UsersMapper;
+import com.springboot.springboothousemarket.common.UserStatus;
+import com.springboot.springboothousemarket.dto.BusinessException;
+import com.springboot.springboothousemarket.dto.UserVO;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements UsersService {
 
     private final UsersMapper usersMapper;
+    private final UserCleanupService userCleanupService;
 
-    public UsersServiceImpl(UsersMapper usersMapper) {
+    public UsersServiceImpl(UsersMapper usersMapper, UserCleanupService userCleanupService) {
         this.usersMapper = usersMapper;
+        this.userCleanupService = userCleanupService;
     }
 
     @Override
     @CacheEvict(cacheNames = "home:stats", allEntries = true)
     public Users createUser(Users users) {
-        users.setIsDeleted(0); // 默认未删除
+        users.setIsDeleted(0);
+        if (users.getStatus() == null || users.getStatus().isBlank()) {
+            users.setStatus(UserStatus.NORMAL);
+        }
         usersMapper.insert(users);
         return users;
     }
@@ -36,8 +44,11 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
     @CacheEvict(cacheNames = "home:stats", allEntries = true)
     public Users updateUser(Long id, Users users) {
         users.setId(id);
+        // 不允许通过通用更新通道变更角色与状态，二者各有独立受控入口
+        users.setRole(null);
+        users.setStatus(null);
         usersMapper.updateById(users);
-        return users;
+        return getUserById(id);
     }
 
     @Override
@@ -49,51 +60,58 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
     }
 
     @Override
+    @Transactional
     @CacheEvict(cacheNames = "home:stats", allEntries = true)
-    public boolean deleteUser(Long id) {
+    public boolean deleteUser(Long id, Users operator) {
+        if (operator != null && operator.getId().equals(id)) {
+            throw new BusinessException("不能删除当前登录的管理员账号");
+        }
         Users user = getUserById(id);
-        if (user == null)
+        if (user == null) {
             return false;
+        }
+        if ("ADMIN".equals(user.getRole())) {
+            throw new BusinessException("管理员账号不允许删除");
+        }
+        // 级联清理房源/预约/收藏/聊天/通知/申请单，避免孤儿数据
+        userCleanupService.cleanupUserData(id);
         user.setIsDeleted(1);
         usersMapper.updateById(user);
         return true;
     }
 
     @Override
+    @Transactional
+    @CacheEvict(cacheNames = "home:stats", allEntries = true)
+    public boolean changeStatus(Long id, String status, Users operator) {
+        if (!UserStatus.isValid(status)) {
+            throw new BusinessException("非法的用户状态");
+        }
+        if (operator != null && operator.getId().equals(id)) {
+            throw new BusinessException("不能变更当前登录账号的状态");
+        }
+        Users user = getUserById(id);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        if ("ADMIN".equals(user.getRole())) {
+            throw new BusinessException("管理员账号不允许禁用");
+        }
+        Users update = new Users();
+        update.setId(id);
+        update.setStatus(status);
+        return usersMapper.updateById(update) > 0;
+    }
+
+    @Override
+    public List<UserVO> getAllUsersVO() {
+        QueryWrapper<Users> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("is_deleted", 0).orderByDesc("register_time");
+        return usersMapper.selectList(queryWrapper).stream().map(UserVO::from).toList();
+    }
+
+    @Override
     public Users getUserByUsername(String username) {
         return usersMapper.selectByUsername(username);
     }
-
-    @Override
-    public List<Users> getAllUsers() {
-        QueryWrapper<Users> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("is_deleted", 0);
-        return usersMapper.selectList(queryWrapper);
-    }
-
-    @Override
-    public Users verifyLandlord(Long userId, String nickname, String realName, String idCardNo) {
-        Users user = getUserById(userId);
-        if (user == null) {
-            throw new RuntimeException("用户不存在");
-        }
-        if (!"LANDLORD".equals(user.getRole())) {
-            throw new RuntimeException("只有房东可以进行实名认证");
-        }
-        if (idCardNo == null || !idCardNo.matches("\\d{17}[\\dXx]")) {
-            throw new RuntimeException("请输入18位有效身份证号");
-        }
-        if (realName == null || realName.isBlank()) {
-            throw new RuntimeException("请输入真实姓名");
-        }
-
-        user.setNickname(nickname == null || nickname.isBlank() ? user.getUsername() : nickname);
-        user.setRealName(realName);
-        user.setIdCardNo(idCardNo);
-        user.setRealNameVerified(1);
-        user.setVerifiedTime(LocalDateTime.now());
-        updateById(user);
-        return user;
-    }
-
 }

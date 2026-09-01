@@ -117,8 +117,12 @@ public class Houses {
     @TableField("landlord_id")
     private Long landlordId;
 
-    @Schema(description = "房源状态")
+    @Schema(description = "房源状态: PENDING_REVIEW(待审核)/NORMAL(已上架)/OFFLINE(已下架)/REJECTED(审核未通过)")
     private String status;
+
+    @Schema(description = "审核意见")
+    @TableField("review_note")
+    private String reviewNote;
 
     @Schema(description = "创建时间")
     @TableField("create_time")

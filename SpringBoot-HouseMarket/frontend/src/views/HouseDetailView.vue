@@ -45,7 +45,7 @@
             <p>{{ house.description || '暂无描述' }}</p>
           </div>
 
-          <div class="house-actions">
+          <div class="house-actions" v-if="!isOwnHouse">
             <button class="btn btn-lg btn-accent" @click="bookHouse">预约看房</button>
             <button
               class="btn btn-lg"
@@ -55,6 +55,9 @@
               <svg width="16" height="16" viewBox="0 0 24 24" :fill="isFav ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
               {{ isFav ? '已收藏' : '收藏' }}
             </button>
+          </div>
+          <div class="house-actions" v-else>
+            <button class="btn btn-lg btn-outline" @click="goBack">这是您发布的房源，返回工作台管理</button>
           </div>
         </div>
       </div>
@@ -101,7 +104,7 @@
     </div>
 
     <!-- Loading state -->
-    <div class="container loading-container" v-else>
+    <div class="container loading-container" v-else-if="!loadFailed">
       <div class="skeleton-detail">
         <div class="skeleton-gallery"></div>
         <div class="skeleton-info">
@@ -111,6 +114,15 @@
           <div class="skeleton-line w-100"></div>
           <div class="skeleton-line w-50"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- Not found state -->
+    <div class="container loading-container" v-else>
+      <div class="house-notfound">
+        <span class="notfound-icon">🏚️</span>
+        <p>房源不存在或已下架</p>
+        <button class="btn btn-outline" @click="router.push('/')">返回首页</button>
       </div>
     </div>
 
@@ -159,6 +171,7 @@ import {useRoute, useRouter} from 'vue-router'
 import {useHouseStore} from '../stores/houses'
 import {useFavoriteStore} from '../stores/favorites'
 import {useAppointmentStore} from '../stores/appointments'
+import {useAuthStore} from '../stores/auth'
 import AppHeader from '../components/AppHeader.vue'
 import ImageGallery from '../components/ImageGallery.vue'
 import ChatPanel from '../components/ChatPanel.vue'
@@ -174,18 +187,16 @@ const router = useRouter()
 const houseStore = useHouseStore()
 const favStore = useFavoriteStore()
 const aptStore = useAppointmentStore()
+const authStore = useAuthStore()
 
 const {handleLogout: doLogout} = useAuth()
-let user = {}
-try {
-  user = JSON.parse(localStorage.getItem('user') || 'null') || {}
-} catch {
-  user = {}
-}
-const isLoggedIn = computed(() => !!localStorage.getItem('token'))
+const user = computed(() => authStore.user || {})
+const isLoggedIn = computed(() => authStore.isLoggedIn)
 
 const house = ref(null)
+const loadFailed = ref(false)
 const isFav = ref(false)
+const isOwnHouse = computed(() => house.value && user.value.id && Number(house.value.landlordId) === Number(user.value.id))
 const showBookModal = ref(false)
 const showPhone = ref(false)
 const showChat = ref(false)
@@ -258,9 +269,13 @@ async function toggleFavorite() {
     isFav.value = false
     showAlert('已取消收藏')
   } else {
-    await favStore.add(house.value.id, user.id)
-    isFav.value = true
-    showAlert('已收藏')
+    try {
+      await favStore.add(house.value.id)
+      isFav.value = true
+      showAlert('已收藏')
+    } catch (e) {
+      showAlert(e.response?.data?.message || '收藏失败', 'error')
+    }
   }
 }
 
@@ -279,12 +294,17 @@ async function submitBooking() {
     bookingError.value = '请填写完整的预约时间和地点'
     return
   }
+  const appointmentTime = new Date(`${bookForm.date} ${bookForm.time}`)
+  if (Number.isNaN(appointmentTime.getTime()) || appointmentTime.getTime() <= Date.now()) {
+    bookingError.value = '预约时间必须晚于当前时间'
+    return
+  }
   bookingError.value = ''
   bookingLoading.value = true
   try {
     await aptStore.addAppointment({
       houseId: house.value.id,
-      tenantId: user.id,
+      tenantId: user.value.id,
       landlordId: house.value.landlordId,
       time: `${bookForm.date} ${bookForm.time}`,
       location: bookForm.location,
@@ -308,20 +328,31 @@ function handleLogout() {
 
 onMounted(async () => {
   const id = route.params.id
-  if (!id) return
-  const res = await houseStore.fetchHouseById(id)
-  if (res.success) house.value = res.data.house
+  if (!id) {
+    loadFailed.value = true
+    return
+  }
+  try {
+    const res = await houseStore.fetchHouseById(id)
+    if (res.success) {
+      house.value = res.data.house
+    } else {
+      loadFailed.value = true
+    }
+  } catch (e) {
+    loadFailed.value = true
+  }
 
-  if (isLoggedIn.value && user.id) {
+  if (isLoggedIn.value && user.value.id && house.value && !isOwnHouse.value) {
     try {
       const checkRes = await favStore.check(id)
-    isFav.value = checkRes.data?.favorited || false
+      isFav.value = checkRes.data?.favorited || false
     } catch (e) { /* ignore */
     }
   }
 
   if (route.query.action === 'book') {
-    if (isLoggedIn.value) showBookModal.value = true
+    if (isLoggedIn.value && !loadFailed.value) showBookModal.value = true
     else router.push('/login')
   }
 })
@@ -702,5 +733,22 @@ onMounted(async () => {
     margin-left: 0;
     width: 100%;
   }
+}
+
+.house-notfound {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--text-muted);
+}
+
+.notfound-icon {
+  font-size: 56px;
+  display: block;
+  margin-bottom: 16px;
+}
+
+.house-notfound p {
+  font-size: 16px;
+  margin-bottom: 20px;
 }
 </style>
