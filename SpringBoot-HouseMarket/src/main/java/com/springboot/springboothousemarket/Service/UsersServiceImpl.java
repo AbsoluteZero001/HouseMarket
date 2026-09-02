@@ -75,9 +75,9 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         }
         // 级联清理房源/预约/收藏/聊天/通知/申请单，避免孤儿数据
         userCleanupService.cleanupUserData(id);
-        user.setIsDeleted(1);
-        usersMapper.updateById(user);
-        return true;
+        // isDeleted 带 @TableLogic：逻辑删除字段不能经 updateById 设置（会被排除出 SET 子句），
+        // 必须走 deleteById，由 MyBatis-Plus 转写为 UPDATE is_deleted=1
+        return usersMapper.deleteById(id) > 0;
     }
 
     @Override

@@ -188,6 +188,15 @@ const notifs = (await notifRes.json()).data?.notifications || []
 check('通知中心存在 APPOINTMENT_CREATED 记录', notifs.some(n => n.type === 'APPOINTMENT_CREATED' && n.relatedId === aptId), '')
 check('该通知 sentTime 已写(实时送达)', notifs.some(n => n.type === 'APPOINTMENT_CREATED' && n.relatedId === aptId && n.sentTime), '')
 
+// 清理：删除本次测试创建的预约，避免污染演示数据
+try {
+    await fetch(BASE + '/api/appointments/' + aptId, {
+        method: 'DELETE', headers: {Authorization: 'Bearer ' + tenant.token}
+    })
+    console.log('  [CLEANUP] 已删除测试预约 #' + aptId)
+} catch {
+}
+
 landlordWs.close()
 tenantWs.close()
 

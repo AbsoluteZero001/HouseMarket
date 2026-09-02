@@ -91,6 +91,7 @@ check('管理员通过申请', s == 200 and r.get('success'), f"status={s} {r}")
 s, r = login(t_user, 'newpass456', 'LANDLORD')
 check('审核通过后角色升级为 LANDLORD', s == 200 and r.get('code') == 200 and r['data']['role'] == 'LANDLORD', str(r.get('data', {}).get('role')))
 landlord_token = r['token']
+e2e_landlord_id = r['data']['id']
 
 # 通知：审核通过的通知应存在
 s, r = call('GET', '/api/notifications', tenant_token)
@@ -259,6 +260,19 @@ s, r = call('GET', '/api/appointments', token='invalid.token.here')
 check('无效 Token 返回 401', s == 401, f"status={s}")
 s, r = call('GET', '/api/notifications')
 check('未登录请求通知返回 401', s == 401, f"status={s}")
+
+print()
+print("=" * 60)
+print("九、清理测试数据（避免污染演示库）")
+print("=" * 60)
+# 管理员删除 E2E 注册的两个账号：级联清理其房源/预约/收藏/聊天/通知/申请单
+for uid_name, uid in [('E2E房东账号', e2e_landlord_id), ('E2E租客账号', renter_id)]:
+    s, r = call('DELETE', f'/user/{uid}', admin_token)
+    check(f'清理{uid_name}(级联删除名下数据)', s == 200 and r.get('success'), f"status={s} {r}")
+# 验证首页不再有 E2E 房源
+s, r = call('GET', '/api/public/houses?page=1&pageSize=100')
+check('演示库已无 E2E 测试房源', all('E2E' not in (h.get('title') or '') for h in r['data']['houses']),
+      str([h['title'] for h in r['data']['houses'] if 'E2E' in (h.get('title') or '')]))
 
 print()
 print("=" * 50)
