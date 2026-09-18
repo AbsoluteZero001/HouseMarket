@@ -31,6 +31,7 @@
 
 <p align="center">
   <img src="https://github.com/AbsoluteZero001/HouseMarket/actions/workflows/ci.yml/badge.svg" alt="CI" />
+  <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="License: MIT" />
 </p>
 
 <br/>
@@ -155,8 +156,8 @@ flowchart LR
 ## 📦 项目结构
 
 ```
-SpringBoot-HouseMarket/
-├── src/
+HouseMarket/                     # 仓库根目录即工程根目录
+├── src/                         # 后端 Spring Boot 源码
 │   ├── main/
 │   │   ├── java/com/springboot/springboothousemarket/
 │   │   │   ├── Config/           # 安全、WebSocket、缓存、MyBatis、异常处理等配置
@@ -173,7 +174,7 @@ SpringBoot-HouseMarket/
 │   │       ├── application.yml   # 默认配置
 │   │       └── application-redis.yml # Redis profile
 │   └── test/                     # 认证、预约、房东审核测试
-├── frontend/
+├── frontend/                     # 前端 Vue 3 工程
 │   ├── src/
 │   │   ├── api/                  # Axios 接口封装
 │   │   ├── components/           # 房源卡片、审批表格、流程轨迹等组件
@@ -183,13 +184,18 @@ SpringBoot-HouseMarket/
 │   │   ├── views/                # 首页、登录、注册、租客、房东、管理、详情页
 │   │   └── assets/styles/        # 全局样式
 │   └── public/backgrounds/       # 首页、认证、租客、房东、管理端背景图
+├── e2e/                          # 端到端业务闭环测试
 ├── docs/INTERVIEW_TECH.md        # 面试技术选型与演进建议
-├── uploads/                      # 房源图片
-├── docker-compose.yml            # MySQL + Redis
-├── .github/workflows/ci.yml      # GitHub Actions CI
+├── seed-uploads/                 # 随仓库分发的房源种子图片
+├── .github/workflows/            # GitHub Actions CI / 代码质量
+├── Dockerfile                    # 后端镜像（多阶段构建）
+├── docker-compose.yml            # MySQL + Redis + 后端 + 前端编排
 ├── pom.xml                       # Maven 配置
+├── LICENSE                       # MIT 开源协议
 └── README.md
 ```
+
+> 运行时上传目录 `uploads/` 不入库（见 `.gitignore`）；容器首次启动时会自动把 `seed-uploads/` 的种子图片复制进去。
 
 ## 🔧 快速开始
 
@@ -199,7 +205,7 @@ SpringBoot-HouseMarket/
 
 ```bash
 git clone https://github.com/AbsoluteZero001/HouseMarket.git
-cd SpringBoot-HouseMarket
+cd HouseMarket
 ```
 
 ### 2. 启动 MySQL 与 Redis（可选）
@@ -270,12 +276,12 @@ mvn spring-boot:run -Dspring-boot.run.profiles=redis
 - `frontend/Dockerfile`：前端 Node 构建 + Nginx 静态托管。
 - `frontend/nginx.conf`：代理 `/api`、`/uploads`、`/ws`、`/user`，支持 WebSocket。
 - `docker-compose.yml`：编排 MySQL、Redis、后端、前端四个服务，并自动执行 `00-schema.sql` → `01-data.sql` 初始化。
-- `一键启动.bat`：Windows 下检测 Docker、构建镜像、启动服务、等待就绪并打开浏览器。
+- `Start.bat`：Windows 下检测 Docker、构建镜像、启动服务、等待就绪并打开浏览器。
 
-启动方式：
+启动方式（Windows 双击或命令行执行）：
 
-```bash
-一键启动.bat
+```bat
+Start.bat
 ```
 
 等价命令：
@@ -351,7 +357,7 @@ GitHub Actions 在 `main` / `master` 推送和 Pull Request 时自动执行：
 
 ## 🎨 资源与复现
 
-- 房源图片：`uploads/` 已提交到 Git，数据库中的 `/uploads/*.png` 路径可直接访问。
+- 房源种子图片：`seed-uploads/` 已提交到 Git；本地运行时可将其复制到运行时目录 `uploads/`（该目录不入库），Docker 部署则由 `docker-entrypoint.sh` 在容器首次启动时自动复制，数据库中的 `/uploads/*.png` 路径即可直接访问。
 - 页面背景：`frontend/public/backgrounds/` 已提交，覆盖首页、登录 / 注册、租客端、房东端和管理端。
 - 背景再生成：运行 `python frontend/scripts/generate-backgrounds.py`（需要 Pillow）可重新生成海报级背景。
 - 初始化数据：`src/main/resources/db/schema.sql` 与 `src/main/resources/db/data.sql`。
@@ -369,6 +375,10 @@ GitHub Actions 在 `main` / `master` 推送和 Pull Request 时自动执行：
 3. 提交更改（`git commit -m 'Add some AmazingFeature'`）
 4. 推送到分支（`git push origin feature/AmazingFeature`）
 5. 开启 Pull Request
+
+## 📄 开源协议
+
+本项目基于 [MIT License](LICENSE) 开源，任何个人或团队均可自由使用、修改、分发与商用，唯须保留原始版权与许可声明。
 
 ---
 

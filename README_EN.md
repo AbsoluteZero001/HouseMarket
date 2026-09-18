@@ -31,6 +31,7 @@
 
 <p align="center">
   <img src="https://github.com/AbsoluteZero001/HouseMarket/actions/workflows/ci.yml/badge.svg" alt="CI" />
+  <img src="https://img.shields.io/badge/License-MIT-yellow?style=flat-square" alt="License: MIT" />
 </p>
 
 <br/>
@@ -155,8 +156,8 @@ flowchart LR
 ## 📦 Project Structure
 
 ```
-SpringBoot-HouseMarket/
-├── src/
+HouseMarket/                     # Repository root is the project root
+├── src/                         # Spring Boot backend sources
 │   ├── main/
 │   │   ├── java/com/springboot/springboothousemarket/
 │   │   │   ├── Config/           # Security, WebSocket, cache, MyBatis, exception handling
@@ -173,7 +174,7 @@ SpringBoot-HouseMarket/
 │   │       ├── application.yml   # Default configuration
 │   │       └── application-redis.yml # Redis profile
 │   └── test/                     # Auth, appointment, landlord review tests
-├── frontend/
+├── frontend/                     # Vue 3 frontend project
 │   ├── src/
 │   │   ├── api/                  # Axios API wrappers
 │   │   ├── components/           # House cards, approval tables, flow traces, etc.
@@ -183,13 +184,18 @@ SpringBoot-HouseMarket/
 │   │   ├── views/                # Home, login, register, tenant, landlord, admin, detail
 │   │   └── assets/styles/        # Global styles
 │   └── public/backgrounds/       # Home, auth, tenant, landlord, admin backgrounds
+├── e2e/                          # End-to-end business-flow tests
 ├── docs/INTERVIEW_TECH.md        # Interview tech selection and evolution notes
-├── uploads/                      # Listing images
-├── docker-compose.yml            # MySQL + Redis
-├── .github/workflows/ci.yml      # GitHub Actions CI
+├── seed-uploads/                 # Listing seed images shipped with the repo
+├── .github/workflows/            # GitHub Actions CI / code quality
+├── Dockerfile                    # Backend image (multi-stage build)
+├── docker-compose.yml            # MySQL + Redis + backend + frontend orchestration
 ├── pom.xml                       # Maven configuration
+├── LICENSE                       # MIT License
 └── README.md
 ```
+
+> The runtime upload directory `uploads/` is not committed (see `.gitignore`); on first container start `docker-entrypoint.sh` copies the seed images from `seed-uploads/` into it automatically.
 
 ## 🔧 Quick Start
 
@@ -199,7 +205,7 @@ The repository already contains seed data, listing images, and all page backgrou
 
 ```bash
 git clone https://github.com/AbsoluteZero001/HouseMarket.git
-cd SpringBoot-HouseMarket
+cd HouseMarket
 ```
 
 ### 2. Start MySQL and Redis (Optional)
@@ -270,12 +276,12 @@ The project includes a complete Docker deployment setup:
 - `frontend/Dockerfile`: Node build for the frontend with Nginx static hosting.
 - `frontend/nginx.conf`: proxies `/api`, `/uploads`, `/ws`, and `/user`, including WebSocket support.
 - `docker-compose.yml`: orchestrates MySQL, Redis, backend, and frontend services, and runs `00-schema.sql` → `01-data.sql` automatically.
-- `一键启动.bat`: checks Docker, builds images, starts services, waits for readiness, and opens the browser on Windows.
+- `Start.bat`: checks Docker, builds images, starts services, waits for readiness, and opens the browser on Windows.
 
-Start with:
+Start with (double-click on Windows or run in a terminal):
 
-```bash
-一键启动.bat
+```bat
+Start.bat
 ```
 
 Or the equivalent command:
@@ -351,7 +357,7 @@ GitHub Actions runs automatically on `main` / `master` pushes and Pull Requests:
 
 ## 🎨 Assets & Reproducibility
 
-- Listing images: the `uploads/` directory is committed to Git, and `/uploads/*.png` paths in the database are directly accessible.
+- Listing seed images: `seed-uploads/` is committed to Git; for local runs you can copy it into the runtime `uploads/` directory (not committed), while Docker deployments copy it automatically via `docker-entrypoint.sh` on first container start, so the `/uploads/*.png` paths in the database are directly accessible.
 - Page backgrounds: `frontend/public/backgrounds/` is committed and covers home, login / register, tenant, landlord, and admin views.
 - Regenerate backgrounds: run `python frontend/scripts/generate-backgrounds.py` (requires Pillow) to regenerate poster-level backgrounds.
 - Seed data: `src/main/resources/db/schema.sql` and `src/main/resources/db/data.sql`.
@@ -369,6 +375,10 @@ Issues and Pull Requests are welcome.
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE). Anyone may freely use, modify, distribute, and use it commercially, provided that the original copyright and permission notice are retained.
 
 ---
 
