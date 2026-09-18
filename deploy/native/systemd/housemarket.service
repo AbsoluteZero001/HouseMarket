@@ -1,0 +1,45 @@
+# ============================================================
+# HouseMarket 后端 systemd 服务
+# 安装路径：/etc/systemd/system/housemarket.service
+# ============================================================
+
+[Unit]
+Description=HouseMarket Spring Boot Backend
+After=network.target mysql.service redis.service
+Wants=mysql.service redis.service
+
+[Service]
+Type=simple
+# 运行用户（建议使用非 root 用户，如 housemarket）
+User=housemarket
+Group=housemarket
+
+# 工作目录（JAR 与配置文件所在目录）
+WorkingDirectory=/opt/housemarket/backend
+
+# 环境变量文件（存放 JAVA_HOME、数据库密码、JWT_SECRET 等敏感信息）
+EnvironmentFile=/etc/housemarket/housemarket.env
+
+# 启动命令
+# - JAVA_HOME 从 EnvironmentFile 读取
+# - JVM 参数可按需调整（堆内存根据服务器内存配置）
+ExecStart=${JAVA_HOME}/bin/java \
+  -Xms512m -Xmx1024m \
+  -Dspring.config.additional-location=application-prod.yml \
+  -jar app.jar
+
+# 优雅停止
+ExecStop=/bin/kill -SIGTERM $MAINPID
+TimeoutStopSec=30
+Restart=on-failure
+RestartSec=10
+
+# 安全加固
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/housemarket/uploads /opt/housemarket/logs
+
+[Install]
+WantedBy=multi-user.target
