@@ -1,0 +1,142 @@
+﻿name: Deploy Production
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: housemarket-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy HouseMarket
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout tested commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Create deployment bundle
+        shell: bash
+        env:
+          DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+
+          echo "Deploy SHA: ${DEPLOY_SHA}"
+
+          git cat-file -e "${DEPLOY_SHA}^{commit}"
+          git update-ref refs/heads/main "${DEPLOY_SHA}"
+
+          git bundle create housemarket.bundle refs/heads/main
+          git bundle verify housemarket.bundle
+
+          test -s housemarket.bundle
+
+      - name: Prepare SSH
+        shell: bash
+        env:
+          DEPLOY_KEY: ${{ secrets.HOUSEMARKET_DEPLOY_KEY }}
+          KNOWN_HOSTS: ${{ secrets.HOUSEMARKET_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+
+          install -d -m 700 ~/.ssh
+
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/housemarket_deploy
+          chmod 600 ~/.ssh/housemarket_deploy
+
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Test deployment channel
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.HOUSEMARKET_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.HOUSEMARKET_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+
+          RESULT="$(
+            ssh \
+              -i ~/.ssh/housemarket_deploy \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              -o StrictHostKeyChecking=yes \
+              -o ConnectTimeout=15 \
+              "${DEPLOY_USER}@${DEPLOY_HOST}" \
+              housemarket-ping
+          )"
+
+          echo "$RESULT"
+          test "$RESULT" = "HOUSEMARKET_SSH_OK"
+
+      - name: Upload deployment bundle
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.HOUSEMARKET_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.HOUSEMARKET_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+
+          ssh \
+            -i ~/.ssh/housemarket_deploy \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=15 \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            upload-housemarket-bundle \
+            < housemarket.bundle
+
+      - name: Deploy production
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.HOUSEMARKET_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.HOUSEMARKET_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+
+          ssh \
+            -i ~/.ssh/housemarket_deploy \
+            -o IdentitiesOnly=yes \
+            -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes \
+            -o ConnectTimeout=15 \
+            -o ServerAliveInterval=30 \
+            -o ServerAliveCountMax=10 \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            deploy-housemarket
+
+      - name: Verify public site
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          curl \
+            --fail \
+            --silent \
+            --show-error \
+            --location \
+            --retry 5 \
+            --retry-delay 3 \
+            --connect-timeout 10 \
+            --max-time 30 \
+            https://house.evezero.cn/ \
+            > /dev/null
+
+          echo "HouseMarket production verification passed."
