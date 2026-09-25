@@ -1,0 +1,50 @@
+name: Deploy SSH Smoke Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ssh-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Prepare SSH
+        shell: bash
+        env:
+          DEPLOY_KEY: ${{ secrets.HOUSEMARKET_DEPLOY_KEY }}
+          KNOWN_HOSTS: ${{ secrets.HOUSEMARKET_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+
+          install -d -m 700 ~/.ssh
+
+          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/housemarket_deploy
+          chmod 600 ~/.ssh/housemarket_deploy
+
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Test restricted SSH channel
+        shell: bash
+        env:
+          DEPLOY_HOST: ${{ secrets.HOUSEMARKET_DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.HOUSEMARKET_DEPLOY_USER }}
+        run: |
+          set -euo pipefail
+
+          RESULT="$(
+            ssh \
+              -i ~/.ssh/housemarket_deploy \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              -o StrictHostKeyChecking=yes \
+              "${DEPLOY_USER}@${DEPLOY_HOST}" \
+              housemarket-ping
+          )"
+
+          echo "$RESULT"
+
+          test "$RESULT" = "HOUSEMARKET_SSH_OK"
