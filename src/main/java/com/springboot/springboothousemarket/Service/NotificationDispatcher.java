@@ -31,7 +31,8 @@ public class NotificationDispatcher {
     /**
      * 创建用户通知并入队 WebSocket 推送。
      *
-     * @param businessKey 幂等键（同一业务事件重复调用只会入队一次）
+     * @param businessKey 幂等键（同一业务事件重复调用只会入队一次）。
+     *                   内部会自动追加接收用户维度，见下方说明。
      * @param payload     WebSocket 推送负载（可携带业务上下文字段）
      */
     public void dispatch(String businessKey, String businessType, Long appointmentId,
@@ -40,7 +41,13 @@ public class NotificationDispatcher {
         if (userId == null) {
             return;
         }
-        Notification notification = notificationService.create(userId, type, title, content, relatedType, relatedId);
+        // 幂等键必须带上「接收用户」维度：
+        // 同一个业务事件常常要同时通知房东与租客，若只用「事件」做键，
+        // 第二位收件人会被 notification/notification_outbox 的唯一索引挡掉，
+        // 结果是「其中一方永远收不到通知 / 收不到实时推送」。
+        String scopedKey = businessKey + "#" + userId;
+        Notification notification = notificationService.create(
+                scopedKey, userId, type, title, content, relatedType, relatedId);
         if (payload == null) {
             payload = new AppointmentMessage();
         }
@@ -54,10 +61,10 @@ public class NotificationDispatcher {
         payload.setRelatedId(relatedId);
         try {
             String json = objectMapper.writeValueAsString(payload);
-            outboxService.enqueue(businessKey, businessType, appointmentId, type, json, userId, notification.getId());
+            outboxService.enqueue(scopedKey, businessType, appointmentId, type, json, userId, notification.getId());
         } catch (Exception e) {
             // 通知落库已成功，仅实时推送入队失败：不影响业务主流程
-            log.warn("通知入队失败, businessKey={}, notificationId={}, reason={}", businessKey, notification.getId(), e.getMessage());
+            log.warn("通知入队失败, businessKey={}, notificationId={}, reason={}", scopedKey, notification.getId(), e.getMessage());
         }
     }
 

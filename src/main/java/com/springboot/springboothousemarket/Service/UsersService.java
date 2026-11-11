@@ -75,4 +75,14 @@ public interface UsersService extends IService<Users> {
      * @return 用户信息
      */
     Users getUserByUsername(String username);
+
+    /**
+     * 清空历史遗留的头像 Base64 大字段。
+     * MyBatis-Plus 的 updateById 默认忽略 null 字段，无法把列置空，
+     * 因此这里用显式 set 的方式把 avatar_base64 写成 NULL。
+     *
+     * @param id 用户ID
+     * @return 是否更新成功
+     */
+    boolean clearAvatarBase64(Long id);
 }

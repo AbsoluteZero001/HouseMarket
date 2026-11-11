@@ -40,10 +40,11 @@ public class LandlordApplicationController {
     }
 
     /**
-     * 租客主动提交房东入驻申请（被拒绝后可修改资料重新提交）。
+     * 提交/更新房东入驻申请。
+     * 租客可发起申请；已是房东的用户也可再次调用以维护入驻资料（否则无法更新，属业务死路）。
      */
     @PostMapping("/landlord/application")
-    @PreAuthorize("hasAuthority('TENANT')")
+    @PreAuthorize("hasAnyAuthority('TENANT','LANDLORD')")
     public ResponseResult apply(@AuthenticationPrincipal Users currentUser,
                                 @RequestBody(required = false) Map<String, String> body) {
         String realName = body == null ? null : body.get("realName");

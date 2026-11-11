@@ -19,8 +19,8 @@ export const useAppointmentStore = defineStore('appointments', () => {
     loading.value = true
     try {
       const res = await getAppointments(status)
-      if (res.data.success) {
-        appointments.value = res.data.data.appointments || []
+      if (res.data?.success !== false) {
+        appointments.value = res.data?.data?.appointments || []
       }
       return res.data
     } finally {

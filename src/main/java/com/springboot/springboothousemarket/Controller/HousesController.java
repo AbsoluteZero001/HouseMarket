@@ -251,17 +251,23 @@ public class HousesController {
         return ResponseResult.ok("图片顺序已更新");
     }
 
+    /**
+     * 发布房源前置校验：房东必须「入驻审核通过」且「实名认证通过」。
+     * 这里抛 BusinessException（可预期的业务错误）而不是 RuntimeException，
+     * 以便全局异常处理返回明确的 400 与可操作指引文案。
+     */
     private void requireLandlordApproved(Users currentUser) {
         if (currentUser == null) {
             throw new SecurityException("请先登录");
         }
-        if ("LANDLORD".equals(currentUser.getRole())
-                && !landlordApplicationService.hasApproved(currentUser.getId())) {
-            throw new RuntimeException("房东入驻审核通过后才能发布房源");
+        if (!"LANDLORD".equals(currentUser.getRole())) {
+            return;
         }
-        if ("LANDLORD".equals(currentUser.getRole())
-                && !Integer.valueOf(1).equals(currentUser.getRealNameVerified())) {
-            throw new RuntimeException("请先完成房东实名认证后再发布房源");
+        if (!landlordApplicationService.hasApproved(currentUser.getId())) {
+            throw new BusinessException("房东入驻申请尚未通过审核，请等待管理员审核通过后再发布房源");
+        }
+        if (!Integer.valueOf(1).equals(currentUser.getRealNameVerified())) {
+            throw new BusinessException("请先提交实名认证并等待管理员审核通过后再发布房源");
         }
     }
 

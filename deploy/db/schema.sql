@@ -162,11 +162,13 @@ CREATE TABLE `notification`
     `content`      VARCHAR(1000)         DEFAULT NULL COMMENT '通知内容',
     `related_type` VARCHAR(50)           DEFAULT NULL COMMENT '关联业务类型: APPOINTMENT/LANDLORD_APPLICATION/IDENTITY_VERIFICATION/HOUSE',
     `related_id`   BIGINT                DEFAULT NULL COMMENT '关联业务ID',
+    `business_key` VARCHAR(191)          DEFAULT NULL COMMENT '业务幂等键（事件+接收用户维度，用于去重；NULL表示不参与去重）',
     `read_status`  INT          NOT NULL DEFAULT 0 COMMENT '已读状态: 0未读, 1已读',
     `sent_time`    DATETIME              DEFAULT NULL COMMENT 'WebSocket实时推送时间（为空表示用户当时离线，仍可在通知中心查看）',
     `retry_count`  INT          NOT NULL DEFAULT 0 COMMENT '推送重试次数',
     `create_time`  DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_notification_business_key` (`business_key`),
     KEY            `idx_notification_user` (`user_id`, `read_status`),
     KEY            `idx_notification_related` (`related_type`, `related_id`),
     CONSTRAINT `fk_notification_user` FOREIGN KEY (`user_id`) REFERENCES `sysuser` (`id`)
@@ -178,7 +180,7 @@ CREATE TABLE `notification`
 CREATE TABLE `notification_outbox`
 (
     `id`              BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-    `business_key`    VARCHAR(128) NOT NULL COMMENT '业务幂等键',
+    `business_key`    VARCHAR(191) NOT NULL COMMENT '业务幂等键（含接收用户维度，避免同一事件的不同收件人互相顶掉）',
     `business_type`   VARCHAR(50)  NOT NULL DEFAULT 'APPOINTMENT' COMMENT '业务类型: APPOINTMENT/LANDLORD/IDENTITY/HOUSE/CHAT',
     `appointment_id`  BIGINT                DEFAULT NULL COMMENT '预约ID（非预约业务为空）',
     `notification_id` BIGINT                DEFAULT NULL COMMENT '关联的用户通知ID',
@@ -188,6 +190,7 @@ CREATE TABLE `notification_outbox`
     `status`          VARCHAR(20)  NOT NULL DEFAULT 'pending' COMMENT '状态: pending/processing/sent/failed',
     `retry_count`     INT          NOT NULL DEFAULT 0 COMMENT '重试次数',
     `create_time`     DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `claim_time`      DATETIME              DEFAULT NULL COMMENT '最近一次被消费者领取的时间（用于回收僵死的 processing 记录）',
     `send_time`       DATETIME              DEFAULT NULL COMMENT '发送时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_outbox_business_key` (`business_key`),

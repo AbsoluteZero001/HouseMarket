@@ -58,6 +58,10 @@ public class NotificationOutbox {
     @TableField("create_time")
     private LocalDateTime createTime;
 
+    @Schema(description = "最近一次被消费者领取的时间")
+    @TableField("claim_time")
+    private LocalDateTime claimTime;
+
     @Schema(description = "发送时间")
     @TableField("send_time")
     private LocalDateTime sendTime;

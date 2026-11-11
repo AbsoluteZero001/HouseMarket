@@ -46,6 +46,10 @@ public class Notification {
     @TableField("related_id")
     private Long relatedId;
 
+    @Schema(description = "业务幂等键（事件+接收用户维度，用于避免重复落库）")
+    @TableField("business_key")
+    private String businessKey;
+
     @Schema(description = "已读状态: 0未读, 1已读")
     @TableField("read_status")
     private Integer readStatus;

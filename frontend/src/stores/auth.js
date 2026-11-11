@@ -27,8 +27,14 @@ export const useAuthStore = defineStore('auth', () => {
     function persist() {
         if (token.value) localStorage.setItem('token', token.value)
         else localStorage.removeItem('token')
-        if (user.value) localStorage.setItem('user', JSON.stringify(user.value))
-        else localStorage.removeItem('user')
+        if (user.value) {
+            // 头像 Base64 是 MB 级大字段：绝不写进 localStorage，
+            // 否则每次刷新都要重新解析一份巨型 JSON（并可能撑爆浏览器存储配额）。
+            const {avatarBase64, ...rest} = user.value
+            localStorage.setItem('user', JSON.stringify(rest))
+        } else {
+            localStorage.removeItem('user')
+        }
     }
 
     async function login(credentials) {

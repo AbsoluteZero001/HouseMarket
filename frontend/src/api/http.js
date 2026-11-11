@@ -24,11 +24,12 @@ http.interceptors.response.use(
   error => {
     if (error.response) {
         const {status, data} = error.response
+        const errorMessage = data?.message || data?.msg || ''
         if (status === 401) {
             // 统一处理：清理本地登录态并跳转登录页（带提示），避免页面静默变匿名
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-            window.dispatchEvent(new CustomEvent('auth:expired', {detail: {message: data?.message || '登录状态已失效，请重新登录'}}))
+            localStorage.removeItem('token')
+            localStorage.removeItem('user')
+            window.dispatchEvent(new CustomEvent('auth:expired', {detail: {message: errorMessage || '登录状态已失效，请重新登录'}}))
             if (!redirecting401) {
                 redirecting401 = true
                 const current = router.currentRoute.value
@@ -38,7 +39,7 @@ http.interceptors.response.use(
                 }, 1000)
             }
         } else if (status === 403) {
-            window.dispatchEvent(new CustomEvent('app:error', {detail: {message: data?.message || '没有权限执行该操作'}}))
+            window.dispatchEvent(new CustomEvent('app:error', {detail: {message: errorMessage || '没有权限执行该操作'}}))
         }
     }
     return Promise.reject(error)

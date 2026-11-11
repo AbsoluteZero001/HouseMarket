@@ -56,7 +56,7 @@
         LEFT JOIN
         sysuser lu ON a.landlord_id = lu.id
         WHERE
-        a.tenant_id = #{userId} OR a.landlord_id = #{userId}
+        (a.tenant_id = #{userId} OR a.landlord_id = #{userId})
         <if test="status != null and status != ''">
             AND a.status = #{status}
         </if>

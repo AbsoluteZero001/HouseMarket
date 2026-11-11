@@ -37,10 +37,33 @@ public class LandlordApplicationServiceImpl extends ServiceImpl<LandlordApplicat
         LandlordApplication existing = getByUserId(userId);
         if (existing != null) {
             if ("approved".equals(existing.getStatus())) {
-                // 已是房东，无需重复申请
+                // 已是房东：允许继续维护联系资料，但绝不回退已生效的审核状态与房东权限
+                // （旧实现直接 return，导致 LANDLORD 用户永远无法更新入驻资料）
+                boolean changed = false;
+                if (realName != null && !realName.isBlank() && !realName.trim().equals(existing.getRealName())) {
+                    existing.setRealName(realName.trim());
+                    changed = true;
+                }
+                if (phone != null && !phone.isBlank() && !phone.trim().equals(existing.getPhone())) {
+                    existing.setPhone(phone.trim());
+                    changed = true;
+                }
+                if (changed) {
+                    existing.setUpdateTime(LocalDateTime.now());
+                    this.updateById(existing);
+                }
                 return existing;
             }
             if ("pending".equals(existing.getStatus())) {
+                // 审核中：允许刷新联系资料，但保持 pending 状态不变
+                if (realName != null && !realName.isBlank()) {
+                    existing.setRealName(realName.trim());
+                }
+                if (phone != null && !phone.isBlank()) {
+                    existing.setPhone(phone.trim());
+                }
+                existing.setUpdateTime(LocalDateTime.now());
+                this.updateById(existing);
                 return existing;
             }
             // rejected：允许修改资料后重新提交
@@ -72,8 +95,10 @@ public class LandlordApplicationServiceImpl extends ServiceImpl<LandlordApplicat
         if (currentUser == null) {
             throw new BusinessException("请先登录");
         }
-        if (!"TENANT".equals(currentUser.getRole())) {
-            throw new BusinessException("只有租客可以申请成为房东");
+        // 允许租客与房东两个角色提交：
+        // 房东（已通过入驻审核）需要能继续维护入驻资料，否则就是一条没有出口的死路。
+        if (!"TENANT".equals(currentUser.getRole()) && !"LANDLORD".equals(currentUser.getRole())) {
+            throw new BusinessException("只有租客或房东可以提交房东入驻申请");
         }
         if (realName == null || realName.isBlank()) {
             throw new BusinessException("请填写真实姓名");
@@ -105,10 +130,31 @@ public class LandlordApplicationServiceImpl extends ServiceImpl<LandlordApplicat
         if (application == null || !"pending".equals(application.getStatus())) {
             return false;
         }
+        // 前置校验必须发生在状态更新之前：
+        // 实名认证是房东入驻的前置条件，若先置为 approved 再校验失败，
+        // 就会留下「已通过审核但永远不能发布房源」的死路状态。
+        Users applicant = usersService.getUserById(application.getUserId());
+        if (applicant == null) {
+            throw new BusinessException("申请人不存在，审核中止");
+        }
+        if (!Integer.valueOf(1).equals(applicant.getRealNameVerified())) {
+            throw new BusinessException("申请人尚未完成实名认证，无法通过房东入驻审核，请先完成实名认证");
+        }
+        // 注册时选择「房东」不会填写申请单姓名/电话，审核通过时用实名档案回填，保证审核单信息完整
+        if ((application.getRealName() == null || application.getRealName().isBlank())
+                && applicant.getRealName() != null && !applicant.getRealName().isBlank()) {
+            application.setRealName(applicant.getRealName());
+        }
+        if ((application.getPhone() == null || application.getPhone().isBlank())
+                && applicant.getPhone() != null && !applicant.getPhone().isBlank()) {
+            application.setPhone(applicant.getPhone());
+        }
         boolean updated = this.lambdaUpdate()
                 .eq(LandlordApplication::getId, id)
                 .eq(LandlordApplication::getStatus, "pending")
                 .set(LandlordApplication::getStatus, "approved")
+                .set(LandlordApplication::getRealName, application.getRealName())
+                .set(LandlordApplication::getPhone, application.getPhone())
                 .set(LandlordApplication::getReviewerId, reviewerId)
                 .set(LandlordApplication::getReviewNote, note)
                 .set(LandlordApplication::getReviewTime, LocalDateTime.now())
@@ -118,10 +164,6 @@ public class LandlordApplicationServiceImpl extends ServiceImpl<LandlordApplicat
             return false;
         }
         // 审核通过必须真正改变角色：与审核单状态同一事务
-        Users applicant = usersService.getUserById(application.getUserId());
-        if (applicant == null) {
-            throw new BusinessException("申请人不存在，审核中止");
-        }
         applicant.setRole("LANDLORD");
         usersService.updateById(applicant);
 

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.springboot.springboothousemarket.Entity.Notification;
 import com.springboot.springboothousemarket.Mapper.NotificationMapper;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -14,8 +15,10 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
         implements NotificationService {
 
     @Override
-    public Notification create(Long userId, String type, String title, String content, String relatedType, Long relatedId) {
+    public Notification create(String businessKey, Long userId, String type, String title, String content,
+                               String relatedType, Long relatedId) {
         Notification notification = new Notification();
+        notification.setBusinessKey(businessKey);
         notification.setUserId(userId);
         notification.setType(type);
         notification.setTitle(title);
@@ -25,7 +28,21 @@ public class NotificationServiceImpl extends ServiceImpl<NotificationMapper, Not
         notification.setReadStatus(0);
         notification.setRetryCount(0);
         notification.setCreateTime(LocalDateTime.now());
-        save(notification);
+        try {
+            save(notification);
+        } catch (DuplicateKeyException duplicate) {
+            // 同一业务事件重复触发：MySQL 唯一键保证不会重复落库，
+            // 这里把首次创建的通知返回给调用方，保证上层拿到稳定的 notificationId。
+            if (businessKey != null) {
+                Notification existing = getOne(new LambdaQueryWrapper<Notification>()
+                        .eq(Notification::getBusinessKey, businessKey)
+                        .last("LIMIT 1"));
+                if (existing != null) {
+                    return existing;
+                }
+            }
+            throw duplicate;
+        }
         return notification;
     }
 

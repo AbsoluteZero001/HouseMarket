@@ -1,6 +1,7 @@
 package com.springboot.springboothousemarket.Entity;
 
 import com.baomidou.mybatisplus.annotation.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
@@ -93,7 +94,13 @@ public class Users {
     @TableField("avatar")
     private String avatar;
 
-    @Schema(description = "头像Base64数据")
+    /**
+     * 头像 Base64 内联数据（历史字段）。
+     * 已改为「文件落盘 + 只存 URL」，该字段仅用于存量数据迁移，
+     * 绝不参与序列化：否则登录/列表等接口会携带 MB 级大字段。
+     */
+    @Schema(description = "头像Base64数据（历史字段，不再对外下发）")
+    @JsonIgnore
     @TableField("avatar_base64")
     private String avatarBase64;
 

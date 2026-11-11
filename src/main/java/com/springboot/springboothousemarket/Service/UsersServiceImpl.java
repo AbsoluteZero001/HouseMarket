@@ -114,4 +114,15 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
     public Users getUserByUsername(String username) {
         return usersMapper.selectByUsername(username);
     }
+
+    @Override
+    public boolean clearAvatarBase64(Long id) {
+        if (id == null) {
+            return false;
+        }
+        return lambdaUpdate()
+                .eq(Users::getId, id)
+                .set(Users::getAvatarBase64, null)
+                .update();
+    }
 }

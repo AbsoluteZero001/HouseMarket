@@ -18,10 +18,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Base64;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 @Tag(name = "用户信息API")
 @RequestMapping("/user")
@@ -129,11 +132,15 @@ public class UsersController {
         }
         user.setNickname(nickname.trim());
         sysUserService.updateUser(user.getId(), user);
-        return ResponseResult.ok(null, Map.of("user", sysUserService.getUserById(user.getId())));
+        return ResponseResult.ok(null, Map.of("user", UserVO.from(sysUserService.getUserById(user.getId()))));
     }
 
     /**
-     * 上传头像（Base64 入库）。
+     * 上传头像：二进制落盘到 uploadDir/avatars/，数据库只保存图片 URL。
+     * <p>
+     * 旧实现把 Base64 写进 sysuser.avatar_base64（MEDIUMTEXT），并随登录/列表等接口
+     * 全量下发，导致单次响应可达数 MB；现改为「文件 + URL」，
+     * 由 WebMvcConfig 的 /uploads/** 静态映射直接提供图片。
      */
     @PostMapping(value = "/avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseResult updateAvatar(
@@ -148,31 +155,64 @@ public class UsersController {
         if (bytes.length > 2 * 1024 * 1024) {
             throw new BusinessException("头像大小不能超过 2MB");
         }
-        String extension = "";
-        String original = upload.getOriginalFilename();
-        if (original != null) {
-            int dot = original.lastIndexOf('.');
-            if (dot >= 0) {
-                extension = original.substring(dot);
-            }
-        }
-        if (!extension.isBlank()
-                && !Set.of(".jpg", ".jpeg", ".png", ".gif", ".webp").contains(extension.toLowerCase())) {
+        String extension = resolveImageExtension(bytes, upload.getOriginalFilename());
+        if (extension == null) {
             throw new BusinessException("头像仅支持 JPG/PNG/GIF/WEBP 格式");
         }
-        String mime = upload.getContentType();
-        if (mime == null || mime.isBlank() || "application/octet-stream".equalsIgnoreCase(mime)) {
-            mime = extension.equalsIgnoreCase(".png") ? "image/png"
-                    : extension.equalsIgnoreCase(".webp") ? "image/webp"
-                      : extension.equalsIgnoreCase(".gif") ? "image/gif"
-                        : "image/jpeg";
+        // 文件名由服务端随机生成：杜绝用户可控文件名带来的路径穿越与同名覆盖
+        String fileName = UUID.randomUUID().toString().replace("-", "") + extension;
+        Path avatarDir = Paths.get(uploadDir, "avatars").toAbsolutePath().normalize();
+        Files.createDirectories(avatarDir);
+        Path target = avatarDir.resolve(fileName).normalize();
+        if (!target.startsWith(avatarDir)) {
+            throw new BusinessException("头像保存路径非法");
         }
-        String dataUrl = "data:" + mime + ";base64," + Base64.getEncoder().encodeToString(bytes);
+        Files.write(target, bytes);
 
         Users user = sysUserService.getUserById(currentUser.getId());
-        user.setAvatarBase64(dataUrl);
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        user.setAvatar("/uploads/avatars/" + fileName);
         sysUserService.updateUser(user.getId(), user);
-        return ResponseResult.ok(null, Map.of("user", sysUserService.getUserById(user.getId())));
+        // 清理历史 Base64 大字段（头像已落盘，无需再保留内联副本）
+        sysUserService.clearAvatarBase64(user.getId());
+        return ResponseResult.ok(null, Map.of("user", UserVO.from(sysUserService.getUserById(user.getId()))));
+    }
+
+    /**
+     * 依据文件真实字节（magic number）判定图片类型，不信任用户提供的文件名与 Content-Type。
+     *
+     * @return 合法扩展名（含点）；无法识别时返回 null
+     */
+    private String resolveImageExtension(byte[] bytes, String originalFilename) {
+        if (bytes.length >= 8
+                && (bytes[0] & 0xFF) == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
+            return ".png";
+        }
+        if (bytes.length >= 3
+                && (bytes[0] & 0xFF) == 0xFF && (bytes[1] & 0xFF) == 0xD8 && (bytes[2] & 0xFF) == 0xFF) {
+            return ".jpg";
+        }
+        if (bytes.length >= 3 && bytes[0] == 'G' && bytes[1] == 'I' && bytes[2] == 'F') {
+            return ".gif";
+        }
+        if (bytes.length >= 12
+                && bytes[0] == 'R' && bytes[1] == 'I' && bytes[2] == 'F' && bytes[3] == 'F'
+                && bytes[8] == 'W' && bytes[9] == 'E' && bytes[10] == 'B' && bytes[11] == 'P') {
+            return ".webp";
+        }
+        // magic number 识别失败时，仅在文件名后缀明确合法的情况下放行（避免误伤合法图片）
+        if (originalFilename != null) {
+            int dot = originalFilename.lastIndexOf('.');
+            if (dot >= 0) {
+                String ext = originalFilename.substring(dot).toLowerCase();
+                if (Set.of(".jpg", ".jpeg", ".png", ".gif", ".webp").contains(ext)) {
+                    return ".jpeg".equals(ext) ? ".jpg" : ext;
+                }
+            }
+        }
+        return null;
     }
 
     /**

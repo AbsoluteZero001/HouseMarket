@@ -26,6 +26,7 @@ import java.util.List;
 public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appointment> implements AppointmentService {
 
     private final AppointmentFlowService flowService;
+    private final NotificationOutboxService outboxService;
     private final HousesMapper housesMapper;
     private final NotificationDispatcher notificationDispatcher;
 
@@ -33,9 +34,11 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     private int pendingExpireHours;
 
     public AppointmentServiceImpl(AppointmentFlowService flowService,
+                                  NotificationOutboxService outboxService,
                                   HousesMapper housesMapper,
                                   NotificationDispatcher notificationDispatcher) {
         this.flowService = flowService;
+        this.outboxService = outboxService;
         this.housesMapper = housesMapper;
         this.notificationDispatcher = notificationDispatcher;
     }
@@ -270,7 +273,17 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
         if (appointment == null) {
             return false;
         }
-        return removeById(id);
+        // 级联清理：必须先删子表再删主表。
+        // appointment_flow(fk_flow_appointment) 与 notification_outbox(fk_outbox_appointment)
+        // 对 appointment 的外键均无 ON DELETE CASCADE，若只删主表必然触发
+        // ERROR 1451 (SQLIntegrityConstraintViolationException)，导致删除功能 100% 失败。
+        outboxService.deleteByAppointmentId(id);
+        flowService.deleteByAppointmentId(id);
+        boolean removed = removeById(id);
+        if (!removed) {
+            log.warn("预约删除失败, appointmentId={}", id);
+        }
+        return removed;
     }
 
     // ------------------------------------------------------------------

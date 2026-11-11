@@ -53,10 +53,14 @@ public class NotificationOutboxServiceImpl extends ServiceImpl<NotificationOutbo
 
     @Override
     public boolean claim(Long id) {
+        // claim_time 记录「本次领取时刻」：
+        // 之前用 create_time 判定僵死，语义是错的 —— 一条刚创建就被领取的记录
+        // 会因为 create_time 很旧而被误判为僵死并被反复重置。
         return this.lambdaUpdate()
                 .eq(NotificationOutbox::getId, id)
                 .eq(NotificationOutbox::getStatus, "pending")
                 .set(NotificationOutbox::getStatus, "processing")
+                .set(NotificationOutbox::getClaimTime, LocalDateTime.now())
                 .update();
     }
 
@@ -86,10 +90,14 @@ public class NotificationOutboxServiceImpl extends ServiceImpl<NotificationOutbo
 
     @Override
     public void resetStaleProcessing(int minutes) {
+        // 以 claim_time（领取时刻）而非 create_time（创建时刻）判定僵死，
+        // 否则「创建很久才被领取」的记录一领取就被判超时回收，形成活锁。
         this.lambdaUpdate()
                 .eq(NotificationOutbox::getStatus, "processing")
-                .le(NotificationOutbox::getCreateTime, LocalDateTime.now().minusMinutes(minutes))
+                .isNotNull(NotificationOutbox::getClaimTime)
+                .le(NotificationOutbox::getClaimTime, LocalDateTime.now().minusMinutes(minutes))
                 .set(NotificationOutbox::getStatus, "pending")
+                .set(NotificationOutbox::getClaimTime, null)
                 .update();
     }
 }
