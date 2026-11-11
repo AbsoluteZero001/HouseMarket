@@ -49,18 +49,31 @@
     <div class="nc-empty" v-else-if="!loading">
       暂无通知，新的预约和审批结果会实时出现在这里
     </div>
+
+    <div class="nc-more" v-if="hasMore">
+      <button class="btn btn-sm btn-outline" @click="loadMore" :disabled="loadingMore">
+        {{ loadingMore ? '加载中…' : '加载更多' }}
+      </button>
+      <span class="nc-more-hint">已显示 {{ items.length }} / {{ total }} 条</span>
+    </div>
   </div>
 </template>
 
 <script setup>
 import {onMounted, ref} from 'vue'
-import {getNotifications, markAllNotificationsRead, markNotificationRead} from '../api/notifications'
+import {getNotificationsPage, markAllNotificationsRead, markNotificationRead} from '../api/notifications'
 
 const emit = defineEmits(['open-related'])
+
+const PAGE_SIZE = 20
 
 const items = ref([])
 const unreadCount = ref(0)
 const loading = ref(false)
+const loadingMore = ref(false)
+const page = ref(1)
+const total = ref(0)
+const hasMore = ref(false)
 
 const eventMap = {
   APPOINTMENT_CREATED: '新预约申请',
@@ -98,13 +111,40 @@ function formatTime(value) {
 async function load() {
   loading.value = true
   try {
-    const res = await getNotifications(100)
-    items.value = res.data?.data?.notifications || []
-    unreadCount.value = Number(res.data?.data?.unread) || 0
+    const res = await getNotificationsPage(1, PAGE_SIZE)
+    const data = res.data?.data || {}
+    items.value = data.notifications || []
+    unreadCount.value = Number(data.unread) || 0
+    total.value = Number(data.total) || items.value.length
+    page.value = Number(data.page) || 1
+    hasMore.value = Boolean(data.hasMore)
   } catch (e) {
     items.value = []
+    total.value = 0
+    hasMore.value = false
   } finally {
     loading.value = false
+  }
+}
+
+// 加载更多：按后端分页追加。
+// 排序键是 (read_status, id)，唯一且稳定，追加不会造成重复或漏项。
+async function loadMore() {
+  if (loadingMore.value || !hasMore.value) return
+  loadingMore.value = true
+  try {
+    const res = await getNotificationsPage(page.value + 1, PAGE_SIZE)
+    const data = res.data?.data || {}
+    const next = data.notifications || []
+    const known = new Set(items.value.map(n => n.id))
+    items.value = items.value.concat(next.filter(n => !known.has(n.id)))
+    total.value = Number(data.total) || total.value
+    page.value = Number(data.page) || page.value + 1
+    hasMore.value = Boolean(data.hasMore)
+  } catch {
+    /* 静默：保持当前列表不变，用户可稍后重试 */
+  } finally {
+    loadingMore.value = false
   }
 }
 
@@ -288,6 +328,19 @@ onMounted(load)
   text-align: center;
   color: #9ca3af;
   padding: 60px 20px;
+}
+
+.nc-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.nc-more-hint {
+  font-size: 12px;
+  color: #9ca3af;
 }
 
 @media (max-width: 640px) {

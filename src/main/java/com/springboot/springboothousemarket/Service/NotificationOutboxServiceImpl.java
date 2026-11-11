@@ -89,6 +89,24 @@ public class NotificationOutboxServiceImpl extends ServiceImpl<NotificationOutbo
     }
 
     @Override
+    public int archiveOlderThan(LocalDateTime cutoff, int batchSize) {
+        if (batchSize <= 0) {
+            return 0;
+        }
+        // 只归档「已投递完成」的记录：pending/processing 还在队列里，删掉等于丢消息
+        List<NotificationOutbox> rows = list(new LambdaQueryWrapper<NotificationOutbox>()
+                .select(NotificationOutbox::getId)
+                .in(NotificationOutbox::getStatus, List.of("sent", "failed"))
+                .le(NotificationOutbox::getCreateTime, cutoff)
+                .last("LIMIT " + batchSize));
+        if (rows.isEmpty()) {
+            return 0;
+        }
+        List<Long> ids = rows.stream().map(NotificationOutbox::getId).toList();
+        return removeByIds(ids) ? ids.size() : 0;
+    }
+
+    @Override
     public void resetStaleProcessing(int minutes) {
         // 以 claim_time（领取时刻）而非 create_time（创建时刻）判定僵死，
         // 否则「创建很久才被领取」的记录一领取就被判超时回收，形成活锁。

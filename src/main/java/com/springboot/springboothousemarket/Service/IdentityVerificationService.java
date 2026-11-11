@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.springboot.springboothousemarket.Entity.IdentityVerification;
 import com.springboot.springboothousemarket.Entity.Users;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -30,4 +31,26 @@ public interface IdentityVerificationService extends IService<IdentityVerificati
      * 审核拒绝：申请人可修改后重新提交。
      */
     boolean reject(Long id, Long reviewerId, String note);
+
+    /**
+     * 审核 SLA 超时处理：把「提交时间距今超过 expireHours 且仍处于 pending」的申请
+     * 自动置为 rejected，并通知申请人（可修改后重新提交）。
+     *
+     * 人工审核没有时限约束时，申请会无限期挂起，用户既拿不到结果、也看不出还要等多久；
+     * 加上超时自动拒绝后，SLA 对外可见且有终态。
+     *
+     * @return 本次实际被自动拒绝的申请数
+     */
+    int expireOverdue(int expireHours);
+
+    /**
+     * 取「本次提交时间」：优先 submit_time（重新提交会刷新），
+     * 存量数据 submit_time 为空时回落到 create_time。
+     */
+    default LocalDateTime resolveSubmitTime(IdentityVerification verification) {
+        if (verification == null) {
+            return null;
+        }
+        return verification.getSubmitTime() != null ? verification.getSubmitTime() : verification.getCreateTime();
+    }
 }

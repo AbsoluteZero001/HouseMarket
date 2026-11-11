@@ -1,16 +1,15 @@
 -- ============================================================
--- 迁移脚本：2026-11-10
+-- Flyway 迁移脚本：V2026_11_10 —— 通知幂等 + Outbox 领取时刻
 -- 目标：
 --   1) notification 增加 business_key 唯一索引 —— 通知幂等，杜绝同一业务事件重复落库；
 --   2) notification_outbox 增加 claim_time —— 用「领取时刻」而非「创建时刻」判定僵死记录；
 --   3) notification_outbox.business_key 扩容到 191 —— 容纳「事件#接收用户」的归一化幂等键。
 --
--- 执行方式：mysql -u root -p housemarket < 本脚本
--- 幂等性：全部使用 information_schema 判存，可重复执行。
--- 注意：新增唯一索引前会清理 business_key 重复的历史行（正常为空，因为该列是本次新增）。
+-- 执行方式：由 Flyway 在应用启动时自动执行（见 application.yml 的 spring.flyway 配置），
+--             执行记录写入 flyway_schema_history 表；不再需要人工登录数据库执行。
+-- 幂等性：全部使用 information_schema 判存，即使被重复执行也不会报错。
+-- 注意：脚本不再包含 USE housemarket —— 目标库由 Flyway 的 spring.flyway.schemas 决定。
 -- ============================================================
-
-USE housemarket;
 
 SET @db := DATABASE();
 

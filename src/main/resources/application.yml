@@ -19,6 +19,24 @@ spring:
     default-property-inclusion: non_null
   cache:
     type: simple
+  # 建表脚本（db/schema.sql、db/data.sql）不随应用自动执行：
+  #   - 基线表结构由 db/schema.sql 负责（Docker 初始化 / 手工导入）；
+  #   - 之后的增量变更一律走 Flyway，避免「两套初始化入口」互相覆盖。
+  sql:
+    init:
+      mode: never
+  # Flyway：把 db/migration 下的版本化脚本接入应用启动流程。
+  # baseline-on-migrate=true 兼容「库已由 db/schema.sql 建好」的存量环境：
+  # Flyway 会先把存量库标记为基线版本，再依次执行尚未应用的增量脚本。
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    locations: classpath:db/migration
+    table: flyway_schema_history
+    baseline-on-migrate: true
+    baseline-version: 1
+    baseline-description: "存量库基线（表结构由 db/schema.sql 导入）"
+    validate-on-migrate: true
+    out-of-order: false
   servlet:
     multipart:
       max-file-size: 5MB
@@ -30,6 +48,38 @@ app:
     reset-interval: 60000
   appointment:
     pending-expire-hours: ${APPOINTMENT_PENDING_EXPIRE_HOURS:24}
+  # 实名认证审核 SLA：超过该时长仍未人工审核，申请自动置为「已拒绝」并通知申请人，
+  # 避免申请无限期挂起、用户长期等不到结果（可重新提交）。
+  identity:
+    verify-expire-hours: ${IDENTITY_VERIFY_EXPIRE_HOURS:72}
+    verify-expiry-enabled: ${IDENTITY_VERIFY_EXPIRY_ENABLED:true}
+    verify-expiry-interval-ms: ${IDENTITY_VERIFY_EXPIRY_INTERVAL_MS:600000}
+  # 通知归档：超过保留天数的通知与已投递完成的 Outbox 记录由定时任务分批清理，
+  # 控制单表规模，避免通知中心查询与唯一索引随数据量增长而劣化。
+  notification:
+    archive-enabled: ${NOTIFICATION_ARCHIVE_ENABLED:true}
+    archive-days: ${NOTIFICATION_ARCHIVE_DAYS:90}
+    # 未读通知保留更久：避免用户还没来得及看的消息被归档掉
+    archive-unread-days: ${NOTIFICATION_ARCHIVE_UNREAD_DAYS:365}
+    archive-batch-size: ${NOTIFICATION_ARCHIVE_BATCH_SIZE:1000}
+    archive-interval-ms: ${NOTIFICATION_ARCHIVE_INTERVAL_MS:21600000}
+  # 登录/注册限流：同时按「用户名」与「客户端 IP」两个维度计数。
+  # 只按用户名限流时，攻击者可用一批用户名批量撞库（每个用户名都只触发一次），
+  # 加上 IP 维度后可拦截批量注册与撞库枚举。
+  ratelimit:
+    # 账号维度：登录在「请求前」计数（成功也计数），防止针对单一账号的爆破。
+    login-user-limit: ${RATELIMIT_LOGIN_USER_LIMIT:5}
+    # IP 维度：登录只在「凭据错误」时计数（成功登录不消耗额度），
+    # 否则共享同一个出口 IP 的办公网/校园网会被正常用户互相「连坐」误伤。
+    # 阈值仍需比账号维度宽松：一台机器上可能有几十个同事共用出口。
+    login-ip-limit: ${RATELIMIT_LOGIN_IP_LIMIT:30}
+    # 注册两个维度都在请求前计数：批量注册本身就是滥用行为，不存在误伤场景。
+    register-user-limit: ${RATELIMIT_REGISTER_USER_LIMIT:5}
+    register-ip-limit: ${RATELIMIT_REGISTER_IP_LIMIT:20}
+    window-seconds: ${RATELIMIT_WINDOW_SECONDS:60}
+    # 是否信任 X-Forwarded-For：应用部署在 Nginx/网关之后时必须为 true，
+    # 否则所有请求的来源 IP 都会是代理地址，IP 维度限流会误伤全部用户。
+    trust-proxy-headers: ${RATELIMIT_TRUST_PROXY_HEADERS:true}
   # 跨域来源白名单（逗号分隔）。生产环境务必通过环境变量覆盖为真实域名，禁止使用 *
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:8080,http://localhost:4173,http://localhost:80}

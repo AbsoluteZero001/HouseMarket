@@ -58,6 +58,17 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- 数据库版本迁移（Flyway）：db/migration 下的脚本随应用启动自动执行，
+             版本演进留痕，无需人工登录数据库执行 SQL -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-mysql</artifactId>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

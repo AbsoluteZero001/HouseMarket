@@ -57,6 +57,10 @@ public class IdentityVerification {
     @TableField("create_time")
     private LocalDateTime createTime;
 
+    @Schema(description = "最近一次提交申请的时间（审核 SLA 计时起点，重新提交会刷新）")
+    @TableField("submit_time")
+    private LocalDateTime submitTime;
+
     @Schema(description = "更新时间")
     @TableField("update_time")
     private LocalDateTime updateTime;

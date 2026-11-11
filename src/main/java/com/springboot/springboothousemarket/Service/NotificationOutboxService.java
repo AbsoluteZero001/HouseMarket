@@ -3,6 +3,7 @@ package com.springboot.springboothousemarket.Service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.springboot.springboothousemarket.Entity.NotificationOutbox;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface NotificationOutboxService extends IService<NotificationOutbox> {
@@ -21,4 +22,12 @@ public interface NotificationOutboxService extends IService<NotificationOutbox> 
     boolean deleteByAppointmentId(Long appointmentId);
 
     void resetStaleProcessing(int minutes);
+
+    /**
+     * Outbox 归档：只清理「已投递完成（sent/failed）」且超过保留期的记录。
+     * pending/processing 仍在投递队列中，删掉等于丢消息。
+     *
+     * @return 实际删除的条数
+     */
+    int archiveOlderThan(LocalDateTime cutoff, int batchSize);
 }

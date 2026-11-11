@@ -6,6 +6,7 @@ import com.springboot.springboothousemarket.Service.IdentityVerificationService;
 import com.springboot.springboothousemarket.dto.IdentityVerificationVO;
 import com.springboot.springboothousemarket.dto.ResponseResult;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +33,10 @@ public class IdentityVerificationController {
 
     private final IdentityVerificationService identityVerificationService;
 
+    /** 审核 SLA（小时）：超过此时长未人工审核，申请会被自动拒绝。 */
+    @Value("${app.identity.verify-expire-hours:72}")
+    private int slaHours;
+
     public IdentityVerificationController(IdentityVerificationService identityVerificationService) {
         this.identityVerificationService = identityVerificationService;
     }
@@ -40,7 +45,7 @@ public class IdentityVerificationController {
     public ResponseResult getMine(@AuthenticationPrincipal Users currentUser) {
         IdentityVerification verification = identityVerificationService.getByUserId(currentUser.getId());
         return ResponseResult.ok(null, Map.of("verification",
-                verification == null ? Map.of() : IdentityVerificationVO.from(verification)));
+                verification == null ? Map.of() : IdentityVerificationVO.from(verification, slaHours)));
     }
 
     @PostMapping("/identity-verification")
@@ -48,8 +53,8 @@ public class IdentityVerificationController {
                                  @RequestBody Map<String, String> body) {
         IdentityVerification verification = identityVerificationService.submit(
                 currentUser, body.get("realName"), body.get("idCardNo"));
-        return ResponseResult.ok("实名认证申请已提交，请等待管理员审核",
-                Map.of("verification", IdentityVerificationVO.from(verification)));
+        return ResponseResult.ok("实名认证申请已提交，请在 " + slaHours + " 小时内等待管理员审核，超时将自动拒绝并可重新提交",
+                Map.of("verification", IdentityVerificationVO.from(verification, slaHours)));
     }
 
     @GetMapping("/admin/identity-verifications")
@@ -57,7 +62,7 @@ public class IdentityVerificationController {
     public ResponseResult list(@RequestParam(required = false) String status) {
         List<IdentityVerification> list = identityVerificationService.listByStatus(status);
         return ResponseResult.ok(null, Map.of("verifications",
-                list.stream().map(IdentityVerificationVO::from).toList()));
+                list.stream().map(v -> IdentityVerificationVO.from(v, slaHours)).toList()));
     }
 
     @PutMapping("/admin/identity-verifications/{id}/approve")

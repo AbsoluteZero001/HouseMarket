@@ -53,6 +53,7 @@ public class IdentityVerificationServiceImpl extends ServiceImpl<IdentityVerific
         if (existing != null && "approved".equals(existing.getStatus())) {
             throw new BusinessException("您已完成实名认证，无需重复提交");
         }
+        LocalDateTime now = LocalDateTime.now();
         if (existing != null) {
             existing.setRealName(realName.trim());
             existing.setIdCardNo(cardNo);
@@ -60,7 +61,10 @@ public class IdentityVerificationServiceImpl extends ServiceImpl<IdentityVerific
             existing.setReviewNote(null);
             existing.setReviewerId(null);
             existing.setReviewTime(null);
-            existing.setUpdateTime(LocalDateTime.now());
+            // 重新提交 = 新的一轮审核：SLA 计时重新开始，
+            // 同时审核通知的幂等键也会带上这一轮的标识（见 reviewRound）。
+            existing.setSubmitTime(now);
+            existing.setUpdateTime(now);
             updateById(existing);
             return existing;
         }
@@ -71,8 +75,9 @@ public class IdentityVerificationServiceImpl extends ServiceImpl<IdentityVerific
         verification.setRealName(realName.trim());
         verification.setIdCardNo(cardNo);
         verification.setStatus("pending");
-        verification.setCreateTime(LocalDateTime.now());
-        verification.setUpdateTime(LocalDateTime.now());
+        verification.setCreateTime(now);
+        verification.setSubmitTime(now);
+        verification.setUpdateTime(now);
         save(verification);
         return verification;
     }
@@ -122,7 +127,7 @@ public class IdentityVerificationServiceImpl extends ServiceImpl<IdentityVerific
         usersService.updateById(user);
 
         notificationDispatcher.dispatch(
-                "IDENTITY:" + id + ":IDENTITY_APPROVED",
+                "IDENTITY:" + id + ":IDENTITY_APPROVED:" + reviewRound(verification),
                 "IDENTITY",
                 null,
                 verification.getUserId(),
@@ -153,7 +158,7 @@ public class IdentityVerificationServiceImpl extends ServiceImpl<IdentityVerific
             return false;
         }
         notificationDispatcher.dispatch(
-                "IDENTITY:" + id + ":IDENTITY_REJECTED",
+                "IDENTITY:" + id + ":IDENTITY_REJECTED:" + reviewRound(verification),
                 "IDENTITY",
                 null,
                 verification.getUserId(),
@@ -162,5 +167,71 @@ public class IdentityVerificationServiceImpl extends ServiceImpl<IdentityVerific
                 "很抱歉，您的实名认证申请未通过：" + (note == null ? "" : note) + "。修改资料后可重新提交",
                 "IDENTITY_VERIFICATION", id);
         return true;
+    }
+
+    @Override
+    @Transactional
+    public int expireOverdue(int expireHours) {
+        if (expireHours <= 0) {
+            return 0;
+        }
+        LocalDateTime deadline = LocalDateTime.now().minusHours(expireHours);
+        // 计时起点用 submit_time（重新提交会刷新）；存量数据为空时回落到 create_time
+        List<IdentityVerification> overdue = list(new LambdaQueryWrapper<IdentityVerification>()
+                .eq(IdentityVerification::getStatus, "pending")
+                .and(w -> w.isNotNull(IdentityVerification::getSubmitTime)
+                        .le(IdentityVerification::getSubmitTime, deadline)
+                        .or()
+                        .isNull(IdentityVerification::getSubmitTime)
+                        .le(IdentityVerification::getCreateTime, deadline)));
+        int rejected = 0;
+        for (IdentityVerification verification : overdue) {
+            if (rejectOverdue(verification, expireHours)) {
+                rejected++;
+            }
+        }
+        return rejected;
+    }
+
+    /**
+     * 超期自动拒绝：状态机与人工审核共用同一张表，
+     * 这里用「status = pending」的条件更新兜底，避免与管理员的审核操作互相覆盖。
+     */
+    private boolean rejectOverdue(IdentityVerification verification, int expireHours) {
+        String note = "超过 " + expireHours + " 小时未完成人工审核，系统已自动拒绝；修改资料后可重新提交";
+        boolean updated = lambdaUpdate()
+                .eq(IdentityVerification::getId, verification.getId())
+                .eq(IdentityVerification::getStatus, "pending")
+                .set(IdentityVerification::getStatus, "rejected")
+                .set(IdentityVerification::getReviewNote, note)
+                .set(IdentityVerification::getReviewTime, LocalDateTime.now())
+                .set(IdentityVerification::getUpdateTime, LocalDateTime.now())
+                .update();
+        if (!updated) {
+            return false;
+        }
+        notificationDispatcher.dispatch(
+                "IDENTITY:" + verification.getId() + ":IDENTITY_EXPIRED:" + reviewRound(verification),
+                "IDENTITY",
+                null,
+                verification.getUserId(),
+                "IDENTITY_EXPIRED",
+                "实名认证审核超时",
+                "很抱歉，您的实名认证申请超过 " + expireHours + " 小时未被审核，已被系统自动拒绝。修改资料后可重新提交。",
+                "IDENTITY_VERIFICATION", verification.getId());
+        return true;
+    }
+
+    /**
+     * 审核轮次标识：同一份申请被重新提交后属于新的一轮，
+     * 通知幂等键必须带上轮次，否则「被拒 → 重新提交 → 再被拒」时第二条通知会被唯一索引挡掉，
+     * 用户永远看不到最新的审核结果。
+     */
+    private String reviewRound(IdentityVerification verification) {
+        LocalDateTime submitTime = resolveSubmitTime(verification);
+        if (submitTime == null) {
+            return "R0";
+        }
+        return "R" + submitTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 }

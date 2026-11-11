@@ -3,6 +3,7 @@ package com.springboot.springboothousemarket.Service;
 import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Mapper.RegisterRequestMapper;
 import com.springboot.springboothousemarket.dto.BusinessException;
+import com.springboot.springboothousemarket.dto.LoginFailedException;
 import com.springboot.springboothousemarket.dto.RegisterRequest;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -93,7 +94,9 @@ public class RegisterRequestServiceImpl implements RegisterRequestService {
         RegisterRequest user = mapper.findUserByUsername(username);
 
         if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
-            throw new BusinessException("用户名或密码错误");
+            // 凭据错误用专门的异常类型：只有这一类失败才计入 IP 维度的撞库计数，
+            // 账号被禁用之类的状态类错误不应牵连共享出口 IP 的正常用户。
+            throw new LoginFailedException("用户名或密码错误");
         }
         if (!"normal".equals(user.getStatus())) {
             throw new BusinessException("账号已被禁用，请联系管理员");

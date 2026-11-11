@@ -171,6 +171,7 @@ CREATE TABLE `notification`
     UNIQUE KEY `uk_notification_business_key` (`business_key`),
     KEY            `idx_notification_user` (`user_id`, `read_status`),
     KEY            `idx_notification_related` (`related_type`, `related_id`),
+    KEY            `idx_notification_create_time` (`create_time`),
     CONSTRAINT `fk_notification_user` FOREIGN KEY (`user_id`) REFERENCES `sysuser` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户通知表';
 
@@ -197,6 +198,7 @@ CREATE TABLE `notification_outbox`
     KEY            `idx_outbox_status` (`status`),
     KEY            `idx_outbox_appointment` (`appointment_id`),
     KEY            `idx_outbox_target` (`target_user_id`),
+    KEY            `idx_outbox_create_time` (`create_time`),
     CONSTRAINT `fk_outbox_appointment` FOREIGN KEY (`appointment_id`) REFERENCES `appointment` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知事务 Outbox 表';
 
@@ -237,6 +239,7 @@ CREATE TABLE `identity_verification`
     `reviewer_id` BIGINT                DEFAULT NULL COMMENT '审核人ID',
     `review_time` DATETIME              DEFAULT NULL COMMENT '审核时间',
     `create_time` DATETIME              DEFAULT CURRENT_TIMESTAMP COMMENT '申请时间',
+    `submit_time` DATETIME              DEFAULT NULL COMMENT '最近一次提交申请的时间（审核 SLA 计时起点）',
     `update_time` DATETIME              DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_identity_user` (`user_id`),

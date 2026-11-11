@@ -33,8 +33,8 @@ deploy/
 │   │   ├── housemarket.service      # systemd 服务文件
 │   │   └── housemarket.env.example  # 环境变量模板
 │   └── deploy.sh                    # 一键部署脚本
-├── db/                              # 数据库初始化脚本
-│   ├── schema.sql                   # 建库建表
+├── db/                              # 数据库初始化脚本（基线）
+│   ├── schema.sql                   # 建库建表（与 src/main/resources/db/schema.sql 保持一致）
 │   └── data.sql                     # 演示数据
 └── seed-uploads/                    # 房源种子图片
 ```
@@ -142,6 +142,28 @@ mysql -u<user> -p<password> < db/data.sql
 ```
 
 **注意**：`data.sql` 包含演示数据（10 套房源、演示用户）。生产环境如需清空演示数据，请在导入后手动清理。
+
+### 增量迁移由 Flyway 自动执行（无需人工干预）
+
+`db/schema.sql` 只负责**基线表结构**；之后的所有结构变更统一放在
+`src/main/resources/db/migration/V<版本>__<说明>.sql`，由 **Flyway 在应用启动时自动执行**：
+
+- 迁移脚本随应用 JAR 一起发布，**不要再手工登录数据库执行**（手工执行会导致 Flyway 历史表与实际结构不一致，启动时报校验失败）。
+- 执行记录写入 `flyway_schema_history` 表，可用下面的 SQL 审计：
+  ```sql
+  SELECT version, description, success, installed_on FROM flyway_schema_history ORDER BY installed_rank;
+  ```
+- 存量库（已由 `db/schema.sql` 建好）首次启动时会被标记为基线版本 `1`，随后依次执行尚未应用的增量脚本；
+  新建的空库同样按此流程推进。
+- 迁移脚本全部使用 `information_schema` 判存，**可重复执行**，不会因「已经手工改过库」而报错。
+- 紧急情况下想临时跳过迁移，可用环境变量 `FLYWAY_ENABLED=false` 关闭，但请自行确保结构已到位。
+
+当前已纳入版本管理的增量迁移：
+
+| 版本 | 内容 |
+| --- | --- |
+| `2026.11.10` | `notification.business_key` 唯一索引（通知幂等）、`notification_outbox.claim_time`（按领取时刻回收僵死记录）、`business_key` 扩容到 191 |
+| `2026.11.11` | `identity_verification.submit_time`（实名审核 SLA 计时起点）、`notification` / `notification_outbox` 的 `create_time` 索引（归档扫描） |
 
 ---
 

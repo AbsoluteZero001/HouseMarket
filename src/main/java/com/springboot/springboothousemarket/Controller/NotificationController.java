@@ -1,5 +1,6 @@
 package com.springboot.springboothousemarket.Controller;
 
+import com.springboot.springboothousemarket.Entity.Notification;
 import com.springboot.springboothousemarket.Entity.Users;
 import com.springboot.springboothousemarket.Service.NotificationService;
 import com.springboot.springboothousemarket.dto.ResponseResult;
@@ -12,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -29,13 +32,34 @@ public class NotificationController {
         this.notificationService = notificationService;
     }
 
+    /**
+     * 通知列表（分页）。
+     *
+     * 之前只有 limit 一个参数，最多返回最新 100 条且无法翻页，
+     * 用户看不到更早的通知 —— 这里补上 page/size 分页，并保留 limit 兼容旧调用方。
+     *
+     * @param page 页码，从 1 开始；不传按第 1 页处理
+     * @param size 每页条数，1~100；不传时取 limit（兼容旧参数）
+     * @param limit 旧参数：单次最多返回多少条（未传 page/size 时生效）
+     */
     @GetMapping
     public ResponseResult getNotifications(@AuthenticationPrincipal Users currentUser,
+                                           @RequestParam(required = false) Integer page,
+                                           @RequestParam(required = false) Integer size,
                                            @RequestParam(defaultValue = "50") int limit) {
-        int safeLimit = Math.min(Math.max(limit, 1), 100);
-        return ResponseResult.ok(null, Map.of(
-                "notifications", notificationService.listByUser(currentUser.getId(), safeLimit),
-                "unread", notificationService.countUnread(currentUser.getId())));
+        int safeSize = size != null ? Math.min(Math.max(size, 1), 100) : Math.min(Math.max(limit, 1), 100);
+        int safePage = page != null ? Math.max(page, 1) : 1;
+        int offset = (safePage - 1) * safeSize;
+        List<Notification> records = notificationService.listByUserPaged(currentUser.getId(), offset, safeSize);
+        long total = notificationService.countByUser(currentUser.getId());
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("notifications", records);
+        data.put("unread", notificationService.countUnread(currentUser.getId()));
+        data.put("total", total);
+        data.put("page", safePage);
+        data.put("size", safeSize);
+        data.put("hasMore", offset + records.size() < total);
+        return ResponseResult.ok(null, data);
     }
 
     @GetMapping("/unread-count")
