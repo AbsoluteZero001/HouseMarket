@@ -279,7 +279,8 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
         List<Houses> houses = list(new QueryWrapper<Houses>()
                 .eq("landlord_id", landlordId)
                 .eq("is_deleted", 0)
-                .orderByDesc("create_time"));
+                .orderByDesc("create_time")
+                .orderByDesc("id"));
         return toListVO(houses);
     }
 
@@ -320,7 +321,10 @@ public class HousesServiceImpl extends ServiceImpl<HousesMapper, Houses> impleme
         if (address != null && !address.isBlank()) {
             query.like("address", address);
         }
-        query.orderByDesc("create_time");
+        // 排序键必须唯一：create_time 可能大量重复（批量导入 / 定时发布），
+        // MySQL 对并列行的返回顺序未定义，翻页时会出现「某条记录在第 1 页和第 2 页各出现一次」
+        // 或「某条记录两页都看不到」的重复/遗漏。追加 id 作为稳定的次级排序键。
+        query.orderByDesc("create_time").orderByDesc("id");
 
         Page<Houses> entityPage = page(new Page<>(page, pageSize), query);
         Page<HouseListVO> voPage = new Page<>(entityPage.getCurrent(), entityPage.getSize(), entityPage.getTotal());

@@ -6,6 +6,7 @@ import com.springboot.springboothousemarket.dto.BusinessException;
 import com.springboot.springboothousemarket.dto.LoginFailedException;
 import com.springboot.springboothousemarket.dto.RegisterRequest;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,7 +65,16 @@ public class RegisterRequestServiceImpl implements RegisterRequestService {
                 ? defaultNickname(role) : user.getNickname());
         user.setAvatar("/uploads/avatars/default.png");
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        mapper.register(user);
+        try {
+            mapper.register(user);
+        } catch (DuplicateKeyException duplicate) {
+            // 兜底：并发注册，或历史数据（逻辑删除前未释放用户名的老账号）
+            // 都会撞上 sysuser.uk_username 唯一索引。
+            // 前置的「用户已存在」检查存在竞态窗口（两个请求同时通过检查），
+            // 因此这里必须把唯一键冲突转成可预期的业务错误，
+            // 否则会落到全局异常处理器的「编程错误」分支、对外返回 500。
+            throw new BusinessException("用户名已被占用，请更换后重试");
+        }
 
         // 选择"房东"= 注册即提交入驻申请，审核通过后角色才真正升级
         if ("LANDLORD".equals(role)) {

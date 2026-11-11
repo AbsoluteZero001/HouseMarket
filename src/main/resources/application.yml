@@ -47,7 +47,16 @@ app:
     poll-interval: 2000
     reset-interval: 60000
   appointment:
+    # pending 预约自动过期：创建满 N 小时仍未处理即作废
     pending-expire-hours: ${APPOINTMENT_PENDING_EXPIRE_HOURS:24}
+    # 「临近看房」的提前量（小时）：只有当看房时间已进入该提前量以内时，
+    # 「创建满 N 小时未处理」才会被判定为过期。
+    # 缺少这一项会让「今天预约下周看房」的记录在第二天（创建满 24h）就被误判过期，
+    # 房东还没来得及处理，租客的预约已经作废。
+    pending-expire-lead-hours: ${APPOINTMENT_PENDING_EXPIRE_LEAD_HOURS:24}
+  # 房源图片：单房源图片数量上限，避免磁盘与 house_image 表被无限撑大
+  house:
+    max-images: ${HOUSE_MAX_IMAGES:20}
   # 实名认证审核 SLA：超过该时长仍未人工审核，申请自动置为「已拒绝」并通知申请人，
   # 避免申请无限期挂起、用户长期等不到结果（可重新提交）。
   identity:

@@ -33,6 +33,16 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     @Value("${app.appointment.pending-expire-hours:24}")
     private int pendingExpireHours;
 
+    /**
+     * 「临近看房」的提前量（小时）。
+     *
+     * <p>只有在看房时间已经进入该提前量以内时，「创建满 N 小时仍未处理」才作为过期依据；
+     * 否则一条「今天预约下周看房」的记录会在第二天（创建满 24h）被误判为过期，
+     * 房东还没来得及处理，租客的预约就已经作废 —— 业务闭环直接断裂。
+     */
+    @Value("${app.appointment.pending-expire-lead-hours:24}")
+    private int pendingExpireLeadHours;
+
     public AppointmentServiceImpl(AppointmentFlowService flowService,
                                   NotificationOutboxService outboxService,
                                   HousesMapper housesMapper,
@@ -153,7 +163,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     @Transactional
     @CacheEvict(cacheNames = "home:stats", allEntries = true)
     public boolean approve(Long id, Users operator) {
-        Appointment appointment = requireTransitionable(id, operator, AppointmentStatus.PENDING, true);
+        Appointment appointment = requireTransitionable(id, operator, AppointmentStatus.PENDING);
         boolean updated = transition(appointment, AppointmentStatus.APPROVED, "APPROVE",
                 operator.getId(), "LANDLORD", "房东审批通过");
         if (updated) {
@@ -169,7 +179,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     @Transactional
     @CacheEvict(cacheNames = "home:stats", allEntries = true)
     public boolean reject(Long id, Users operator) {
-        Appointment appointment = requireTransitionable(id, operator, AppointmentStatus.PENDING, true);
+        Appointment appointment = requireTransitionable(id, operator, AppointmentStatus.PENDING);
         boolean updated = transition(appointment, AppointmentStatus.REJECTED, "REJECT",
                 operator.getId(), "LANDLORD", "房东拒绝本次预约");
         if (updated) {
@@ -214,7 +224,7 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     @Transactional
     @CacheEvict(cacheNames = "home:stats", allEntries = true)
     public boolean complete(Long id, Users operator) {
-        Appointment appointment = requireTransitionable(id, operator, AppointmentStatus.APPROVED, false);
+        Appointment appointment = requireTransitionable(id, operator, AppointmentStatus.APPROVED);
         boolean updated = transition(appointment, AppointmentStatus.COMPLETED, "COMPLETE",
                 operator.getId(), "LANDLORD", "看房完成，预约闭环结束");
         if (updated) {
@@ -228,19 +238,32 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
 
     /**
      * 定时任务：pending 超时自动过期。
-     * 过期条件：看房时间已过，或创建超过 app.appointment.pending-expire-hours 小时仍未处理。
+     *
+     * <p>过期条件（两者满足其一）：
+     * <ol>
+     *   <li><b>看房时间已过</b>（{@code time < now}）—— 约定时间到了还没处理；</li>
+     *   <li><b>看房时间已临近</b>（{@code time < now + pending-expire-lead-hours}）
+     *       <b>且</b>创建已超过 {@code pending-expire-hours} 小时仍未处理
+     *       —— 房东临近了还没答复，再等就来不及了。</li>
+     * </ol>
+     *
+     * <p>旧实现只有「创建超过 N 小时」一个条件（缺少「临近看房」这一前提），
+     * 会把「今天预约下周看房」的记录在第二天直接判为过期。修正后，
+     * 远期预约会一直保留到临近看房或看房时间过去为止。
      */
     @Override
     @Scheduled(fixedDelay = 60000)
     @Transactional
     public int expireOverdueAppointments() {
         LocalDateTime now = LocalDateTime.now();
+        int leadHours = Math.max(0, pendingExpireLeadHours);
         List<Appointment> overdue = this.lambdaQuery()
                 .eq(Appointment::getStatus, AppointmentStatus.PENDING)
                 .and(wrapper -> wrapper
                         .lt(Appointment::getTime, now)
-                        .or()
-                        .lt(Appointment::getCreateTime, now.minusHours(pendingExpireHours)))
+                        .or(inner -> inner
+                                .lt(Appointment::getTime, now.plusHours(leadHours))
+                                .lt(Appointment::getCreateTime, now.minusHours(pendingExpireHours))))
                 .list();
         int count = 0;
         for (Appointment appointment : overdue) {
@@ -290,22 +313,23 @@ public class AppointmentServiceImpl extends ServiceImpl<AppointmentMapper, Appoi
     // 内部方法：状态流转 + 轨迹 + 通知 必须在同一事务内
     // ------------------------------------------------------------------
 
-    private Appointment requireTransitionable(Long id, Users operator, String requiredStatus, boolean requireLandlordOwner) {
+    /**
+     * 校验当前预约是否允许执行「房东侧」的状态流转。
+     *
+     * <p>原实现带一个 {@code requireLandlordOwner} 布尔参数，但 true / false
+     * 两个分支的判定逻辑完全等价（都是要求「操作者是 LANDLORD 且是该房源的房东」），
+     * 属于典型的死参数 —— 只会让人误以为两条路径有区别。现已移除。
+     */
+    private Appointment requireTransitionable(Long id, Users operator, String requiredStatus) {
         Appointment appointment = getById(id);
         if (appointment == null) {
             throw new BusinessException("预约不存在");
         }
-        if (requireLandlordOwner) {
-            if (!"LANDLORD".equals(operator.getRole())) {
-                throw new BusinessException("只有房东才能执行该操作");
-            }
-            if (!appointment.getLandlordId().equals(operator.getId())) {
-                throw new org.springframework.security.access.AccessDeniedException("只能操作自己房源的预约");
-            }
-        } else {
-            if (!"LANDLORD".equals(operator.getRole()) || !appointment.getLandlordId().equals(operator.getId())) {
-                throw new org.springframework.security.access.AccessDeniedException("只有房源所属房东才能执行该操作");
-            }
+        if (!"LANDLORD".equals(operator.getRole())) {
+            throw new BusinessException("只有房东才能执行该操作");
+        }
+        if (!appointment.getLandlordId().equals(operator.getId())) {
+            throw new org.springframework.security.access.AccessDeniedException("只有房源所属房东才能执行该操作");
         }
         if (!requiredStatus.equals(appointment.getStatus())) {
             throw new BusinessException("当前状态不允许该操作（要求状态：" + requiredStatus + "）");

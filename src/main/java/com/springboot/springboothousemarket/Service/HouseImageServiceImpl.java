@@ -4,10 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.springboot.springboothousemarket.Entity.HouseImage;
 import com.springboot.springboothousemarket.Mapper.HouseImageMapper;
+import com.springboot.springboothousemarket.Util.ImageUploadValidator;
+import com.springboot.springboothousemarket.dto.BusinessException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -22,10 +23,17 @@ import java.util.stream.Collectors;
 @Service
 public class HouseImageServiceImpl extends ServiceImpl<HouseImageMapper, HouseImage> implements HouseImageService {
 
-    private static final List<String> ALLOWED_EXTENSIONS = List.of(".jpg", ".jpeg", ".png", ".gif", ".webp");
-
     @Value("${upload.dir:./uploads}")
     private String uploadDir;
+
+    /**
+     * 单个房源允许的图片数量上限。
+     *
+     * <p>旧实现没有上限：房东（或拿到 LANDLORD 角色的账号）可以无限次上传，
+     * 撑爆磁盘与 {@code house_image} 表。发房源、传图片都应有明确边界。
+     */
+    @Value("${app.house.max-images:20}")
+    private int maxImagesPerHouse;
 
     @Override
     public List<HouseImage> listByHouseId(Long houseId) {
@@ -51,20 +59,16 @@ public class HouseImageServiceImpl extends ServiceImpl<HouseImageMapper, HouseIm
     @Transactional
     public HouseImage uploadImage(Long houseId, MultipartFile file, String imageType, Integer sortOrder, boolean cover) throws IOException {
         if (houseId == null) {
-            throw new RuntimeException("房源ID不能为空");
+            throw new BusinessException("房源ID不能为空");
         }
         if (file == null || file.isEmpty()) {
-            throw new RuntimeException("上传图片不能为空");
+            throw new BusinessException("上传图片不能为空");
         }
+        // 数量上限：防止单个房源无限上传，撑爆磁盘与数据库
+        assertWithinImageLimit(houseId);
 
-        String originalName = StringUtils.cleanPath(file.getOriginalFilename() == null ? "image" : file.getOriginalFilename());
-        String extension = getExtension(originalName);
-        if (!ALLOWED_EXTENSIONS.contains(extension.toLowerCase(Locale.ROOT))) {
-            throw new RuntimeException("仅支持 JPG、PNG、GIF、WEBP 格式图片");
-        }
-        if (file.getSize() > 5 * 1024 * 1024) {
-            throw new RuntimeException("图片大小不能超过 5MB");
-        }
+        // 按文件真实字节判定类型：不信任用户提供的文件名与 Content-Type
+        String extension = ImageUploadValidator.validateAndDetectExtension(file, "房源图片");
 
         Path basePath = Paths.get(uploadDir).toAbsolutePath().normalize();
         Path houseDir = basePath.resolve("houses").resolve(String.valueOf(houseId)).normalize();
@@ -73,7 +77,7 @@ public class HouseImageServiceImpl extends ServiceImpl<HouseImageMapper, HouseIm
         }
         Files.createDirectories(houseDir);
 
-        String fileName = UUID.randomUUID().toString().replace("-", "") + extension;
+        String fileName = ImageUploadValidator.randomFileName(extension);
         Path target = houseDir.resolve(fileName).normalize();
         if (!target.startsWith(houseDir)) {
             throw new RuntimeException("非法的房源图片文件名");
@@ -101,8 +105,10 @@ public class HouseImageServiceImpl extends ServiceImpl<HouseImageMapper, HouseIm
     @Transactional
     public HouseImage createImage(Long houseId, String imageUrl, String imageType, Integer sortOrder, boolean cover) {
         if (houseId == null || imageUrl == null || imageUrl.isBlank()) {
-            throw new RuntimeException("房源图片地址不能为空");
+            throw new BusinessException("房源图片地址不能为空");
         }
+        // 与上传入口一致的数量上限：防止通过「批量 imageUrls」一次性塞爆表
+        assertWithinImageLimit(houseId);
         boolean shouldCover = cover || listByHouseId(houseId).isEmpty();
         if (shouldCover) {
             clearCover(houseId);
@@ -191,9 +197,15 @@ public class HouseImageServiceImpl extends ServiceImpl<HouseImageMapper, HouseIm
                 .update();
     }
 
-    private String getExtension(String fileName) {
-        int dot = fileName.lastIndexOf('.');
-        return dot >= 0 ? fileName.substring(dot) : "";
+    /**
+     * 校验房源当前图片数量是否已达上限。
+     */
+    private void assertWithinImageLimit(Long houseId) {
+        int limit = Math.max(1, maxImagesPerHouse);
+        long existing = count(new LambdaQueryWrapper<HouseImage>().eq(HouseImage::getHouseId, houseId));
+        if (existing >= limit) {
+            throw new BusinessException("每个房源最多上传 " + limit + " 张图片，请先删除部分图片");
+        }
     }
 
     private String normalizeImageType(String imageType) {

@@ -8,10 +8,12 @@ import com.springboot.springboothousemarket.common.UserStatus;
 import com.springboot.springboothousemarket.dto.BusinessException;
 import com.springboot.springboothousemarket.dto.UserVO;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements UsersService {
@@ -75,9 +77,49 @@ public class UsersServiceImpl extends ServiceImpl<UsersMapper, Users> implements
         }
         // 级联清理房源/预约/收藏/聊天/通知/申请单，避免孤儿数据
         userCleanupService.cleanupUserData(id);
+        // 释放用户名：必须先改名，再做逻辑删除
+        releaseUsername(user);
         // isDeleted 带 @TableLogic：逻辑删除字段不能经 updateById 设置（会被排除出 SET 子句），
         // 必须走 deleteById，由 MyBatis-Plus 转写为 UPDATE is_deleted=1
         return usersMapper.deleteById(id) > 0;
+    }
+
+    /**
+     * 逻辑删除前释放「用户名」这一唯一键占用。
+     *
+     * <p>背景：{@code sysuser.uk_username} 是 {@code username} 单列唯一索引，
+     * 而逻辑删除（{@code is_deleted=1}）的行仍然留在表里、依旧占用该用户名；
+     * 同时所有按用户名查询的地方都带 {@code AND is_deleted = 0}，
+     * 于是「注册前的重名检查」查不到已删除用户 → 直接 INSERT 撞唯一键，
+     * 表现为 HTTP 500 DuplicateKeyException。
+     * 结果就是：管理员删掉某个用户后，该用户名<b>永远</b>无法再次注册。
+     *
+     * <p>解决办法：删除前把用户名改写成「原名#del#&lt;用户ID&gt;」，
+     * 既保留审计线索（还能看出原用户名），又腾出原用户名供重新注册。
+     */
+    private void releaseUsername(Users user) {
+        String original = user.getUsername();
+        if (original == null || original.isBlank()) {
+            return;
+        }
+        String suffix = "#del#" + user.getId();
+        // sysuser.username 为 VARCHAR(100)，改名后总长不得超列宽
+        int keep = Math.max(1, 100 - suffix.length());
+        String released = original.substring(0, Math.min(original.length(), keep)) + suffix;
+        Users update = new Users();
+        update.setId(user.getId());
+        update.setUsername(released);
+        try {
+            usersMapper.updateById(update);
+        } catch (DuplicateKeyException conflict) {
+            // 极端情况：改名后的用户名恰好被占用（例如有人注册了带 #del# 的用户名），
+            // 退化为 UUID 命名，保证删除流程不因唯一键冲突而整体失败。
+            Users fallback = new Users();
+            fallback.setId(user.getId());
+            fallback.setUsername("deleted_" + user.getId() + "_"
+                    + UUID.randomUUID().toString().replace("-", ""));
+            usersMapper.updateById(fallback);
+        }
     }
 
     @Override

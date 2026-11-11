@@ -3,7 +3,9 @@ package com.springboot.springboothousemarket.Controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.springboot.springboothousemarket.Entity.Houses;
 import com.springboot.springboothousemarket.Entity.Users;
+import com.springboot.springboothousemarket.Entity.Appointment;
 import com.springboot.springboothousemarket.Service.AppointmentService;
+import com.springboot.springboothousemarket.common.AppointmentStatus;
 import com.springboot.springboothousemarket.Service.HousesService;
 import com.springboot.springboothousemarket.Service.UsersService;
 import com.springboot.springboothousemarket.dto.ResponseResult;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 @Tag(name = "首页公开API")
@@ -67,7 +70,12 @@ public class PublicController {
                 .eq(Users::getRole, "TENANT")
                 .eq(Users::getIsDeleted, 0)
                 .count();
-        long appointmentsCount = appointmentService.count();
+        // 只统计「有效预约」：被拒绝 / 已取消 / 已过期的记录不代表真实交易，
+        // 全部计入会让首页展示的预约量严重失真。
+        long appointmentsCount = appointmentService.lambdaQuery()
+                .in(Appointment::getStatus, List.of(AppointmentStatus.PENDING,
+                        AppointmentStatus.APPROVED, AppointmentStatus.COMPLETED))
+                .count();
 
         return ResponseResult.ok(null, Map.of(
                 "houses", housesCount,

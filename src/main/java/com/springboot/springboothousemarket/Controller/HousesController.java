@@ -15,7 +15,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import com.springboot.springboothousemarket.Util.ImageUploadValidator;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -60,6 +61,19 @@ public class HousesController {
 
     /**
      * 通用图片上传（房东/管理员）。
+     *
+     * <p>旧实现有四个缺陷：
+     * <ol>
+     *   <li>只校验文件名后缀，而且<b>没有后缀时直接跳过校验</b> ——
+     *       内容是 HTML/脚本的文件也能入库，并通过 {@code /uploads/**} 静态映射对外提供；</li>
+     *   <li>没有任何大小上限；</li>
+     *   <li>文件名由用户可控（沿用原始 basename），存在同名覆盖风险；</li>
+     *   <li>返回<b>绝对 URL</b>（{@code fromCurrentContextPath()}）——
+     *       应用部署在 Nginx 反向代理之后时，前端拿到的是内网地址，图片直接失效。</li>
+     * </ol>
+     *
+     * <p>现统一走 {@link ImageUploadValidator}：按 magic number 判定真实类型、
+     * 限制大小、服务端生成随机文件名，并返回<b>相对路径</b>（与另外两个上传入口一致）。
      */
     @PostMapping("/upload-image")
     @PreAuthorize("hasAnyAuthority('LANDLORD','ADMIN')")
@@ -67,37 +81,21 @@ public class HousesController {
                                       @RequestParam(value = "file", required = false) MultipartFile fileParam,
                                       @RequestParam(value = "imageFile", required = false) MultipartFile imageFileParam) throws IOException {
         MultipartFile uploadFile = firstNonEmpty(imageFile, fileParam, imageFileParam);
-        if (uploadFile == null || uploadFile.isEmpty()) {
-            throw new RuntimeException("上传图片不能为空");
-        }
+        String extension = ImageUploadValidator.validateAndDetectExtension(uploadFile, "图片");
 
         Path uploadDirPath = Paths.get(uploadDir).toAbsolutePath().normalize();
         Files.createDirectories(uploadDirPath);
 
-        String original = uploadFile.getOriginalFilename();
-        String baseName = original == null || original.isBlank() ? "image" : original;
-        baseName = Paths.get(baseName).getFileName().toString();
-        String extension = "";
-        int dot = baseName.lastIndexOf('.');
-        if (dot > 0) {
-            extension = baseName.substring(dot);
-            baseName = baseName.substring(0, dot);
-        }
-        if (!extension.isBlank()
-                && !List.of(".jpg", ".jpeg", ".png", ".gif", ".webp").contains(extension.toLowerCase())) {
-            throw new RuntimeException("仅支持 JPG、PNG、GIF、WEBP 格式图片");
-        }
-        String uniqueFileName = baseName + "_" + System.currentTimeMillis() + extension;
+        // 文件名完全由服务端生成：杜绝用户可控文件名带来的路径穿越与同名覆盖
+        String uniqueFileName = ImageUploadValidator.randomFileName(extension);
         Path targetFile = uploadDirPath.resolve(uniqueFileName).normalize();
         if (!targetFile.startsWith(uploadDirPath)) {
-            throw new IOException("非法的上传文件名");
+            throw new BusinessException("非法的上传路径");
         }
         Files.copy(uploadFile.getInputStream(), targetFile, StandardCopyOption.REPLACE_EXISTING);
 
-        String url = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/uploads/")
-                .path(uniqueFileName)
-                .toUriString();
+        // 返回相对路径：反代 / 多域名部署下，绝对 URL 会指向内网地址导致图片无法访问
+        String url = "/uploads/" + uniqueFileName;
         return ResponseResult.ok(null, Map.of("url", url));
     }
 

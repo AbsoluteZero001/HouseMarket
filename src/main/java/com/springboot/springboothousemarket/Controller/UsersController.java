@@ -6,6 +6,7 @@ import com.springboot.springboothousemarket.common.UserStatus;
 import com.springboot.springboothousemarket.dto.BusinessException;
 import com.springboot.springboothousemarket.dto.ResponseResult;
 import com.springboot.springboothousemarket.dto.UserVO;
+import com.springboot.springboothousemarket.Util.ImageUploadValidator;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
@@ -24,7 +25,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 
 @Tag(name = "用户信息API")
 @RequestMapping("/user")
@@ -32,6 +32,12 @@ import java.util.UUID;
 public class UsersController {
 
     private static final Set<String> VALID_ROLES = Set.of("ADMIN", "LANDLORD", "TENANT");
+
+    /** 头像大小上限：2MB。 */
+    private static final long AVATAR_MAX_BYTES = 2L * 1024 * 1024;
+
+    /** 昵称长度上限：与 sysuser.nickname 列宽（VARCHAR(100)）保持一致。 */
+    private static final int NICKNAME_MAX_LENGTH = 100;
 
     private final UsersService sysUserService;
     private final PasswordEncoder passwordEncoder;
@@ -118,19 +124,34 @@ public class UsersController {
 
     /**
      * 更新当前用户昵称。
+     *
+     * <p>旧实现没有长度校验：昵称超过 {@code sysuser.nickname} 的列宽（VARCHAR(100)）时，
+     * MySQL 直接报错 → {@code DataIntegrityViolationException} →
+     * 全局异常处理器按「编程错误」返回 500 与「系统繁忙」，
+     * 用户完全不知道自己哪里填错了。这里补上前置校验，返回可操作的 400 文案。
      */
     @PutMapping("/profile")
     public ResponseResult updateNickname(@RequestBody Map<String, String> body,
                                          @AuthenticationPrincipal Users currentUser) {
-        Users user = sysUserService.getUserById(currentUser.getId());
-        if (user == null) {
-            throw new BusinessException("用户不存在");
+        if (currentUser == null) {
+            throw new SecurityException("请先登录");
+        }
+        if (body == null) {
+            throw new BusinessException("请求参数不能为空");
         }
         String nickname = body.get("nickname");
         if (nickname == null || nickname.isBlank()) {
             throw new BusinessException("昵称不能为空");
         }
-        user.setNickname(nickname.trim());
+        String trimmed = nickname.trim();
+        if (trimmed.length() > NICKNAME_MAX_LENGTH) {
+            throw new BusinessException("昵称不能超过 " + NICKNAME_MAX_LENGTH + " 个字符");
+        }
+        Users user = sysUserService.getUserById(currentUser.getId());
+        if (user == null) {
+            throw new BusinessException("用户不存在");
+        }
+        user.setNickname(trimmed);
         sysUserService.updateUser(user.getId(), user);
         return ResponseResult.ok(null, Map.of("user", UserVO.from(sysUserService.getUserById(user.getId()))));
     }
@@ -148,19 +169,12 @@ public class UsersController {
             @RequestParam(value = "file", required = false) MultipartFile file,
             @AuthenticationPrincipal Users currentUser) throws IOException {
         MultipartFile upload = avatar != null && !avatar.isEmpty() ? avatar : file;
-        if (upload == null || upload.isEmpty()) {
-            throw new BusinessException("上传头像不能为空");
-        }
+        // 统一按文件真实字节（magic number）判定类型并限制大小：
+        // 不再信任用户提供的文件名与 Content-Type，也不再依赖「后缀合法就放行」的兜底分支
+        String extension = ImageUploadValidator.validateAndDetectExtension(upload, AVATAR_MAX_BYTES, "头像");
         byte[] bytes = upload.getBytes();
-        if (bytes.length > 2 * 1024 * 1024) {
-            throw new BusinessException("头像大小不能超过 2MB");
-        }
-        String extension = resolveImageExtension(bytes, upload.getOriginalFilename());
-        if (extension == null) {
-            throw new BusinessException("头像仅支持 JPG/PNG/GIF/WEBP 格式");
-        }
         // 文件名由服务端随机生成：杜绝用户可控文件名带来的路径穿越与同名覆盖
-        String fileName = UUID.randomUUID().toString().replace("-", "") + extension;
+        String fileName = ImageUploadValidator.randomFileName(extension);
         Path avatarDir = Paths.get(uploadDir, "avatars").toAbsolutePath().normalize();
         Files.createDirectories(avatarDir);
         Path target = avatarDir.resolve(fileName).normalize();
@@ -178,41 +192,6 @@ public class UsersController {
         // 清理历史 Base64 大字段（头像已落盘，无需再保留内联副本）
         sysUserService.clearAvatarBase64(user.getId());
         return ResponseResult.ok(null, Map.of("user", UserVO.from(sysUserService.getUserById(user.getId()))));
-    }
-
-    /**
-     * 依据文件真实字节（magic number）判定图片类型，不信任用户提供的文件名与 Content-Type。
-     *
-     * @return 合法扩展名（含点）；无法识别时返回 null
-     */
-    private String resolveImageExtension(byte[] bytes, String originalFilename) {
-        if (bytes.length >= 8
-                && (bytes[0] & 0xFF) == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47) {
-            return ".png";
-        }
-        if (bytes.length >= 3
-                && (bytes[0] & 0xFF) == 0xFF && (bytes[1] & 0xFF) == 0xD8 && (bytes[2] & 0xFF) == 0xFF) {
-            return ".jpg";
-        }
-        if (bytes.length >= 3 && bytes[0] == 'G' && bytes[1] == 'I' && bytes[2] == 'F') {
-            return ".gif";
-        }
-        if (bytes.length >= 12
-                && bytes[0] == 'R' && bytes[1] == 'I' && bytes[2] == 'F' && bytes[3] == 'F'
-                && bytes[8] == 'W' && bytes[9] == 'E' && bytes[10] == 'B' && bytes[11] == 'P') {
-            return ".webp";
-        }
-        // magic number 识别失败时，仅在文件名后缀明确合法的情况下放行（避免误伤合法图片）
-        if (originalFilename != null) {
-            int dot = originalFilename.lastIndexOf('.');
-            if (dot >= 0) {
-                String ext = originalFilename.substring(dot).toLowerCase();
-                if (Set.of(".jpg", ".jpeg", ".png", ".gif", ".webp").contains(ext)) {
-                    return ".jpeg".equals(ext) ? ".jpg" : ext;
-                }
-            }
-        }
-        return null;
     }
 
     /**
